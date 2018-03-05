@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# A script to run the kaggle model using ml-engine.
+#
+# A script to train the kaggle model remotely using ml-engine.
 #
 # Setup Steps:
 # 1. Install the gcloud SDK
 # 2. Authenticate with the GCP project you want to use, `gcloud config set project [my-project]`
 # 3. Put the train and test data in Cloud Storage, `gsutil cp [DATA_FILE] gs://[BUCKET_NAME]/`
-
+#
 
 # Edit these!
 BUCKET_NAME=kaggle-model-experiments

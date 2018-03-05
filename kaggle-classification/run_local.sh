@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#
+# A script to train the kaggle model locally
+#
+
 gcloud ml-engine local train \
      --module-name=trainer.model \
      --package-path=trainer \
