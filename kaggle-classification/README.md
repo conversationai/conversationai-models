@@ -5,24 +5,20 @@ and the it ends in February 2018.
 
 These models are meant to be simple baselines created independently from the Google infrastructure.
 
-## To Run
+## To Run Locally
 1. Download the training (`train.csv`) and test (`test.csv`) data from the
 [Kaggle challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge/data).
-2. Install library dependencies:
+
+2. Setup a (virtualenv)[https://virtualenvwrapper.readthedocs.io/en/latest/] for the project(Optional)
+
+3. Install library dependencies:
 ```shell
 pip install -r requirements.txt
 ```
 
-3. Run a model on a given class (e.g. 'toxic' or 'obscene'):
+4. Run a model on a given class (e.g. 'toxic' or 'obscene'). There are examples of how to
+run the model locally and using ml-engine in `run_local.sh` and `run.sh` respectively.
 
-```shell
-  python trainer/model.py \
-         --train_data=train.csv \
-         --predict_data=test.csv \
-         --y_class=toxic \
-         --model=bag_of_words \
-         --train_steps=1000
-```
 
 ## Available Models
   * `bag_of_words` - bag of words model with a learned word-embedding layer
