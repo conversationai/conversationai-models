@@ -1,0 +1,11 @@
+# Don't version control data
+*.csv
+
+# Directories to save model checkpoints
+model/*
+saved_models/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
