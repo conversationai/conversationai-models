@@ -42,15 +42,13 @@ DATA_SEED = 48173 # Random seed used for splitting the data into train/test
 MAX_LABEL = 2
 MAX_DOCUMENT_LENGTH = 500 # Max length of each comment in words
 
+# CNN parameters
 CNNParams = namedtuple(
-  'CNNParams', ['WINDOW_SIZE', 'EMBEDDING_SIZE','POOLING_WINDOW', 'POOLING_STRIDE',
-                'N_FILTERS', 'FILTER_SHAPE1', 'FILTER_SHAPE2'])
-cnn_values = {'WINDOW_SIZE':20, 'EMBEDDING_SIZE':20, 'POOLING_WINDOW':4,
-              'POOLING_STRIDE':2, 'N_FILTERS':10}
-cnn_values['FILTER_SHAPE1'] = [cnn_values['WINDOW_SIZE'], cnn_values['EMBEDDING_SIZE']]
-cnn_values['FILTER_SHAPE2'] = [cnn_values['WINDOW_SIZE'], cnn_values['N_FILTERS']]
-CNN_PARAMS = CNNParams(**cnn_values)
+  'CNNParams',['EMBEDDING_SIZE','N_FILTERS', 'FILTER_SIZES', 'DROPOUT_KEEP_PROB'])
+CNN_PARAMS = CNNParams(
+  EMBEDDING_SIZE=20, N_FILTERS=10, FILTER_SIZES=[2,3,4,5],  DROPOUT_KEEP_PROB=.75)
 
+# Bag of Word parameters
 BOWParams = namedtuple('BOWParams', ['EMBEDDING_SIZE'])
 BOW_PARAMS = BOWParams(EMBEDDING_SIZE = 20)
 
@@ -144,56 +142,68 @@ def estimator_spec_for_softmax_classification(logits, labels, mode):
       )
 
 def cnn_model(features, labels, mode):
-  """
-  A 2 layer ConvNet to predict from sequence of words to a class.
-  Largely stolen from:
-  https://github.com/tensorflow/tensorflow/blob/master/tensorflow/examples/learn/text_classification_cnn.py
-  Returns a tf.estimator.EstimatorSpec.
-  """
-  # Convert indexes of words into embeddings.
-  # This creates embeddings matrix of [n_words, EMBEDDING_SIZE] and then
-  # maps word indexes of the sequence into [batch_size, sequence_length,
-  # EMBEDDING_SIZE].
-  word_vectors = tf.contrib.layers.embed_sequence(
-      features[WORDS_FEATURE], vocab_size=n_words, embed_dim=
-    CNN_PARAMS.EMBEDDING_SIZE)
+  embedding_size = CNN_PARAMS.EMBEDDING_SIZE
+  filter_sizes = CNN_PARAMS.FILTER_SIZES
+  num_filters = CNN_PARAMS.N_FILTERS
+  dropout_keep_prob = CNN_PARAMS.DROPOUT_KEEP_PROB
 
-  # Inserts a dimension of 1 into a tensor's shape.
-  word_vectors = tf.expand_dims(word_vectors, 3)
+  with tf.name_scope("embedding"):
+    W = tf.Variable(
+        tf.random_uniform([n_words, embedding_size], -1.0, 1.0),
+        name="W")
 
-  with tf.variable_scope('CNN_Layer1'):
-    # Apply Convolution filtering on input sequence.
-    conv1 = tf.layers.conv2d(
-        word_vectors,
-        filters=CNN_PARAMS.N_FILTERS,
-        kernel_size=CNN_PARAMS.FILTER_SHAPE1,
-        padding='VALID',
-        # Add a ReLU for non linearity.
-        activation=tf.nn.relu)
-    # Max pooling across output of Convolution+Relu.
-    pool1 = tf.layers.max_pooling2d(
-        conv1,
-        pool_size=CNN_PARAMS.POOLING_WINDOW,
-        strides=CNN_PARAMS.POOLING_STRIDE,
-        padding='SAME')
-    # Transpose matrix so that n_filters from convolution becomes width.
-    pool1 = tf.transpose(pool1, [0, 1, 3, 2])
-  with tf.variable_scope('CNN_Layer2'):
-    # Second level of convolution filtering.
-    conv2 = tf.layers.conv2d(
-        pool1,
-        filters=CNN_PARAMS.N_FILTERS,
-        kernel_size=CNN_PARAMS.FILTER_SHAPE2,
-        padding='VALID')
-    # Max across each filter to get useful features for classification.
-    pool2 = tf.squeeze(tf.reduce_max(conv2, 1), squeeze_dims=[1])
+    embedded_chars = tf.nn.embedding_lookup(W, features[WORDS_FEATURE])
+    embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)
 
-  # Apply regular WX + B and classification.
-  logits = tf.layers.dense(pool2, MAX_LABEL, activation=None)
-  predicted_classes = tf.argmax(logits, 1)
+  pooled_outputs = []
+  for i, filter_size in enumerate(filter_sizes):
+    with tf.name_scope("conv-maxpool-%s" % filter_size):
+
+      # Convolution Layer
+        filter_shape = [filter_size, embedding_size, 1, num_filters]
+        W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+        b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
+        conv = tf.nn.conv2d(
+          embedded_chars_expanded,
+          W,
+          strides=[1, 1, 1, 1],
+          padding="VALID",
+          name="conv")
+        # Apply nonlinearity
+        hh = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+
+        # Max-pooling over the outputs. Max over samples in batch and
+        # all filters.
+        pooled = tf.nn.max_pool(
+          hh,
+          ksize=[1, MAX_DOCUMENT_LENGTH - filter_size + 1, 1, 1],
+          strides=[1, 1, 1, 1],
+          padding='VALID',
+          name="pool")
+
+        pooled_outputs.append(pooled)
+
+  # Combine all the pooled features
+  num_filters_total = num_filters * len(filter_sizes)
+  h_pool = tf.concat(pooled_outputs, 3)
+  h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
+
+  # Add dropout in training
+  with tf.name_scope("dropout"):
+    # Set dropout rate to 1 (disable dropout) by default
+    h_drop = tf.nn.dropout(h_pool_flat, 1.0)
+
+    if mode == tf.estimator.ModeKeys.TRAIN:
+      h_drop = tf.nn.dropout(h_pool_flat, dropout_keep_prob)
+
+  # Add a fully connected layer to do prediction
+  with tf.name_scope("output"):
+    W = tf.Variable(tf.truncated_normal([num_filters_total, MAX_LABEL], stddev=0.1), name="W")
+    b = tf.Variable(tf.constant(0.1, shape=[MAX_LABEL]), name="b")
+    scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
 
   return estimator_spec_for_softmax_classification(
-    logits=logits, labels=labels, mode=mode)
+    logits=scores, labels=labels, mode=mode)
 
 def bag_of_words_model(features, labels, mode):
   """
@@ -316,6 +326,7 @@ def main():
         dtype=tf.int64, shape=MAX_DOCUMENT_LENGTH)
     }
     serving_input_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
+
     classifier.export_savedmodel(FLAGS.saved_model_dir, serving_input_fn)
 
 
