@@ -15,7 +15,7 @@ JOB_NAME=test_kaggle_training
 REGION=us-central1
 
 DATE=`date '+%Y%m%d_%H%M%S'`
-OUTPUT_PATH=gs://${BUCKET_NAME}/${DATE}
+OUTPUT_PATH=gs://${BUCKET_NAME}/${USER}-${DATE}
 
 echo "Writing to $OUTPUT_PATH"
 
