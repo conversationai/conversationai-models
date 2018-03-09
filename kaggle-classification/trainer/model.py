@@ -46,7 +46,7 @@ MAX_DOCUMENT_LENGTH = 500 # Max length of each comment in words
 CNNParams = namedtuple(
   'CNNParams',['EMBEDDING_SIZE','N_FILTERS', 'FILTER_SIZES', 'DROPOUT_KEEP_PROB'])
 CNN_PARAMS = CNNParams(
-  EMBEDDING_SIZE=20, N_FILTERS=10, FILTER_SIZES=[2,3,4,5],  DROPOUT_KEEP_PROB=.75)
+  EMBEDDING_SIZE=50, N_FILTERS=10, FILTER_SIZES=[2,3,4,5],  DROPOUT_KEEP_PROB=.75)
 
 # Bag of Word parameters
 BOWParams = namedtuple('BOWParams', ['EMBEDDING_SIZE'])
