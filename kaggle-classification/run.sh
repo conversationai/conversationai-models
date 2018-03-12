@@ -35,3 +35,15 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --saved_model_dir gs://${BUCKET_NAME}/saved_models/${USER} \
     --model_dir gs://${BUCKET_NAME}/model/${USER}/${DATE} \
     --model cnn \
+
+
+echo "You can view the tensorboard for this job with the command:"
+echo ""
+echo -e "\t tensorboard --logdir=gs://${BUCKET_NAME}/model/${USER}/${DATE}"
+echo ""
+echo "And on your browser navigate to:"
+echo ""
+echo -e "\t http://localhost:6006/#scalars"
+echo ""
+echo "This will populate after a model checkpoint is saved."
+echo ""
