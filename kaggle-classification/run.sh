@@ -32,6 +32,6 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --y_class toxic \
     ---predict_data gs://${BUCKET_NAME}/test.csv \
     --train_steps 1500 \
-    --saved_model_dir gs://${BUCKET_NAME}/saved_models \
-    --model_dir gs://${BUCKET_NAME}/model/${DATE} \
+    --saved_model_dir gs://${BUCKET_NAME}/saved_models/${USER} \
+    --model_dir gs://${BUCKET_NAME}/model/${USER}/${DATE} \
     --model cnn \
