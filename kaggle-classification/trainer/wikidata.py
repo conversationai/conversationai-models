@@ -5,6 +5,7 @@ Class to encapsulate training and test data.
 import numpy as np
 import pandas as pd
 import tensorflow as tf
+import tflearn
 from sklearn.model_selection import train_test_split
 
 Y_CLASSES = ['toxic', 'severe_toxic','obscene','threat','insult','identity_hate']
@@ -54,7 +55,7 @@ class WikiData:
       self.vocab_processor = self.load_vocab_processor(vocab_processor_path)
 
     else:
-      self.vocab_processor = tf.contrib.learn.preprocessing.VocabularyProcessor(
+      self.vocab_processor = tflearn.data_utils.VocabularyProcessor(
         max_document_length)
       self.x_train = np.array(list(self.vocab_processor.fit_transform(
         self.x_train_text)))
@@ -65,7 +66,7 @@ class WikiData:
 
   def _load_vocab_processor(self, path):
     """Load a VocabularyProcessor from the provided path"""
-    return tf.contrib.learn.preprocessing.VocabularyProcessor.restore(path)
+    return tflearn.data_utils.VocabularyProcessor.restore(path)
 
   def _load_csv(self, path):
     """
