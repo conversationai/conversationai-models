@@ -39,7 +39,7 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
 
 echo "You can view the tensorboard for this job with the command:"
 echo ""
-echo -e "\t tensorboard --logdir=gs://$BUCKET_NAME/model/$USER/$DATE"
+echo -e "\t tensorboard --logdir=gs://${BUCKET_NAME}/model/${USER}/${DATE}"
 echo ""
 echo "And on your browser navigate to:"
 echo ""
