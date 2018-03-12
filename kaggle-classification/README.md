@@ -8,8 +8,10 @@ These models are meant to be simple baselines created independently from the Goo
 ## To Run Locally
 1. Download the training (`train.csv`) and test (`test.csv`) data from the
 [Kaggle challenge](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge/data).
+(The default script will fetch data data from the cloud bucket, which you can
+also use, but you will need to authenticate with `gcloud auth application-default login`.
 
-2. Setup a (virtualenv)[https://virtualenvwrapper.readthedocs.io/en/latest/] for the project(Optional)
+2. Setup a [virtualenv](https://virtualenvwrapper.readthedocs.io/en/latest/) for the project(Optional)
 
 3. Install library dependencies:
 ```shell
