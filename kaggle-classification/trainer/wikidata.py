@@ -14,7 +14,7 @@ Y_CLASSES = ['toxic', 'severe_toxic','obscene','threat','insult','identity_hate'
 def ngrams(sentence, ngram_size):
   """Converts a string into a list of ngrams of characters.
 
-  ngram('abra cadabra') =
+  ngrams('abra cadabra', 5) =
     [('a', 'b', 'r', 'a', ' '), ('b', 'r', 'a', ' ', 'c'), ...
      ('a', 'd', 'a', 'b', 'r'), ('d', 'a', 'b', 'r', 'a')]
   """
