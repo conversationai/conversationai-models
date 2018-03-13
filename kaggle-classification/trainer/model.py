@@ -242,10 +242,6 @@ def main(FLAGS):
       tf.logging.info('Running in verbose mode')
       tf.logging.set_verbosity(tf.logging.DEBUG)
 
-    if os.path.isdir(FLAGS.model_dir):
-      tf.logging.info("Removing model data from '/{0}'".format(FLAGS.model_dir))
-      shutil.rmtree(FLAGS.model_dir)
-
     # Load and split data
     tf.logging.info('Loading data from {0}'.format(FLAGS.train_data))
 
@@ -277,7 +273,7 @@ def main(FLAGS):
       config=tf.contrib.learn.RunConfig(
         tf_random_seed=TRAIN_SEED,
       ),
-      model_dir=FLAGS.model_dir)
+      model_dir=FLAGS.job_dir)
 
     # Train model
     train_input_fn = tf.estimator.inputs.numpy_input_fn(
@@ -341,8 +337,6 @@ if __name__ == '__main__':
       '--verbose', help='Run in verbose mode.', action='store_true')
   parser.add_argument(
     "--train_data", type=str, default="", help="Path to the training data.")
-  parser.add_argument(
-    "--model_dir", type=str, default="model", help="Temp place for model files")
   parser.add_argument(
     "--saved_model_dir", type=str, default="saved_models", help="Place to saved model files")
   parser.add_argument(
