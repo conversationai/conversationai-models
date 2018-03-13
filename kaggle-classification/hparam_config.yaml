@@ -30,3 +30,8 @@ trainingInput:
         minValue: 0.5
         maxValue: 1
         scaleType: UNIT_LINEAR_SCALE
+      - parameterName: learning_rate
+        type: DOUBLE
+        minValue: 0.000001
+        maxValue: 0.1
+        scaleType: UNIT_LOG_SCALE

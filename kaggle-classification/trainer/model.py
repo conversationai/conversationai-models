@@ -56,10 +56,9 @@ MODEL_LIST = ['bag_of_words', 'cnn'] # Possible models
 
 # Training Params
 TRAIN_SEED = 9812 # Random seed used to initialize training
-LEARNING_RATE = 0.01
-BATCH_SIZE = 20
+BATCH_SIZE = 128
 
-def estimator_spec_for_softmax_classification(logits, labels, mode):
+def estimator_spec_for_softmax_classification(logits, labels, mode, learning_rate):
   """
   Depending on the value of mode, different EstimatorSpec arguments are required.
 
@@ -114,7 +113,7 @@ def estimator_spec_for_softmax_classification(logits, labels, mode):
 
   # TRAIN Mode
   if mode == tf.estimator.ModeKeys.TRAIN:
-    optimizer = tf.train.AdamOptimizer(learning_rate=LEARNING_RATE)
+    optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
     train_op = optimizer.minimize(loss, global_step=tf.train.get_global_step())
     logging_hook = tf.train.LoggingTensorHook(
       tensors={'loss': loss}, every_n_iter=50)
@@ -200,7 +199,7 @@ def get_cnn_model(embedding_size, num_filters, dropout_keep_prob):
       scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
 
     return estimator_spec_for_softmax_classification(
-      logits=scores, labels=labels, mode=mode)
+      logits=scores, labels=labels, mode=mode, learning_rate = FLAGS.learning_rate)
   return cnn_model
 
 def bag_of_words_model(features, labels, mode):
@@ -353,6 +352,9 @@ if __name__ == '__main__':
   parser.add_argument(
     "--char_ngrams", type=int, default=0,
     help="Size of overlapping character ngrams to split into, use words if 0")
+  parser.add_argument(
+    "--learning_rate", type=float, default=0.01,
+    help="The model learning rate")
   parser.add_argument(
     "--min_frequency", type=int, default=0,
     help="Minimum count for tokens passed to VocabularyProcessor")
