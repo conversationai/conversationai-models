@@ -10,9 +10,10 @@ trainingInput:
   # parameterServerCount: 3
   hyperparameters:
     goal: MAXIMIZE
-    hyperparameterMetricTag: accuracy
-    maxTrials: 4
-    maxParallelTrials: 2
+    hyperparameterMetricTag: auc
+    maxTrials: 100
+    maxParallelTrials: 10
+    enableTrialEarlyStopping: TRUE
     params:
       - parameterName: embedding_size
         type: INTEGER
@@ -22,7 +23,7 @@ trainingInput:
       - parameterName: num_filters
         type: INTEGER
         minValue: 10
-        maxValue: 30
+        maxValue: 200
         scaleType: UNIT_LINEAR_SCALE
       - parameterName: dropout_keep_prob
         type: DOUBLE
