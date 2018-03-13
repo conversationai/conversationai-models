@@ -11,6 +11,5 @@ gcloud ml-engine local train \
      --package-path=trainer \
      --job-dir=model -- \
      --train_data=local_data/train.csv \
-     --predict_data=local_data/test.csv \
      --y_class=toxic \
      --train_steps=100
