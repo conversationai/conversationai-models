@@ -9,12 +9,14 @@ python trainer/eval.py  \
   --model_dir=saved_models/{timestamp}/ \
   --test_data=local_data/test.csv
 """
-
+import sys
 import argparse
 import numpy as np
 import pandas as pd
-import wikidata
 import tensorflow as tf
+
+sys.path.insert(0, '')
+from trainer import wikidata
 
 # Name of the input words feature
 WORDS_FEATURE = 'words'
@@ -80,7 +82,7 @@ def main():
     scores = predict(test_data, classifier)
 
     for i in range(len(scores)):
-        print scores[i][0], data.x_test_text[i]
+        print(scores[i][0], data.x_test_text[i])
 
 
 if __name__ == '__main__':
