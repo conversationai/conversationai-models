@@ -27,7 +27,6 @@ from __future__ import division
 import argparse
 import os
 import sys
-import shutil
 import pandas as pd
 import tensorflow as tf
 from sklearn import metrics
@@ -46,10 +45,7 @@ MAX_LABEL = 2
 MAX_DOCUMENT_LENGTH = 500 # Max length of each comment in words
 
 # CNN parameters
-CNNParams = namedtuple(
-  'CNNParams',['EMBEDDING_SIZE','N_FILTERS', 'FILTER_SIZES', 'DROPOUT_KEEP_PROB'])
-CNN_PARAMS = CNNParams(
-  EMBEDDING_SIZE=50, N_FILTERS=10, FILTER_SIZES=[2,3,4,5],  DROPOUT_KEEP_PROB=.75)
+DEFAULT_FILTER_SIZES = [2,3,4,5]
 
 # Bag of Word parameters
 BOWParams = namedtuple('BOWParams', ['EMBEDDING_SIZE'])
@@ -144,11 +140,9 @@ def estimator_spec_for_softmax_classification(logits, labels, mode):
         export_outputs=export_outputs
       )
 
-def get_cnn_model(embedding_size):
+def get_cnn_model(embedding_size, num_filters, dropout_keep_prob):
   def cnn_model(features, labels, mode):
-    filter_sizes = CNN_PARAMS.FILTER_SIZES
-    num_filters = CNN_PARAMS.N_FILTERS
-    dropout_keep_prob = CNN_PARAMS.DROPOUT_KEEP_PROB
+    filter_sizes = DEFAULT_FILTER_SIZES
 
     with tf.name_scope("embedding"):
       W = tf.Variable(
@@ -262,7 +256,7 @@ def main(FLAGS):
       data.x_train = data.x_train - 1
       data.x_test = data.x_test - 1
     elif FLAGS.model == 'cnn':
-      model_fn = get_cnn_model(FLAGS.embedding_size)
+      model_fn = get_cnn_model(FLAGS.embedding_size, FLAGS.num_filters, FLAGS.dropout_keep_prob)
     else:
       tf.logging.error("Unknown specified model '{}', must be one of {}"
                        .format(FLAGS.model, MODEL_LIST))
@@ -349,6 +343,10 @@ if __name__ == '__main__':
     "--train_steps", type=int, default=100, help="The number of steps to train the model")
   parser.add_argument(
     "--embedding_size", type=int, default=50, help="The size of the word embedding")
+  parser.add_argument(
+    "--dropout_keep_prob", type=float, default=0.75, help="The dropout keep probability")
+  parser.add_argument(
+    "--num_filters", type=int, default=10, help="The number of filters in each size")
   parser.add_argument(
     "--job-dir", type=str, default="", help="The directory where the job is staged")
 

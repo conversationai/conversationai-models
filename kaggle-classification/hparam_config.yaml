@@ -1,0 +1,22 @@
+trainingInput:
+  hyperparameters:
+    goal: MAXIMIZE
+    hyperparameterMetricTag: accuracy
+    maxTrials: 4
+    maxParallelTrials: 2
+    params:
+      - parameterName: embedding_size
+        type: INTEGER
+        minValue: 50
+        maxValue: 200
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: num_filters
+        type: INTEGER
+        minValue: 10
+        maxValue: 30
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: dropout_keep_prob
+        type: DOUBLE
+        minValue: 0.5
+        maxValue: 1
+        scaleType: UNIT_LINEAR_SCALE
