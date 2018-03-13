@@ -1,4 +1,13 @@
 trainingInput:
+  ## BASIC_GPU uses single NVIDIA Tesla K80 GPU.
+  scaleTier: BASIC_GPU
+  ## Custom scaleTier needed for using > 1 GPU machines.
+  # scaleTier: CUSTOM
+  # masterType: complex_model_m_gpu
+  # workerType: complex_model_m_gpu
+  # parameterServerType: large_model
+  # workerCount: 9
+  # parameterServerCount: 3
   hyperparameters:
     goal: MAXIMIZE
     hyperparameterMetricTag: accuracy

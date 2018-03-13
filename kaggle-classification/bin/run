@@ -32,7 +32,6 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --package-path trainer/ \
     --region $REGION \
     --verbosity debug \
-    --config config.yaml \
     -- \
     --train_data gs://${BUCKET_NAME}/train.csv \
     --y_class toxic \
