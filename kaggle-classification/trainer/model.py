@@ -34,6 +34,9 @@ from sklearn import metrics
 from trainer import wikidata
 from collections import namedtuple
 
+from tensorflow.contrib.training.python.training import hparam
+
+
 FLAGS = None
 
 # Data Params
@@ -141,69 +144,70 @@ def estimator_spec_for_softmax_classification(logits, labels, mode):
         export_outputs=export_outputs
       )
 
-def cnn_model(features, labels, mode):
-  embedding_size = CNN_PARAMS.EMBEDDING_SIZE
-  filter_sizes = CNN_PARAMS.FILTER_SIZES
-  num_filters = CNN_PARAMS.N_FILTERS
-  dropout_keep_prob = CNN_PARAMS.DROPOUT_KEEP_PROB
+def get_cnn_model(embedding_size):
+  def cnn_model(features, labels, mode):
+    filter_sizes = CNN_PARAMS.FILTER_SIZES
+    num_filters = CNN_PARAMS.N_FILTERS
+    dropout_keep_prob = CNN_PARAMS.DROPOUT_KEEP_PROB
 
-  with tf.name_scope("embedding"):
-    W = tf.Variable(
-        tf.random_uniform([n_words, embedding_size], -1.0, 1.0),
-        name="W")
+    with tf.name_scope("embedding"):
+      W = tf.Variable(
+          tf.random_uniform([n_words, embedding_size], -1.0, 1.0),
+          name="W")
 
-    embedded_chars = tf.nn.embedding_lookup(W, features[WORDS_FEATURE])
-    embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)
+      embedded_chars = tf.nn.embedding_lookup(W, features[WORDS_FEATURE])
+      embedded_chars_expanded = tf.expand_dims(embedded_chars, -1)
 
-  pooled_outputs = []
-  for i, filter_size in enumerate(filter_sizes):
-    with tf.name_scope("conv-maxpool-%s" % filter_size):
+    pooled_outputs = []
+    for i, filter_size in enumerate(filter_sizes):
+      with tf.name_scope("conv-maxpool-%s" % filter_size):
 
-      # Convolution Layer
-        filter_shape = [filter_size, embedding_size, 1, num_filters]
-        W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
-        b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
-        conv = tf.nn.conv2d(
-          embedded_chars_expanded,
-          W,
-          strides=[1, 1, 1, 1],
-          padding="VALID",
-          name="conv")
-        # Apply nonlinearity
-        hh = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
+        # Convolution Layer
+          filter_shape = [filter_size, embedding_size, 1, num_filters]
+          W = tf.Variable(tf.truncated_normal(filter_shape, stddev=0.1), name="W")
+          b = tf.Variable(tf.constant(0.1, shape=[num_filters]), name="b")
+          conv = tf.nn.conv2d(
+            embedded_chars_expanded,
+            W,
+            strides=[1, 1, 1, 1],
+            padding="VALID",
+            name="conv")
+          # Apply nonlinearity
+          hh = tf.nn.relu(tf.nn.bias_add(conv, b), name="relu")
 
-        # Max-pooling over the outputs. Max over samples in batch and
-        # all filters.
-        pooled = tf.nn.max_pool(
-          hh,
-          ksize=[1, MAX_DOCUMENT_LENGTH - filter_size + 1, 1, 1],
-          strides=[1, 1, 1, 1],
-          padding='VALID',
-          name="pool")
+          # Max-pooling over the outputs. Max over samples in batch and
+          # all filters.
+          pooled = tf.nn.max_pool(
+            hh,
+            ksize=[1, MAX_DOCUMENT_LENGTH - filter_size + 1, 1, 1],
+            strides=[1, 1, 1, 1],
+            padding='VALID',
+            name="pool")
 
-        pooled_outputs.append(pooled)
+          pooled_outputs.append(pooled)
 
-  # Combine all the pooled features
-  num_filters_total = num_filters * len(filter_sizes)
-  h_pool = tf.concat(pooled_outputs, 3)
-  h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
+    # Combine all the pooled features
+    num_filters_total = num_filters * len(filter_sizes)
+    h_pool = tf.concat(pooled_outputs, 3)
+    h_pool_flat = tf.reshape(h_pool, [-1, num_filters_total])
 
-  # Add dropout in training
-  with tf.name_scope("dropout"):
-    # Set dropout rate to 1 (disable dropout) by default
-    h_drop = tf.nn.dropout(h_pool_flat, 1.0)
+    # Add dropout in training
+    with tf.name_scope("dropout"):
+      # Set dropout rate to 1 (disable dropout) by default
+      h_drop = tf.nn.dropout(h_pool_flat, 1.0)
 
-    if mode == tf.estimator.ModeKeys.TRAIN:
-      h_drop = tf.nn.dropout(h_pool_flat, dropout_keep_prob)
+      if mode == tf.estimator.ModeKeys.TRAIN:
+        h_drop = tf.nn.dropout(h_pool_flat, dropout_keep_prob)
 
-  # Add a fully connected layer to do prediction
-  with tf.name_scope("output"):
-    W = tf.Variable(tf.truncated_normal([num_filters_total, MAX_LABEL], stddev=0.1), name="W")
-    b = tf.Variable(tf.constant(0.1, shape=[MAX_LABEL]), name="b")
-    scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
+    # Add a fully connected layer to do prediction
+    with tf.name_scope("output"):
+      W = tf.Variable(tf.truncated_normal([num_filters_total, MAX_LABEL], stddev=0.1), name="W")
+      b = tf.Variable(tf.constant(0.1, shape=[MAX_LABEL]), name="b")
+      scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
 
-  return estimator_spec_for_softmax_classification(
-    logits=scores, labels=labels, mode=mode)
+    return estimator_spec_for_softmax_classification(
+      logits=scores, labels=labels, mode=mode)
+  return cnn_model
 
 def bag_of_words_model(features, labels, mode):
   """
@@ -229,7 +233,7 @@ def bag_of_words_model(features, labels, mode):
   return estimator_spec_for_softmax_classification(
       logits=logits, labels=labels, mode=mode)
 
-def main():
+def main(FLAGS):
     global n_words
 
     tf.logging.set_verbosity(tf.logging.INFO)
@@ -262,7 +266,7 @@ def main():
       data.x_train = data.x_train - 1
       data.x_test = data.x_test - 1
     elif FLAGS.model == 'cnn':
-      model_fn = cnn_model
+      model_fn = get_cnn_model(FLAGS.embedding_size)
     else:
       tf.logging.error("Unknown specified model '{}', must be one of {}"
                        .format(FLAGS.model, MODEL_LIST))
@@ -349,7 +353,12 @@ if __name__ == '__main__':
     help="The model to train, one of {}".format(MODEL_LIST))
   parser.add_argument(
     "--train_steps", type=int, default=100, help="The number of steps to train the model")
+  parser.add_argument(
+    "--embedding_size", type=int, default=50, help="The size of the word embedding")
+  parser.add_argument(
+    "--job-dir", type=str, default="", help="The directory where the job is staged")
 
-  FLAGS, unparsed = parser.parse_known_args()
+  FLAGS = parser.parse_args()
 
-  main()
+
+  main(FLAGS)

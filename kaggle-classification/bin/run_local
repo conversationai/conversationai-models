@@ -1,14 +1,15 @@
 #!/bin/bash
 
 #
-# A script to train the kaggle model locally
+# A script to train the kaggle model locally.
+# Assumes that train.csv and test.csv are downloaded into the local_data/
+# directory.
 #
 
 gcloud ml-engine local train \
      --module-name=trainer.model \
      --package-path=trainer \
      --job-dir=model -- \
-     --train_data=gs://kaggle-model-experiments/train.csv \
-     --predict_data=gs://kaggle-model-experiments/test.csv \
+     --train_data=local_data/train.csv \
      --y_class=toxic \
      --train_steps=100
