@@ -4,12 +4,6 @@ https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
 
 To run locally:
   python keras-trainer/model.py
-
-To run with cloud ML engine:
-  gcloud ml-engine local train
-        --module-name=keras-trainer.model
-        --package-path=keras-trainer
-        --job-dir=$HOME/data
 """
 
 from __future__ import absolute_import
@@ -38,12 +32,13 @@ from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
 
+FLAGS = None
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.3,
     batch_size=128,
-    epochs=20,
+    epochs=5,
     max_sequence_length=250,
     embedding_dim=100)
 
@@ -83,7 +78,6 @@ class AttentionToxModel():
         x=train_comment, y=train_labels,
         batch_size=self.hparams.batch_size,
         epochs=self.hparams.epochs,
-        #validation_data=(validation_comment, validation_labels),
         validation_split=0.1,
         callbacks=callbacks)
     
@@ -118,7 +112,7 @@ class AttentionToxModel():
     with open(self.embeddings_path) as f:
       for line in f:
         words.append(line.split()[0])
-    # TODO(jjtan): configure OOV token
+    # TODO: configure OOV token
     tokenizer = Tokenizer()
     tokenizer.fit_on_texts(words)
     return tokenizer
@@ -170,12 +164,11 @@ class AttentionToxModel():
 
 if __name__ == "__main__":
 
-  data_dir = os.path.expanduser('~/data')
-  model_file = os.path.join(data_dir, 'keras_kaggle_model.h5')
-  embeddings_file = os.path.join(data_dir, 'glove.6B/glove.6B.100d.txt')
-  train_file = os.path.join(data_dir, 'kaggle_train.csv')
-  validation_file = os.path.join(data_dir, 'kaggle_validation.csv')
-  test_file = os.path.join(data_dir, 'kaggle_test.csv')
+  model_file = 'local_data/keras_kaggle_model.h5'
+  embeddings_file = 'local_data/glove.6B/glove.6B.100d.txt'
+  train_file = 'local_data/kaggle_train.csv'
+  validation_file = 'local_data/kaggle_validation.csv'
+  test_file = 'local_data/kaggle_test.csv'
 
   model = AttentionToxModel(model_path=model_file, embeddings_path=embeddings_file)
 
