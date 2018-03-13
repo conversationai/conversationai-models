@@ -10,6 +10,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import argparse
 import numpy as np
 import pandas as pd
 import os
@@ -55,11 +56,11 @@ class AttentionToxModel():
     self.model_path = model_path
     self.embeddings_path = embeddings_path
     self.hparams = hparams
-    print("Setting up tokenizer...")
+    print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
-    print("Setting up embedding matrix...")
+    print('Setting up embedding matrix...')
     self.embedding_matrix = self._setup_embedding_matrix()
-    print("Loading model...")
+    print('Loading model...')
     self._load_model()
   
   def train(self, train):
@@ -94,8 +95,8 @@ class AttentionToxModel():
       labels = np.array(data['toxic'])
       score = metrics.roc_auc_score(labels, predictions[idx].flatten())
       scores.append(score)
-      print("{} has AUC {}".format(label, score))
-    print("Avg AUC {}".format(np.mean(scores)))
+      print('{} has AUC {}'.format(label, score))
+    print('Avg AUC {}'.format(np.mean(scores)))
 
   def _prep_texts(self, texts):
     return pad_sequences(self.tokenizer.texts_to_sequences(texts), maxlen=self.hparams.max_sequence_length)
@@ -162,22 +163,25 @@ class AttentionToxModel():
     print(model.summary())
     return model
 
-if __name__ == "__main__":
+if __name__ == '__main__':
 
-  model_file = 'local_data/keras_kaggle_model.h5'
-  embeddings_file = 'local_data/glove.6B/glove.6B.100d.txt'
-  train_file = 'local_data/kaggle_train.csv'
-  validation_file = 'local_data/kaggle_validation.csv'
-  test_file = 'local_data/kaggle_test.csv'
+  parser = argparse.ArgumentParser()
+  parser.add_argument(
+      '--train_path', type=str, default='local_data/kaggle_train.csv', help='Path to the training data.')
+  parser.add_argument(
+      '--test_path', type=str, default='local_data/kaggle_test.csv', help='Path to the test data.')
+  parser.add_argument(
+      '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
+  parser.add_argument(
+      '--model_path', type=str, default='local_data/keras_kaggle_model.h5', help='Path to model file.')
 
-  model = AttentionToxModel(model_path=model_file, embeddings_path=embeddings_file)
+  FLAGS, unparsed = parser.parse_known_args()
 
-  train = pd.read_csv(train_file)
-  validation = pd.read_csv(validation_file)
-  train_and_validation = pd.concat([train, validation])
+  model = AttentionToxModel(model_path=FLAGS.model_path, embeddings_path=FLAGS.embeddings_path)
+  train = pd.read_csv(FLAGS.train_path)
+  model.train(train)
 
-  model.train(train_and_validation)
-  test_data = pd.read_csv(test_file)
+  test_data = pd.read_csv(FLAGS.test_path)
   predictions = model.predict(test_data['comment_text'])
   model.score_auc(test_data)
 
