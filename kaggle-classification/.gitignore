@@ -1,6 +1,3 @@
-# Don't version control data
-*.csv
-
 # Directories to save model checkpoints
 model/*
 saved_models/*
@@ -9,3 +6,12 @@ saved_models/*
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Python virtual environment directory
+env/
+
+# Don't version control data: this is the directory where data is downloaded to.
+local_data/
+
+# Temporary directory for hacking stuff in
+tmp/
