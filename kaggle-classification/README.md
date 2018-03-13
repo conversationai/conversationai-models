@@ -56,8 +56,8 @@ Google infrastructure.
     `requirements.txt`.
 
 4.  Run a model on a given class (e.g. 'toxic' or 'obscene'). There are examples
-    of how to run the model locally and using ml-engine in `run_local.sh` and
-    `run.sh` respectively.
+    of how to run the model locally and using ml-engine in `bin/run_local` and
+    `bin/run` respectively.
 
     Note: to run in google cloud, you will need to be authenticated with
     Google Cloud (you can run `gcloud auth application-default login` to do
