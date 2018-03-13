@@ -74,8 +74,8 @@ class WikiData:
     Will work with a Cloud Storage path, e.g. 'gs://<bucket>/<blob>' or a local
     path. Assumes data can fit into memory.
     """
-    with tf.gfile.Open(path, 'r') as fileobj:
-      df =  pd.read_csv(fileobj)
+    with tf.gfile.Open(path, 'rb') as fileobj:
+      df =  pd.read_csv(fileobj, encoding='utf-8')
 
     return df
 
