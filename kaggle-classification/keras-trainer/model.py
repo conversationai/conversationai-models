@@ -1,6 +1,15 @@
 """
 Classifiers for the Toxic Comment Classification Kaggle challenge,
 https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
+
+To run locally:
+  python keras-trainer/model.py
+
+To run with cloud ML engine:
+  gcloud ml-engine local train
+        --module-name=keras-trainer.model
+        --package-path=keras-trainer
+        --job-dir=$HOME/data
 """
 
 from __future__ import absolute_import
