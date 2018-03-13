@@ -251,7 +251,8 @@ def main(FLAGS):
 
     data = wikidata.WikiData(
       FLAGS.train_data, FLAGS.y_class, seed=DATA_SEED, train_percent=TRAIN_PERCENT,
-      max_document_length=MAX_DOCUMENT_LENGTH)
+      max_document_length=MAX_DOCUMENT_LENGTH, char_ngrams=FLAGS.char_ngrams,
+      min_frequency=FLAGS.min_frequency)
 
     n_words = len(data.vocab_processor.vocabulary_)
     tf.logging.info('Total words: %d' % n_words)
@@ -359,6 +360,12 @@ if __name__ == '__main__':
     "--embedding_size", type=int, default=50, help="The size of the word embedding")
   parser.add_argument(
     "--job-dir", type=str, default="", help="The directory where the job is staged")
+  parser.add_argument(
+    "--char_ngrams", type=int, default=0,
+    help="Size of overlapping character ngrams to split into, use words if 0")
+  parser.add_argument(
+    "--min_frequency", type=int, default=0,
+    help="Minimum count for tokens passed to VocabularyProcessor")
 
   FLAGS = parser.parse_args()
 
