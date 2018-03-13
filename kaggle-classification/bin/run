@@ -11,20 +11,23 @@
 
 # Edit these!
 BUCKET_NAME=kaggle-model-experiments
-JOB_NAME=test_kaggle_training
+
+JOB_NAME=${USER}_kaggle_training
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
 REGION=us-central1
 
 DATE=`date '+%Y%m%d_%H%M%S'`
-OUTPUT_PATH=gs://${BUCKET_NAME}/${USER}-${DATE}
+OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE}
+HPARAM_CONFIG=hparam_config.yaml
 
 echo "Writing to $OUTPUT_PATH"
 
 # Remote
-gcloud ml-engine jobs submit training ${JOB_NAME}_${USER}_${DATE} \
-    --job-dir $OUTPUT_PATH \
+gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+    --job-dir ${OUTPUT_PATH} \
     --runtime-version 1.4 \
+    --config ${HPARAM_CONFIG} \
     --module-name trainer.model \
     --package-path trainer/ \
     --region $REGION \
@@ -34,14 +37,13 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${USER}_${DATE} \
     --train_data gs://${BUCKET_NAME}/train.csv \
     --y_class toxic \
     --train_steps 1500 \
-    --saved_model_dir gs://${BUCKET_NAME}/saved_models/${USER} \
-    --model_dir gs://${BUCKET_NAME}/model/${USER}/${DATE} \
-    --model cnn \
+    --saved_model_dir gs://${BUCKET_NAME}/saved_graph/${USER}/${DATE} \
+    --model cnn
 
 
 echo "You can view the tensorboard for this job with the command:"
 echo ""
-echo -e "\t tensorboard --logdir=gs://${BUCKET_NAME}/model/${USER}/${DATE}"
+echo -e "\t tensorboard --logdir=${OUTPUT_PATH}"
 echo ""
 echo "And on your browser navigate to:"
 echo ""
