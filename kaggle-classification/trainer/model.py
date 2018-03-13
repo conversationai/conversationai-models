@@ -239,9 +239,14 @@ def main(FLAGS):
     tf.logging.info('Loading data from {0}'.format(FLAGS.train_data))
 
     data = wikidata.WikiData(
-      FLAGS.train_data, FLAGS.y_class, seed=DATA_SEED, train_percent=TRAIN_PERCENT,
-      max_document_length=MAX_DOCUMENT_LENGTH, char_ngrams=FLAGS.char_ngrams,
-      min_frequency=FLAGS.min_frequency)
+      data_path=FLAGS.train_data,
+      max_document_length=MAX_DOCUMENT_LENGTH,
+      y_class=FLAGS.y_class,
+      seed=DATA_SEED,
+      train_percent=TRAIN_PERCENT,
+      char_ngrams=FLAGS.char_ngrams,
+      min_frequency=FLAGS.min_frequency
+    )
 
     n_words = len(data.vocab_processor.vocabulary_)
     tf.logging.info('Total words: %d' % n_words)
@@ -290,6 +295,7 @@ def main(FLAGS):
                         # so the input_fn will iterate over the data once and
                         # then raise OutOfRangeError
       shuffle=False)
+
     predicted_test = classifier.predict(input_fn=test_input_fn)
     test_out = pd.DataFrame(
       [(p['classes'], p['probs'][1]) for p in predicted_test],
@@ -316,15 +322,15 @@ def main(FLAGS):
     for key in sorted(tf_scores):
       tf.logging.info("%s: %s" % (key, tf_scores[key]))
 
-    # Export the model
+    # Export the model and save the VocabProcessor
     feature_spec = {
       WORDS_FEATURE: tf.FixedLenFeature(
         dtype=tf.int64, shape=MAX_DOCUMENT_LENGTH)
     }
     serving_input_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
 
-    classifier.export_savedmodel(FLAGS.job_dir, serving_input_fn)
-
+    export_path = classifier.export_savedmodel(FLAGS.job_dir, serving_input_fn)
+    data.save_vocab_processor(export_path)
 
 if __name__ == '__main__':
 
