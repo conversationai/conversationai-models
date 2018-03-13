@@ -5,11 +5,12 @@
 # Assumes that train.csv and test.csv are downloaded into the local_data/
 # directory.
 #
+DATE=`date '+%Y%m%d_%H%M%S'`
 
 gcloud ml-engine local train \
      --module-name=trainer.model \
      --package-path=trainer \
-     --job-dir=model -- \
+     --job-dir=model/${DATE} -- \
      --train_data=local_data/train.csv \
      --y_class=toxic \
      --train_steps=100
