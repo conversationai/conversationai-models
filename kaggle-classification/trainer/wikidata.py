@@ -13,15 +13,19 @@ TEXT_FIELD = 'comment_text'
 VOCAB_PROCESSOR_FILENAME = 'vocab_processor'
 
 
-def ngrams(sentence, ngram_size):
-  """Converts a string into a list of ngrams of characters.
+class Ngrams:
+  def __init__(self, ngram_size):
+    self.ngram_size = ngram_size
 
-  ngrams('abra cadabra', 5) =
-    [('a', 'b', 'r', 'a', ' '), ('b', 'r', 'a', ' ', 'c'), ...
-     ('a', 'd', 'a', 'b', 'r'), ('d', 'a', 'b', 'r', 'a')]
-  """
-  chars = list(sentence)
-  return zip(*[chars[i:] for i in range(ngram_size)])
+  def __call__(self, iterator):
+    """Converts a string into a list of ngrams of characters.
+
+    list(ngrams(['abra cadabra'], 5)) =
+      [('a', 'b', 'r', 'a', ' '), ('b', 'r', 'a', ' ', 'c'), ...
+       ('a', 'd', 'a', 'b', 'r'), ('d', 'a', 'b', 'r', 'a')]
+    """
+    return (zip(*[list(x)[i:] for i in range(self.ngram_size)])
+            for x in iterator)
 
 
 class WikiData:
@@ -68,7 +72,7 @@ class WikiData:
 
     tokenizer_fn = None
     if char_ngrams:
-      tokenizer_fn=lambda iterator: (ngrams(x, char_ngrams) for x in iterator)
+      tokenizer_fn=Ngrams(char_ngrams)
 
     # Create a VocabularyProcessor from the training data
     self.vocab_processor = tflearn.data_utils.VocabularyProcessor(
