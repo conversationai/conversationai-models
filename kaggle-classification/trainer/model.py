@@ -276,6 +276,8 @@ def main(FLAGS):
       model_fn=model_fn,
       config=tf.contrib.learn.RunConfig(
         tf_random_seed=TRAIN_SEED,
+        ## Uncomment to see CPU/GPU allocation in logs.
+        # session_config=tf.ConfigProto(log_device_placement=True),
       ),
       model_dir=FLAGS.model_dir)
 
