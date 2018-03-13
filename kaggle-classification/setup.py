@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['tflearn>=0.3.2']
+REQUIRED_PACKAGES = ['tflearn>=0.3.2', 'Keras==2.1.5', 'h5py==2.7.1']
 
 setup(
     name='trainer',
