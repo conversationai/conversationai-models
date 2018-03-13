@@ -10,11 +10,23 @@ from sklearn.model_selection import train_test_split
 
 Y_CLASSES = ['toxic', 'severe_toxic','obscene','threat','insult','identity_hate']
 
+
+def ngrams(sentence, ngram_size):
+  """Converts a string into a list of ngrams of characters.
+
+  ngram('abra cadabra') =
+    [('a', 'b', 'r', 'a', ' '), ('b', 'r', 'a', ' ', 'c'), ...
+     ('a', 'd', 'a', 'b', 'r'), ('d', 'a', 'b', 'r', 'a')]
+  """
+  chars = list(sentence)
+  return zip(*[chars[i:] for i in range(ngram_size)])
+
+
 class WikiData:
 
   def __init__(self, data_path, y_class, max_document_length,
                vocab_processor_path=None, test_mode=False, seed=None,
-               train_percent=None):
+               train_percent=None, char_ngrams=None, min_frequency=None):
     """
     Args:
       * data_path (string): path to file containing train or test data
@@ -55,8 +67,12 @@ class WikiData:
       self.vocab_processor = self.load_vocab_processor(vocab_processor_path)
 
     else:
+      tokenizer_fn = None
+      if char_ngrams:
+        tokenizer_fn=lambda iterator: (ngrams(x, char_ngrams) for x in iterator)
       self.vocab_processor = tflearn.data_utils.VocabularyProcessor(
-        max_document_length)
+        max_document_length=max_document_length, min_frequency=min_frequency,
+        tokenizer_fn=tokenizer_fn)
       self.x_train = np.array(list(self.vocab_processor.fit_transform(
         self.x_train_text)))
 

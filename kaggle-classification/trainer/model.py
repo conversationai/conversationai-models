@@ -247,7 +247,7 @@ def main():
 
     data = wikidata.WikiData(
       FLAGS.train_data, FLAGS.y_class, seed=DATA_SEED, train_percent=TRAIN_PERCENT,
-      max_document_length=MAX_DOCUMENT_LENGTH)
+      max_document_length=MAX_DOCUMENT_LENGTH, char_ngrams=3, min_frequency=15)
 
     n_words = len(data.vocab_processor.vocabulary_)
     tf.logging.info('Total words: %d' % n_words)
