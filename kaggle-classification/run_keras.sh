@@ -11,7 +11,7 @@
 
 # Edit these!
 BUCKET_NAME=kaggle-model-experiments
-JOB_NAME=test_kaggle_training
+JOB_NAME=${USER}_kaggle_training
 REGION=us-central1
 
 DATE=`date '+%Y%m%d_%H%M%S'`

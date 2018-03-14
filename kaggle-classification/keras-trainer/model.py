@@ -92,6 +92,7 @@ class AttentionToxModel():
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
     tf.gfile.Copy(TEMPORARY_MODEL_PATH, self.model_path, overwrite=True)
+    tf.gfile.Remove(TEMPORARY_MODEL_PATH)
     print('Saved model to {}'.format(self.model_path))
     
     self._load_model()
@@ -117,6 +118,7 @@ class AttentionToxModel():
     try:
       tf.gfile.Copy(self.model_path, TEMPORARY_MODEL_PATH, overwrite=True)
       self.model = load_model(TEMPORARY_MODEL_PATH)
+      tf.gfile.Remove(TEMPORARY_MODEL_PATH)
       print('Model loaded from: {}'.format(self.model_path))
     except NotFoundError:
       print('Could not load model at: {}'.format(self.model_path))
