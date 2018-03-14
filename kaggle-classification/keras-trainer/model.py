@@ -19,7 +19,6 @@ import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
 from keras.models import load_model
-from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from os.path import expanduser

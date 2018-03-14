@@ -1,7 +1,4 @@
-"""TODO(jjtan): DO NOT SUBMIT without one-line documentation for single_layer_cnn.
-
-TODO(jjtan): DO NOT SUBMIT without a detailed description of single_layer_cnn.
-"""
+"""Model class for a single layer CNN"""
 
 from __future__ import absolute_import
 from __future__ import division

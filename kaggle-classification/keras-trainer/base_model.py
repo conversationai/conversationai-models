@@ -1,7 +1,4 @@
-"""TODO(jjtan): DO NOT SUBMIT without one-line documentation for base_model.
-
-TODO(jjtan): DO NOT SUBMIT without a detailed description of base_model.
-"""
+"""Base model class used by the ModelRunner"""
 
 from __future__ import absolute_import
 from __future__ import division
