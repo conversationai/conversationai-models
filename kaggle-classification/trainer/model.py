@@ -324,7 +324,7 @@ def main(FLAGS):
     }
     serving_input_fn = tf.estimator.export.build_parsing_serving_input_receiver_fn(feature_spec)
 
-    classifier.export_savedmodel(FLAGS.saved_model_dir, serving_input_fn)
+    classifier.export_savedmodel(FLAGS.job_dir, serving_input_fn)
 
 
 if __name__ == '__main__':
@@ -334,8 +334,6 @@ if __name__ == '__main__':
       '--verbose', help='Run in verbose mode.', action='store_true')
   parser.add_argument(
     "--train_data", type=str, default="", help="Path to the training data.")
-  parser.add_argument(
-    "--saved_model_dir", type=str, default="saved_models", help="Place to saved model files")
   parser.add_argument(
       "--y_class", type=str, default="toxic",
     help="Class to train model against, one of cnn, bag_of_words")
