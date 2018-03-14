@@ -27,12 +27,12 @@ MAX_DOCUMENT_LENGTH = 500
 def predict(data, classifier):
     """
     Args:
-      data: n x m array of features where n is the number of examples
+      data: (n, m) array of features where n is the number of examples
             and m is the number of features.
       classifier: a SavedModelPredictor with an input tensor 'input' that
                   expects as input a list of tf.train.Example's.
     Returns:
-      scores: a n x num_classes array of scores for each each class
+      scores: (n, num_classes) array of scores for each each class
     """
     model_inputs = []
 
