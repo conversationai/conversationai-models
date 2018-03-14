@@ -14,6 +14,7 @@ import argparse
 import numpy as np
 import pandas as pd
 import os
+import os.path
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -32,14 +33,17 @@ from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
+from tensorflow.python.framework.errors_impl import NotFoundError
 
 FLAGS = None
+
+TEMPORARY_MODEL_PATH = 'model.h5'
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.3,
     batch_size=128,
-    epochs=5,
+    epochs=3,
     max_sequence_length=250,
     embedding_dim=100)
 
@@ -53,6 +57,9 @@ class AttentionToxModel():
                model_path,
                embeddings_path,
                hparams=DEFAULT_HPARAMS):
+    if os.path.exists(TEMPORARY_MODEL_PATH):
+      raise FileExistsError('The following file path already exists: {}'.format(TEMPORARY_MODEL_PATH))
+
     self.model_path = model_path
     self.embeddings_path = embeddings_path
     self.hparams = hparams
@@ -70,7 +77,7 @@ class AttentionToxModel():
 
     callbacks = [
         ModelCheckpoint(
-            self.model_path, save_best_only=True, verbose=True),
+            TEMPORARY_MODEL_PATH, save_best_only=True, verbose=True),
         EarlyStopping(
             monitor='val_loss', mode='auto')
     ]
@@ -81,6 +88,12 @@ class AttentionToxModel():
         epochs=self.hparams.epochs,
         validation_split=0.1,
         callbacks=callbacks)
+
+    # Necessary because we can't save h5 files to cloud storage directly via
+    # Checkpoint.
+    tf.gfile.Copy(TEMPORARY_MODEL_PATH, self.model_path, overwrite=True)
+    tf.gfile.Remove(TEMPORARY_MODEL_PATH)
+    print('Saved model to {}'.format(self.model_path))
     
     self._load_model()
 
@@ -92,7 +105,7 @@ class AttentionToxModel():
     predictions = self.predict(data['comment_text'])
     scores = []
     for idx, label in enumerate(LABELS):
-      labels = np.array(data['toxic'])
+      labels = np.array(data[label])
       score = metrics.roc_auc_score(labels, predictions[idx].flatten())
       scores.append(score)
       print('{} has AUC {}'.format(label, score))
@@ -103,14 +116,16 @@ class AttentionToxModel():
 
   def _load_model(self):
     try:
-      self.model = load_model(self.model_path)
+      tf.gfile.Copy(self.model_path, TEMPORARY_MODEL_PATH, overwrite=True)
+      self.model = load_model(TEMPORARY_MODEL_PATH)
+      tf.gfile.Remove(TEMPORARY_MODEL_PATH)
       print('Model loaded from: {}'.format(self.model_path))
-    except IOError:
+    except NotFoundError:
       print('Could not load model at: {}'.format(self.model_path))
 
   def _setup_tokenizer(self):
     words = []
-    with open(self.embeddings_path) as f:
+    with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         words.append(line.split()[0])
     # TODO: configure OOV token
@@ -120,7 +135,7 @@ class AttentionToxModel():
 
   def _setup_embedding_matrix(self):
     embedding_matrix = np.zeros((len(self.tokenizer.word_index) + 1, self.hparams.embedding_dim))
-    with open(self.embeddings_path) as f:
+    with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         values = line.split()
         word = values[0]
@@ -167,9 +182,9 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--train_path', type=str, default='local_data/kaggle_train.csv', help='Path to the training data.')
+      '--train_path', type=str, default='local_data/train.csv', help='Path to the training data.')
   parser.add_argument(
-      '--test_path', type=str, default='local_data/kaggle_test.csv', help='Path to the test data.')
+      '--validation_path', type=str, default='local_data/validation.csv', help='Path to the test data.')
   parser.add_argument(
       '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
   parser.add_argument(
@@ -178,11 +193,12 @@ if __name__ == '__main__':
   FLAGS, unparsed = parser.parse_known_args()
 
   model = AttentionToxModel(model_path=FLAGS.model_path, embeddings_path=FLAGS.embeddings_path)
-  train = pd.read_csv(FLAGS.train_path)
+  with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
+    train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
 
-  test_data = pd.read_csv(FLAGS.test_path)
-  predictions = model.predict(test_data['comment_text'])
+  with tf.gfile.Open(FLAGS.validation_path, 'rb') as f:
+    test_data = pd.read_csv(f, encoding='utf-8')
   model.score_auc(test_data)
 
   model.predict(['This sentence is benign'])
