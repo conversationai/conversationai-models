@@ -121,7 +121,7 @@ class ModelRunner():
       for line in f:
         words.append(line.split()[0])
     # TODO: configure OOV token
-    tokenizer = Tokenizer()
+    tokenizer = Tokenizer(lower=True)
     tokenizer.fit_on_texts(words)
     return tokenizer
 
