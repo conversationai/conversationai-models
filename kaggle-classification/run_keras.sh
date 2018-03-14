@@ -24,8 +24,8 @@ echo "Writing to $OUTPUT_PATH"
 gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --job-dir $OUTPUT_PATH \
     --runtime-version 1.4 \
-    --module-name keras-trainer.model \
-    --package-path keras-trainer/ \
+    --module-name keras_trainer.model \
+    --package-path keras_trainer \
     --region $REGION \
     --verbosity debug \
     --config ${HPARAM_CONFIG} \

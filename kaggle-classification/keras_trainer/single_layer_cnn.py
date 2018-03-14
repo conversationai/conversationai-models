@@ -4,7 +4,6 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from base_model import BaseModel
 from keras.layers import Conv1D
 from keras.layers import Dense
 from keras.layers import Dropout
@@ -15,37 +14,43 @@ from keras.layers import MaxPooling1D
 from keras.layers import Activation
 from keras.layers import Concatenate
 from keras.models import Model
+from keras_trainer import base_model
 
 
-class SingleLayerCnn(BaseModel):
-  """Single Layer Based CNN"""
+class SingleLayerCnn(base_model.BaseModel):
+  """Single Layer Based CNN
 
-  def __init__(self, embeddings_matrix, embedding_dim, vocab_size, sequence_length, dropout_rate):
+  hparams:
+    embedding_dim
+    vocab_size
+    sequence_length
+    dropout_rate
+    train_embedding
+  """
+
+  def __init__(self, embeddings_matrix, hparams):
     self.embeddings_matrix = embeddings_matrix
-    self.embedding_dim = embedding_dim
-    self.vocab_size = vocab_size
-    self.sequence_length = sequence_length
-    self.dropout_rate = dropout_rate
+    self.hparams = hparams
 
   def get_model(self):
-    I = Input(shape=(self.sequence_length,), dtype='float32')
+    I = Input(shape=(self.hparams.sequence_length,), dtype='float32')
     E = Embedding(
-        self.vocab_size,
-        self.embedding_dim,
+        self.hparams.vocab_size,
+        self.hparams.embedding_dim,
         weights=[self.embeddings_matrix],
-        input_length=self.sequence_length,
-        trainable=False)(I)
+        input_length=self.hparams.sequence_length,
+        trainable=self.hparams.train_embedding)(I)
     X5 = Conv1D(128, 5, activation='relu', padding='same')(E)
-    X5 = MaxPooling1D(self.sequence_length, padding='same')(X5)
+    X5 = MaxPooling1D(self.hparams.sequence_length, padding='same')(X5)
     X4 = Conv1D(128, 4, activation='relu', padding='same')(E)
-    X4 = MaxPooling1D(self.sequence_length, padding='same')(X4)
+    X4 = MaxPooling1D(self.hparams.sequence_length, padding='same')(X4)
     X3 = Conv1D(128, 3, activation='relu', padding='same')(E)
-    X3 = MaxPooling1D(self.sequence_length, padding='same')(X3)
+    X3 = MaxPooling1D(self.hparams.sequence_length, padding='same')(X3)
     X = Concatenate(axis=-1)([X5, X4, X3])
     X = Flatten()(X)
-    X = Dropout(self.dropout_rate)(X)
+    X = Dropout(self.hparams.dropout_rate)(X)
     X = Dense(128, activation='relu')(X)
-    X = Dropout(self.dropout_rate)(X)
+    X = Dropout(self.hparams.dropout_rate)(X)
     toxic_out = Dense(1, activation='sigmoid', name='toxic')(X)
     severe_toxic_out = Dense(1, activation='sigmoid', name='severe_toxic')(X)
     obscene_out = Dense(1, activation='sigmoid', name='obscene')(X)
