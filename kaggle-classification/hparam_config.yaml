@@ -35,3 +35,4 @@ trainingInput:
         minValue: 0.000001
         maxValue: 0.1
         scaleType: UNIT_LOG_SCALE
+        
