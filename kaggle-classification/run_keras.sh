@@ -33,4 +33,4 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --train_path gs://${BUCKET_NAME}/resources/train.csv \
     --validation_path gs://${BUCKET_NAME}/resources/validation.csv \
     --embeddings_path gs://${BUCKET_NAME}/resources/glove.6B/glove.6B.100d.txt \
-    --model_path $OUTPUT_PATH/model.h5
+    --model_path $OUTPUT_PATH/final_model.h5

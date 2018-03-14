@@ -43,7 +43,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.3,
     batch_size=128,
-    epochs=5,
+    epochs=3,
     max_sequence_length=250,
     embedding_dim=100)
 
@@ -104,7 +104,7 @@ class AttentionToxModel():
     predictions = self.predict(data['comment_text'])
     scores = []
     for idx, label in enumerate(LABELS):
-      labels = np.array(data['toxic'])
+      labels = np.array(data[label])
       score = metrics.roc_auc_score(labels, predictions[idx].flatten())
       scores.append(score)
       print('{} has AUC {}'.format(label, score))
@@ -133,7 +133,7 @@ class AttentionToxModel():
 
   def _setup_embedding_matrix(self):
     embedding_matrix = np.zeros((len(self.tokenizer.word_index) + 1, self.hparams.embedding_dim))
-    with tf.gfile.Open(self.embeddings_path, 'rb') as f:
+    with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         values = line.split()
         word = values[0]
@@ -180,9 +180,9 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--train_path', type=str, default='local_data/kaggle_train.csv', help='Path to the training data.')
+      '--train_path', type=str, default='local_data/train.csv', help='Path to the training data.')
   parser.add_argument(
-      '--validation_path', type=str, default='local_data/kaggle_test.csv', help='Path to the test data.')
+      '--validation_path', type=str, default='local_data/validation.csv', help='Path to the test data.')
   parser.add_argument(
       '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
   parser.add_argument(
@@ -195,9 +195,8 @@ if __name__ == '__main__':
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
 
-  with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
+  with tf.gfile.Open(FLAGS.validation_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
-  predictions = model.predict(test_data['comment_text'])
   model.score_auc(test_data)
 
   model.predict(['This sentence is benign'])
