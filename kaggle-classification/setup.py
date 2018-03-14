@@ -13,7 +13,7 @@ setup(
 )
 
 setup(
-    name='keras-trainer',
+    name='keras_trainer',
     version='0.1',
     install_requires=REQUIRED_PACKAGES,
     packages=find_packages(),

@@ -24,7 +24,7 @@ from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
-from single_layer_cnn import SingleLayerCnn
+from keras_trainer import single_layer_cnn
 
 FLAGS = None
 
@@ -32,11 +32,12 @@ TEMPORARY_MODEL_PATH = 'model.h5'
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
-    dropout_rate=0.3,
+    dropout_rate=0.5,
     batch_size=128,
     epochs=3,
-    max_sequence_length=250,
-    embedding_dim=100)
+    sequence_length=250,
+    embedding_dim=100,
+    train_embedding=True)
 
 LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
@@ -62,8 +63,8 @@ class ModelRunner():
     self._load_model()
   
   def train(self, train):
-    vocab_size = len(self.tokenizer.word_index) + 1
-    model = SingleLayerCnn(self.embeddings_matrix, self.hparams.embedding_dim, vocab_size, self.hparams.max_sequence_length, dropout_rate=0.5).get_model()
+    self.hparams.vocab_size = len(self.tokenizer.word_index) + 1
+    model = single_layer_cnn.SingleLayerCnn(self.embeddings_matrix, self.hparams).get_model()
     train_comment = self._prep_texts(train['comment_text'])
     train_labels = [train[label] for label in LABELS]
 
@@ -104,7 +105,7 @@ class ModelRunner():
     print('Avg AUC {}'.format(np.mean(scores)))
 
   def _prep_texts(self, texts):
-    return pad_sequences(self.tokenizer.texts_to_sequences(texts), maxlen=self.hparams.max_sequence_length)
+    return pad_sequences(self.tokenizer.texts_to_sequences(texts), maxlen=self.hparams.sequence_length)
 
   def _load_model(self):
     try:
