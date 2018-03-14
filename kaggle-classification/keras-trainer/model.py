@@ -18,22 +18,13 @@ import os.path
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
-from keras.layers import Conv1D
-from keras.layers import Dense
-from keras.layers import Dropout
-from keras.layers import Embedding
-from keras.layers import Flatten
-from keras.layers import Input
-from keras.layers import MaxPooling1D
-from keras.layers import Activation
-from keras.layers import Concatenate
 from keras.models import load_model
-from keras.models import Model
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
+from single_layer_cnn import SingleLayerCnn
 
 FLAGS = None
 
@@ -50,7 +41,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
 LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
 
-class AttentionToxModel():
+class ModelRunner():
   """Toxicity model using CNN + Attention"""
   
   def __init__(self,
@@ -66,12 +57,13 @@ class AttentionToxModel():
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
     print('Setting up embedding matrix...')
-    self.embedding_matrix = self._setup_embedding_matrix()
+    self.embeddings_matrix = self._setup_embeddings_matrix()
     print('Loading model...')
     self._load_model()
   
   def train(self, train):
-    model = self._build_model()
+    vocab_size = len(self.tokenizer.word_index) + 1
+    model = SingleLayerCnn(self.embeddings_matrix, self.hparams.embedding_dim, vocab_size, self.hparams.max_sequence_length, dropout_rate=0.5).get_model()
     train_comment = self._prep_texts(train['comment_text'])
     train_labels = [train[label] for label in LABELS]
 
@@ -133,8 +125,8 @@ class AttentionToxModel():
     tokenizer.fit_on_texts(words)
     return tokenizer
 
-  def _setup_embedding_matrix(self):
-    embedding_matrix = np.zeros((len(self.tokenizer.word_index) + 1, self.hparams.embedding_dim))
+  def _setup_embeddings_matrix(self):
+    embeddings_matrix = np.zeros((len(self.tokenizer.word_index) + 1, self.hparams.embedding_dim))
     with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         values = line.split()
@@ -142,41 +134,8 @@ class AttentionToxModel():
         if word in self.tokenizer.word_index:
           word_idx = self.tokenizer.word_index[word]
           word_embedding = np.asarray(values[1:], dtype='float32')
-          embedding_matrix[word_idx] = word_embedding
-    return embedding_matrix
-
-  def _build_model(self):
-    I = Input(shape=(self.hparams.max_sequence_length,), dtype='float32')
-    E = Embedding(
-        len(self.tokenizer.word_index) + 1,
-        self.hparams.embedding_dim,
-        weights=[self.embedding_matrix],
-        input_length=self.hparams.max_sequence_length,
-        trainable=False)(I)
-    X5 = Conv1D(128, 5, activation='relu', padding='same')(E)
-    X5 = MaxPooling1D(250, padding='same')(X5)
-    X4 = Conv1D(128, 4, activation='relu', padding='same')(E)
-    X4 = MaxPooling1D(250, padding='same')(X4)
-    X3 = Conv1D(128, 3, activation='relu', padding='same')(E)
-    X3 = MaxPooling1D(250, padding='same')(X3)
-    X = Concatenate(axis=-1)([X5, X4, X3])
-    X = Flatten()(X)
-    X = Dropout(self.hparams.dropout_rate)(X)
-    X = Dense(128, activation='relu')(X)
-    X = Dropout(self.hparams.dropout_rate)(X)
-    toxic_out = Dense(1, activation='sigmoid', name='toxic')(X)
-    severe_toxic_out = Dense(1, activation='sigmoid', name='severe_toxic')(X)
-    obscene_out = Dense(1, activation='sigmoid', name='obscene')(X)
-    threat_out = Dense(1, activation='sigmoid', name='threat')(X)
-    insult_out = Dense(1, activation='sigmoid', name='insult')(X)
-    identity_hate_out = Dense(1, activation='sigmoid', name='identity_hate')(X)
-
-    model = Model(inputs=I, outputs=[toxic_out, severe_toxic_out, obscene_out, threat_out, insult_out, identity_hate_out])
-    model.compile(optimizer='rmsprop',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy'])
-    print(model.summary())
-    return model
+          embeddings_matrix[word_idx] = word_embedding
+    return embeddings_matrix
 
 if __name__ == '__main__':
 
@@ -192,7 +151,7 @@ if __name__ == '__main__':
 
   FLAGS, unparsed = parser.parse_known_args()
 
-  model = AttentionToxModel(model_path=FLAGS.model_path, embeddings_path=FLAGS.embeddings_path)
+  model = ModelRunner(model_path=FLAGS.model_path, embeddings_path=FLAGS.embeddings_path)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
