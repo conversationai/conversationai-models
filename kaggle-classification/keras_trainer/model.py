@@ -63,7 +63,6 @@ class ModelRunner():
     self._load_model()
   
   def train(self, train):
-    self.hparams.vocab_size = len(self.tokenizer.word_index) + 1
     model = single_layer_cnn.SingleLayerCnn(self.embeddings_matrix, self.hparams).get_model()
     train_comment = self._prep_texts(train['comment_text'])
     train_labels = [train[label] for label in LABELS]
@@ -121,13 +120,13 @@ class ModelRunner():
     with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         words.append(line.split()[0])
-    # TODO: configure OOV token
-    tokenizer = Tokenizer(lower=True)
+    tokenizer = Tokenizer(lower=True, oov_token='<unk>')
     tokenizer.fit_on_texts(words)
+    self.hparams.vocab_size = len(tokenizer.word_index) + 1
     return tokenizer
 
   def _setup_embeddings_matrix(self):
-    embeddings_matrix = np.zeros((len(self.tokenizer.word_index) + 1, self.hparams.embedding_dim))
+    embeddings_matrix = np.zeros((self.hparams.vocab_size, self.hparams.embedding_dim))
     with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         values = line.split()
@@ -136,6 +135,7 @@ class ModelRunner():
           word_idx = self.tokenizer.word_index[word]
           word_embedding = np.asarray(values[1:], dtype='float32')
           embeddings_matrix[word_idx] = word_embedding
+    embeddings_matrix[self.hparams.vocab_size - 1] = embeddings_matrix.mean(axis=0)
     return embeddings_matrix
 
 if __name__ == '__main__':
