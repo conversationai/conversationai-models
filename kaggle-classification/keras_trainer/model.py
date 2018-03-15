@@ -24,7 +24,7 @@ from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
-from keras_trainer import single_layer_cnn
+from cnn_with_attention import CNNWithAttention
 
 FLAGS = None
 
@@ -63,7 +63,7 @@ class ModelRunner():
     self._load_model()
   
   def train(self, train):
-    model = single_layer_cnn.SingleLayerCnn(self.embeddings_matrix, self.hparams).get_model()
+    self.model = CNNWithAttention(self.embeddings_matrix, self.hparams).get_model()
     train_comment = self._prep_texts(train['comment_text'])
     train_labels = [train[label] for label in LABELS]
 
@@ -74,7 +74,7 @@ class ModelRunner():
             monitor='val_loss', mode='auto')
     ]
 
-    model.fit(
+    self.model.fit(
         x=train_comment, y=train_labels,
         batch_size=self.hparams.batch_size,
         epochs=self.hparams.epochs,
