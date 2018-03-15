@@ -16,7 +16,7 @@ from keras.layers import Concatenate
 from keras.layers import Multiply
 from keras.models import Model
 from keras.layers import Permute
-import keras_trainer.base_model
+from keras_trainer import base_model
 from keras.layers import Activation
 
 
