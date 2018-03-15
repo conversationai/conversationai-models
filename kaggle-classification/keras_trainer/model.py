@@ -71,7 +71,7 @@ class ModelRunner():
   
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
-      self.model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
+      model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
     else:
       raise ValueError('You have specified an invalid model type.')
     train_comment = self._prep_texts(train['comment_text'])
@@ -84,7 +84,7 @@ class ModelRunner():
             monitor='val_loss', mode='auto')
     ]
 
-    self.model.fit(
+    model.fit(
         x=train_comment, y=train_labels,
         batch_size=self.hparams.batch_size,
         epochs=self.hparams.epochs,
