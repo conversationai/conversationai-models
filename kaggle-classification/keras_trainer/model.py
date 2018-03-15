@@ -25,10 +25,16 @@ from os.path import expanduser
 from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
 from keras_trainer.cnn_with_attention import CNNWithAttention
+from keras_trainer.single_layer_cnn import SingleLayerCnn
 
 FLAGS = None
 
 TEMPORARY_MODEL_PATH = 'model.h5'
+
+VALID_MODELS = {
+  'cnn_with_attention': CNNWithAttention,
+  'single_layer_cnn': SingleLayerCnn
+}
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
@@ -37,7 +43,8 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     epochs=3,
     sequence_length=250,
     embedding_dim=100,
-    train_embedding=True)
+    train_embedding=True,
+    model_type='cnn_with_attention')
 
 LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
@@ -63,7 +70,10 @@ class ModelRunner():
     self._load_model()
   
   def train(self, train):
-    self.model = CNNWithAttention(self.embeddings_matrix, self.hparams).get_model()
+    if self.hparams.model_type in VALID_MODELS:
+      self.model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
+    else:
+      raise ValueError('You have specified an invalid model type.')
     train_comment = self._prep_texts(train['comment_text'])
     train_labels = [train[label] for label in LABELS]
 
