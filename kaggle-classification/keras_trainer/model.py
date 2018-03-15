@@ -18,6 +18,7 @@ import os.path
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
+from keras.callbacks import TensorBoard
 from keras.models import load_model
 from keras.preprocessing.sequence import pad_sequences
 from keras.preprocessing.text import Tokenizer
@@ -30,6 +31,7 @@ from keras_trainer.single_layer_cnn import SingleLayerCnn
 FLAGS = None
 
 TEMPORARY_MODEL_PATH = 'model.h5'
+LOGS_PATH = 'logs/'
 
 VALID_MODELS = {
   'cnn_with_attention': CNNWithAttention,
@@ -44,7 +46,10 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     sequence_length=250,
     embedding_dim=100,
     train_embedding=True,
-    model_type='cnn_with_attention')
+    model_type='cnn_with_attention',
+    filter_sizes=[3,4,5],
+    num_filters=[128,128,128],
+    attention_intermediate_size=128)
 
 LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
 
@@ -55,7 +60,7 @@ class ModelRunner():
   def __init__(self,
                model_path,
                embeddings_path,
-               hparams=DEFAULT_HPARAMS):
+               hparams = DEFAULT_HPARAMS):
     if os.path.exists(TEMPORARY_MODEL_PATH):
       raise FileExistsError('The following file path already exists: {}'.format(TEMPORARY_MODEL_PATH))
 
@@ -81,7 +86,8 @@ class ModelRunner():
         ModelCheckpoint(
             TEMPORARY_MODEL_PATH, save_best_only=True, verbose=True),
         EarlyStopping(
-            monitor='val_loss', mode='auto')
+            monitor='val_loss', mode='auto'),
+        TensorBoard(LOGS_PATH)
     ]
 
     model.fit(
