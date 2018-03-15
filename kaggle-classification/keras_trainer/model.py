@@ -24,7 +24,7 @@ from keras.preprocessing.text import Tokenizer
 from os.path import expanduser
 from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
-from cnn_with_attention import CNNWithAttention
+from keras_trainer.cnn_with_attention import CNNWithAttention
 
 FLAGS = None
 
