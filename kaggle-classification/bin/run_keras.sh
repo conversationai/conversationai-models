@@ -14,8 +14,10 @@ BUCKET_NAME=kaggle-model-experiments
 JOB_NAME=${USER}_kaggle_training
 REGION=us-central1
 
+INPUT_PATH=gs://${BUCKET_NAME}/resources
 DATE=`date '+%Y%m%d_%H%M%S'`
-OUTPUT_PATH=gs://${BUCKET_NAME}/model/${USER}/${DATE}
+OUTPUT_PATH=gs://${BUCKET_NAME}/keras_runs/${USER}/${DATE}
+LOG_PATH=${OUTPUT_PATH}/logs/
 HPARAM_CONFIG=keras_hparam_config.yaml
 
 echo "Writing to $OUTPUT_PATH"
@@ -30,7 +32,20 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --verbosity debug \
     --config ${HPARAM_CONFIG} \
     -- \
-    --train_path gs://${BUCKET_NAME}/resources/train.csv \
-    --validation_path gs://${BUCKET_NAME}/resources/validation.csv \
-    --embeddings_path gs://${BUCKET_NAME}/resources/glove.6B/glove.6B.100d.txt \
-    --model_path $OUTPUT_PATH/final_model.h5
+    --train_path ${INPUT_PATH}/train.csv \
+    --validation_path ${INPUT_PATH}/validation.csv \
+    --embeddings_path ${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
+    --log_path ${LOG_PATH} \
+    --hparams=epochs=10
+
+
+echo "You can view the tensorboard for this job with the command:"
+echo ""
+echo -e "\t tensorboard --logdir=${LOG_PATH}"
+echo ""
+echo "And on your browser navigate to:"
+echo ""
+echo -e "\t http://localhost:6006/#scalars"
+echo ""
+echo "This will populate after a model checkpoint is saved."
+echo ""
