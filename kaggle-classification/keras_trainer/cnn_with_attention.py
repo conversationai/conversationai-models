@@ -43,17 +43,20 @@ class CNNWithAttention(base_model.BaseModel):
         weights=[self.embeddings_matrix],
         input_length=self.hparams.sequence_length,
         trainable=self.hparams.train_embedding)(I)
-    X5 = Conv1D(128, 5, activation='relu', padding='same')(E)
-    X4 = Conv1D(128, 4, activation='relu', padding='same')(E)
-    X3 = Conv1D(128, 3, activation='relu', padding='same')(E)
-    X = Concatenate(axis=-1)([X5, X4, X3])
-    A = Dense(1)(X)
-    # Permute trick to apply softmax to second to last layer.
-    A = Permute((2,1))(A)
-    A = Activation('softmax')(A)
-    A = Permute((2,1))(A)
-    X = Multiply()([A, X])
-    X = AveragePooling1D(self.hparams.sequence_length, padding='same')(X)
+    C = []
+    A = []
+    P = []
+    for i, size in enumerate(self.hparams.filter_sizes):
+        C.append(Conv1D(self.hparams.num_filters[i], size, activation='relu', padding='same')(E))
+        A.append(Dense(self.hparams.attention_intermediate_size, activation = 'relu')(C[i]))
+        A[i] = Dense(1, use_bias=False)(A[i])
+        # Permute trick to apply softmax to second to last layer.
+        A[i] = Permute((2,1))(A[i])
+        A[i] = Activation('softmax')(A[i])
+        A[i] = Permute((2,1))(A[i])
+        P.append(Multiply()([A[i], C[i]]))
+        P[i] = AveragePooling1D(self.hparams.sequence_length, padding='same')(P[i])
+    X = Concatenate(axis=-1)(P)
     X = Flatten()(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     X = Dense(128, activation='relu')(X)
