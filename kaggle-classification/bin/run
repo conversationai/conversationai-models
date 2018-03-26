@@ -3,6 +3,13 @@
 #
 # A script to train the kaggle model remotely using ml-engine.
 #
+# To run with default hyperparameters from the kaggle-classification directory just enter:
+# './bin/run'
+#
+# To run with hyperparameter tuning, enter:
+# './bin/run -c hparam_config.yaml'
+# 
+#
 # Setup Steps:
 # 1. Install the gcloud SDK
 # 2. Authenticate with the GCP project you want to use, `gcloud config set project [my-project]`
@@ -11,15 +18,34 @@
 
 # Edit these!
 BUCKET_NAME=kaggle-model-experiments
-
+CONFIG=gpu_config.yaml
 JOB_NAME=${USER}_kaggle_training
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
 REGION=us-central1
-
 DATE=`date '+%Y%m%d_%H%M%S'`
 OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE}
-HPARAM_CONFIG=hparam_config.yaml
+
+while getopts :c:h opt; do
+case ${opt} in
+h) 
+    echo "Usage: run [-c config_filename.yaml]"
+    echo "Flags: "
+    echo -e " -c Specify a config file (e.g. use hparam_config to enable hyperparameter tuning)"
+    exit 0;;
+c) 
+    echo "Using custom config ${OPTARG}"
+    CONFIG=${OPTARG};;
+:)
+    echo "Error: ${OPTARG} requires an argument."
+    echo "Use 'run -h' for help."
+    exit 1;;
+\?) 
+    echo "Invalid flag. Use 'run -h' for help."
+    exit 1;;
+esac
+done
+
 
 echo "Writing to $OUTPUT_PATH"
 
@@ -27,7 +53,7 @@ echo "Writing to $OUTPUT_PATH"
 gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --job-dir ${OUTPUT_PATH} \
     --runtime-version 1.4 \
-    --config ${HPARAM_CONFIG} \
+    --config ${CONFIG} \
     --module-name trainer.model \
     --package-path trainer/ \
     --region $REGION \
