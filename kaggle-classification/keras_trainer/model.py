@@ -31,7 +31,6 @@ from keras_trainer.single_layer_cnn import SingleLayerCnn
 FLAGS = None
 
 TEMPORARY_MODEL_PATH = 'model.h5'
-LOGS_PATH = 'logs/'
 
 VALID_MODELS = {
   'cnn_with_attention': CNNWithAttention,
@@ -58,14 +57,17 @@ class ModelRunner():
   """Toxicity model using CNN + Attention"""
   
   def __init__(self,
-               model_path,
+               job_dir,
                embeddings_path,
-               hparams = DEFAULT_HPARAMS):
+               log_path,
+               hparams):
     if os.path.exists(TEMPORARY_MODEL_PATH):
       raise FileExistsError('The following file path already exists: {}'.format(TEMPORARY_MODEL_PATH))
 
-    self.model_path = model_path
+    self.job_dir = job_dir
+    self.model_path = os.path.join(job_dir, 'model.h5')
     self.embeddings_path = embeddings_path
+    self.log_path = log_path
     self.hparams = hparams
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
@@ -87,7 +89,7 @@ class ModelRunner():
             TEMPORARY_MODEL_PATH, save_best_only=True, verbose=True),
         EarlyStopping(
             monitor='val_loss', mode='auto'),
-        TensorBoard(LOGS_PATH)
+        TensorBoard(self.log_path)
     ]
 
     model.fit(
@@ -99,6 +101,7 @@ class ModelRunner():
 
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
+    tf.gfile.MakeDirs(self.job_dir)
     tf.gfile.Copy(TEMPORARY_MODEL_PATH, self.model_path, overwrite=True)
     tf.gfile.Remove(TEMPORARY_MODEL_PATH)
     print('Saved model to {}'.format(self.model_path))
@@ -164,11 +167,18 @@ if __name__ == '__main__':
   parser.add_argument(
       '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
   parser.add_argument(
-      '--model_path', type=str, default='local_data/keras_kaggle_model.h5', help='Path to model file.')
+      '--job-dir', type=str, default='local_data/', help='Path to model file.')
+  parser.add_argument(
+      '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+  parser.add_argument(
+      '--hparams', type=str, default='', help='Comma separated list of "name=value" pairs.')
 
-  FLAGS, unparsed = parser.parse_known_args()
+  FLAGS = parser.parse_args()
 
-  model = ModelRunner(model_path=FLAGS.model_path, embeddings_path=FLAGS.embeddings_path)
+  hparams = DEFAULT_HPARAMS
+  hparams.parse(FLAGS.hparams)
+
+  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=FLAGS.log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
