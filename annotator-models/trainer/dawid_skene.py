@@ -13,6 +13,7 @@ Series C (Applied Statistics), Vol. 28, No. 1, pp. 20-28.
 import argparse
 from google.cloud import bigquery
 import tensorflow as tf
+import logging
 import numpy as np
 import pandas as pd
 import sys
@@ -43,7 +44,7 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
     # [items, classes]
     item_classes = initialize(counts)
 
-    print "Iter\tlog-likelihood\tdelta-CM\tdelta-ER\tdelta-Y_hat"
+    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-ER\tdelta-Y_hat')
 
     # while not converged do:
     while not converged:
@@ -67,11 +68,13 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
             error_rates_diff = np.sum(np.abs(error_rates - old_error_rates))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            print iter ,'\t', log_L, '\t%.6f\t%.6f\t%.6f' % (class_marginals_diff, error_rates_diff, item_class_diff)
+            logging.info('{0}\t{1:.4f}\t{2:.4f}\t{3:.4f}\t{4:.4f}'.format(
+                iter, log_L, class_marginals_diff, error_rates_diff, item_class_diff))
+
             if (class_marginals_diff < tol and error_rates_diff < tol) or iter > max_iter:
                 converged = True
         else:
-            print iter ,'\t', log_L
+            logging.info('{0}\t{1:.4f}'.format(iter, log_L))
 
         # update current values
         old_class_marginals = class_marginals
@@ -81,7 +84,7 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
 
 def load_data(path):
-    print('Loading data from {0}'.format(path))
+    logging.info('Loading data from {0}'.format(path))
 
     with tf.gfile.Open(path, 'rb') as fileobj:
       df =  pd.read_csv(fileobj, encoding='utf-8')
@@ -274,7 +277,7 @@ def calc_likelihood(counts, class_marginals, error_rates):
         temp = log_L + np.log(patient_likelihood)
 
         if np.isnan(temp) or np.isinf(temp):
-            print i, log_L, np.log(patient_likelihood), temp
+            logging.info("{0}, {1}, {2}".format(i, log_L, np.log(patient_likelihood), temp))
             sys.exit()
 
         log_L = temp
@@ -340,27 +343,34 @@ def majority_voting(counts):
     return item_classes
 
 def main(FLAGS):
+    # configure logging
+    logging.basicConfig(level=logging.INFO)
 
     # load data, each row is an annotation
-    N_EXAMPLES = 1000
-    LABEL = 'obscene'
+    n_examples= FLAGS.n_examples
+    label = FLAGS.label
 
-    df = load_data(FLAGS.data_path)
+    df = load_data(FLAGS.data_path)[0:n_examples]
+
+    logging.info('Running on {0} examples for label {1}'.format(len(df), label))
 
     # convert responses to counts
-    (items, raters, classes, counts) = responses_to_counts(df, LABEL)
-    print 'num items:', len(items)
-    print 'num raters:', len(raters)
-    print 'num classes:', len(classes)
+    (items, raters, classes, counts) = responses_to_counts(df, label)
+    logging.info('num items: {0}'.format(len(items)))
+    logging.info('num raters: {0}'.format(len(raters)))
+    logging.info('num classes: {0}'.format(len(classes)))
 
     # run EM
     class_marginals, error_rates, item_classes = run(
-        items, raters, classes, counts, label=LABEL, max_iter=50, tol=.1)
+        items, raters, classes, counts, label=label, max_iter=50, tol=.1)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '--data-path', help='The path to data to run on, local or in Cloud Storage')
+        '--data-path', help='The path to data to run on, local or in Cloud Storage.')
+    parser.add_argument('--n_examples', help='The number of annotations to use.')
+    parser.add_argument('--label', help='The label to train on, e.g. "obscene" or "threat"',
+                        default='obscene')
 
     FLAGS = parser.parse_args()
 
