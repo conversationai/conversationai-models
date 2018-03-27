@@ -11,7 +11,6 @@ Series C (Applied Statistics), Vol. 28, No. 1, pp. 20-28.
 """
 
 import argparse
-from google.cloud import bigquery
 import tensorflow as tf
 import logging
 import numpy as np
@@ -366,12 +365,14 @@ def main(FLAGS):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        '--data-path', help='The path to data to run on, local or in Cloud Storage.')
-    parser.add_argument('--n_examples', help='The number of annotations to use.',
-                        default=10000000)
+    parser.add_argument('--data-path',
+                        help='The path to data to run on, local or in Cloud Storage.')
+    parser.add_argument('--n_examples',
+                        help='The number of annotations to use.', default=10000000)
     parser.add_argument('--label', help='The label to train on, e.g. "obscene" or "threat"',
                         default='obscene')
+    parser.add_argument("--job-dir", type=str, default="",
+                        help="The directory where the job is staged")
 
     FLAGS = parser.parse_args()
 
