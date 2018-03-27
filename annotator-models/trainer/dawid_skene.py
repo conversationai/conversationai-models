@@ -10,31 +10,16 @@ Error-Rates Using the EM Algorithm. Journal of the Royal Statistical Society.
 Series C (Applied Statistics), Vol. 28, No. 1, pp. 20-28.
 """
 
+import argparse
+from google.cloud import bigquery
+import tensorflow as tf
 import numpy as np
 import pandas as pd
-from google.cloud import bigquery
 import sys
 
 np.set_printoptions(precision=2, suppress=True)
 
-def main():
-
-    # load data, each row is an annotation
-    N_EXAMPLES = 1000
-    PROJECT_ID = 'conversation-ai-experiments'
-    LABEL = 'obscene'
-
-    df = load_data_from_bq(N_EXAMPLES, PROJECT_ID)
-
-    # convert responses to counts
-    (items, raters, classes, counts) = responses_to_counts(df, LABEL)
-    print 'num items:', len(items)
-    print 'num raters:', len(raters)
-    print 'num classes:', len(classes)
-
-    # run EM
-    class_marginals, error_rates, item_classes = run(
-        items, raters, classes, counts, label=LABEL, max_iter=50, tol=.1)
+FLAGS = None
 
 def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='average'):
     """
@@ -95,48 +80,14 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
     return class_marginals, error_rates, item_classes
 
 
-def load_data_from_bq(n_examples, project_id):
+def load_data(path):
+    print('Loading data from {0}'.format(path))
 
-  QUERY = """
-    SELECT
-      _unit_id,
-      _worker_id,
-      identity_hate,
-      flirtation,
-      insult,
-      obscene,
-      sexual_explicit,
-      threat,
-      toxic_score
-    FROM (
-      SELECT _unit_id, _worker_id, flirtation, identity_hate, insult, na, obscene, sexual_explicit, threat, toxic_score, comment_text
-      FROM `conversation-ai-experiments.crowdflower_jobs.q42017_f1218858_reddit`
-      UNION ALL (
-      SELECT _unit_id, _worker_id, flirtation, identity_hate, insult, na, obscene, sexual_explicit, threat, toxic_score, comment_text
-      FROM `conversation-ai-experiments.crowdflower_jobs.q42017_f1218871_demo1`)
-      UNION ALL (
-      SELECT _unit_id, _worker_id, flirtation, identity_hate, insult, na, obscene, sexual_explicit, threat, toxic_score, comment_text
-      FROM `conversation-ai-experiments.crowdflower_jobs.q42017_f1218872_demo2`)
-      UNION ALL (
-      SELECT _unit_id, _worker_id, flirtation, identity_hate, insult, na, obscene, sexual_explicit, threat, toxic_score, comment_text
-      FROM `conversation-ai-experiments.crowdflower_jobs.q42017_f1218880_splc`)
-     )
-    WHERE flirtation IS NOT NULL
-    ORDER BY _unit_id
-    LIMIT {}
-  """.format(n_examples)
-  df = pd.read_gbq(QUERY, project_id=project_id, dialect="standard")
+    with tf.gfile.Open(path, 'rb') as fileobj:
+      df =  pd.read_csv(fileobj, encoding='utf-8')
 
-  # Remove all rows with nan values
-  df = df[df.isnull().any(axis=1) == False]
-  return df
-
-def load_data():
-    df = pd.read_csv(DATA_PATH)
-
-    # remove all rows with nan values
+    # Remove all rows with nan values
     df = df[df.isnull().any(axis=1) == False]
-
     return df
 
 def responses_to_counts(df, label):
@@ -388,6 +339,29 @@ def majority_voting(counts):
 
     return item_classes
 
+def main(FLAGS):
+
+    # load data, each row is an annotation
+    N_EXAMPLES = 1000
+    LABEL = 'obscene'
+
+    df = load_data(FLAGS.data_path)
+
+    # convert responses to counts
+    (items, raters, classes, counts) = responses_to_counts(df, LABEL)
+    print 'num items:', len(items)
+    print 'num raters:', len(raters)
+    print 'num classes:', len(classes)
+
+    # run EM
+    class_marginals, error_rates, item_classes = run(
+        items, raters, classes, counts, label=LABEL, max_iter=50, tol=.1)
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '--data-path', help='The path to data to run on, local or in Cloud Storage')
+
+    FLAGS = parser.parse_args()
+
+    main(FLAGS)
