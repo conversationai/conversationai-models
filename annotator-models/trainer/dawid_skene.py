@@ -368,7 +368,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument(
         '--data-path', help='The path to data to run on, local or in Cloud Storage.')
-    parser.add_argument('--n_examples', help='The number of annotations to use.')
+    parser.add_argument('--n_examples', help='The number of annotations to use.',
+                        default=10000000)
     parser.add_argument('--label', help='The label to train on, e.g. "obscene" or "threat"',
                         default='obscene')
 

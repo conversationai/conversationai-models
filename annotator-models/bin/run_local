@@ -8,9 +8,7 @@
 DATE=`date '+%Y%m%d_%H%M%S'`
 
 gcloud ml-engine local train \
-     --module-name=trainer.model \
-     --package-path=trainer \
-     --job-dir=model/${DATE} -- \
-     --train_data=local_data/train.csv \
-     --y_class=toxic \
-     --train_steps=100
+     --module-name=trainer.dawid_skene \
+     --package-path=trainer -- \
+     --data-path=gs://crowdflower_data/dawid_skene/training_data_1k.csv \
+     --label='obscene'
