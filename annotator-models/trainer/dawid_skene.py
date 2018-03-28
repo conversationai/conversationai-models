@@ -24,7 +24,6 @@ FLAGS = None
 
 def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='average'):
     """
-    Function: dawid_skene()
     Run the Dawid-Skene estimator on response data
 
     Input:
@@ -95,18 +94,17 @@ def load_data(path):
 
 def responses_to_counts(df, label):
     """
-    Function: responses_to_counts()
-      Convert a matrix of annotations to count data
+    Convert a matrix of annotations to count data
 
     Inputs:
-      responses: dictionary of responses {patient:{observers:[responses]}}
+      df: pandas DataFrame that includes columns '_worker_id', '_unit_id' and label
       label: string of the toxicity type to use, e.g. 'toxic_score' or 'obscene'
 
     Return:
-      patients: list of patients
-      observers: list of observers
-      classes: list of possible patient classes
-      counts: 3d array of counts: [patients x observers x classes]
+      items: list of items
+      raters: list of raters
+      classes: list of possible item classes
+      counts: 3d array of counts: [items x raters x classes]
     """
     # _worker_id -> index and index -> worker
     worker_id_to_index_map = {w: i for (i,w) in enumerate(df["_worker_id"].unique())}
@@ -145,9 +143,8 @@ def responses_to_counts(df, label):
 
 def initialize(counts):
     """
-    Function: initialize()
-      Get initial estimates for the true item classes using counts
-      see equation 3.1 in Dawid-Skene (1979)
+    Get initial estimates for the true item classes using counts
+    see equation 3.1 in Dawid-Skene (1979)
 
     Input:
       counts: counts of the number of times each response was given
@@ -174,7 +171,6 @@ def initialize(counts):
 
 def m_step(counts, item_classes):
     """
-    Function: m_step()
     Get estimates for the prior class probabilities (p_j) and the error
     rates (pi_jkl) using MLE with current estimates of true item classes
     See equations 2.3 and 2.4 in Dawid-Skene (1979)
@@ -212,10 +208,9 @@ def m_step(counts, item_classes):
 
 def e_step(counts, class_marginals, error_rates):
     """
-    Function: e_step()
-      Determine the probability of each item belonging to each class,
-      given current ML estimates of the parameters from the M-step
-      See equation 2.5 in Dawid-Skene (1979)
+    Determine the probability of each item belonging to each class,
+    given current ML estimates of the parameters from the M-step
+    See equation 2.5 in Dawid-Skene (1979)
 
     Inputs:
       counts: Array of how many times each rating was given
@@ -240,25 +235,25 @@ def e_step(counts, class_marginals, error_rates):
             item_classes[i,j] = estimate
 
         # normalize error rates by dividing by the sum over all classes
-        patient_sum = np.sum(item_classes[i,:])
-        if patient_sum > 0:
-            item_classes[i,:] = item_classes[i,:]/float(patient_sum)
+        item_sum = np.sum(item_classes[i,:])
+        if item_sum > 0:
+            item_classes[i,:] = item_classes[i,:]/float(item_sum)
 
     return item_classes
 
 def calc_likelihood(counts, class_marginals, error_rates):
     """
-    Function: calc_likelihood()
-      Calculate the likelihood given the current parameter estimates
-      This should go up monotonically as EM proceeds
-      See equation 2.7 in Dawid-Skene (1979)
+    Calculate the likelihood given the current parameter estimates
+    This should go up monotonically as EM proceeds
+    See equation 2.7 in Dawid-Skene (1979)
 
     Inputs:
       counts: Array of how many times each response was received
-          by each observer from each patient
-      class_marginals: probability of a random patient belonging to each class
-      error_rates: probability of observer k assigning a patient in class j
-          to class l [observers, classes, classes]
+          by each rater from each item
+      class_marginals: probability of a random item belonging to each class
+      error_rates: probability of rater k assigning a item in class j
+          to class l [raters, classes, classes]
+
     Returns:
       Likelihood given current parameter estimates
     """
@@ -266,18 +261,18 @@ def calc_likelihood(counts, class_marginals, error_rates):
     log_L = 0.0
 
     for i in range(nItems):
-        patient_likelihood = 0.0
+        item_likelihood = 0.0
         for j in range(nClasses):
 
             class_prior = class_marginals[j]
-            patient_class_likelihood = np.prod(np.power(error_rates[:,j,:], counts[i,:,:]))
-            patient_class_posterior = class_prior * patient_class_likelihood
-            patient_likelihood += patient_class_posterior
+            item_class_likelihood = np.prod(np.power(error_rates[:,j,:], counts[i,:,:]))
+            item_class_posterior = class_prior * item_class_likelihood
+            item_likelihood += item_class_posterior
 
-        temp = log_L + np.log(patient_likelihood)
+        temp = log_L + np.log(item_likelihood)
 
         if np.isnan(temp) or np.isinf(temp):
-            logging.info("{0}, {1}, {2}".format(i, log_L, np.log(patient_likelihood), temp))
+            logging.info("{0}, {1}, {2}".format(i, log_L, np.log(item_likelihood), temp))
             sys.exit()
 
         log_L = temp
@@ -286,16 +281,16 @@ def calc_likelihood(counts, class_marginals, error_rates):
 
 def random_initialization(counts):
     """
-    Function: random_initialization()
-      Alternative initialization # 1
-      Similar to initialize() above, except choose one initial class for each
-      patient, weighted in proportion to the counts
+    Similar to initialize() above, except choose one initial class for each
+    item, weighted in proportion to the counts.
+
     Input:
       counts: counts of the number of times each response was received
-          by each observer from each patient: [patients x observers x classes]
+          by each rater from each item: [items x raters x classes]
+
     Returns:
-      item_classes: matrix of estimates of true patient classes:
-          [patients x responses]
+      item_classes: matrix of estimates of true item classes:
+          [items x responses]
     """
     [nItems, nRaters, nClasses] = np.shape(counts)
 
@@ -304,8 +299,8 @@ def random_initialization(counts):
     # create an empty array
     item_classes = np.zeros([nItems, nClasses])
 
-    # for each patient, choose a random initial class, weighted in proportion
-    # to the counts from all observers
+    # for each item, choose a random initial class, weighted in proportion
+    # to the counts from all raters
     for p in range(nItems):
         average = response_sums[p,:] / np.sum(response_sums[p,:],dtype=float)
         item_classes[p,np.random.choice(np.arange(nClasses), p=average)] = 1
@@ -314,15 +309,12 @@ def random_initialization(counts):
 
 def majority_voting(counts):
     """
-    Function: majority_voting()
-      Alternative initialization # 2
-      An alternative way to initialize assignment of patients to classes
-      i.e Get initial estimates for the true patient classes using majority voting
-      This is not in the original paper, but could be considered
+      An alternative way to initialize assignment of items to classes
+      i.e Get initial estimates for the true item classes using majority voting
 
     Input:
       counts: Counts of the number of times each response was received
-          by each rater from each patient: [items x raters x classes]
+          by each rater from each item: [items x raters x classes]
     Returns:
       item_classes: matrix of initial estimates of true item classes:
           [items x responses]
@@ -334,7 +326,7 @@ def majority_voting(counts):
     # create an empty array
     item_classes = np.zeros([nItems, nClasses])
 
-    # take the most frequent class for each patient
+    # take the most frequent class for each item
     for p in range(nItems):
         indices = np.argwhere(response_sums[p,:] == np.max(response_sums[p,:]))
         # in the case of ties, take the lowest valued label (could be randomized)
