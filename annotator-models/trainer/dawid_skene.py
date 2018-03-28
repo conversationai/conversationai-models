@@ -16,6 +16,7 @@ import logging
 import numpy as np
 import pandas as pd
 import sys
+import time
 
 np.set_printoptions(precision=2, suppress=True)
 
@@ -67,13 +68,13 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
             error_rates_diff = np.sum(np.abs(error_rates - old_error_rates))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.4f}\t{2:.4f}\t{3:.4f}\t{4:.4f}'.format(
+            logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}\t{4:.4f}'.format(
                 iter, log_L, class_marginals_diff, error_rates_diff, item_class_diff))
 
             if (class_marginals_diff < tol and error_rates_diff < tol) or iter > max_iter:
                 converged = True
         else:
-            logging.info('{0}\t{1:.4f}'.format(iter, log_L))
+            logging.info('{0}\t{1:.1f}'.format(iter, log_L))
 
         # update current values
         old_class_marginals = class_marginals
@@ -360,8 +361,11 @@ def main(FLAGS):
     logging.info('num classes: {0}'.format(len(classes)))
 
     # run EM
+    start = time.time()
     class_marginals, error_rates, item_classes = run(
         items, raters, classes, counts, label=label, max_iter=50, tol=.1)
+    end = time.time()
+    logging.info("training time: {0:.4f} seconds".format(end - start))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
