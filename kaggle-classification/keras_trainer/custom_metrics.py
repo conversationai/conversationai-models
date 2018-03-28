@@ -21,9 +21,7 @@ def auc_roc(y_true, y_pred):
   for v in metric_vars:
       tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
 
-  # force to update metric values
+  # force update metric values
   with tf.control_dependencies([update_op]):
       value = tf.identity(value)
       return value
-
-
