@@ -171,13 +171,23 @@ if __name__ == '__main__':
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
       '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+
+  # Hyper-parameters
   parser.add_argument(
-      '--hparams', type=str, default='', help='Comma separated list of "name=value" pairs.')
+      '--learning_rate', type=float, default='', help='Learning rate.')
+  parser.add_argument(
+      '--dropout_rate', type=float, default='', help='Dropout rate.')
+  parser.add_argument(
+      '--batch_size', type=int, default='', help='Batch size.')
 
   FLAGS = parser.parse_args()
 
   hparams = DEFAULT_HPARAMS
-  hparams.parse(FLAGS.hparams)
+  hparams.parse({
+      'learning_rate': FLAGS.learning_rate,
+      'dropout_rate': FLAGS.dropout_rate,
+      'batch_size': FLAGS.batch_size
+  })
 
   model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=FLAGS.log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
