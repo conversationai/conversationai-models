@@ -1,4 +1,5 @@
 # Directories to save model checkpoints
+runs/
 model/*
 saved_models/*
 

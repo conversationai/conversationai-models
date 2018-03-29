@@ -18,6 +18,7 @@ from keras.models import Model
 from keras.layers import Permute
 from keras_trainer import base_model
 from keras.layers import Activation
+from keras_trainer.custom_metrics import auc_roc
 
 
 class CNNWithAttention(base_model.BaseModel):
@@ -71,6 +72,6 @@ class CNNWithAttention(base_model.BaseModel):
     model = Model(inputs=I, outputs=[toxic_out, severe_toxic_out, obscene_out, threat_out, insult_out, identity_hate_out])
     model.compile(optimizer='rmsprop',
                   loss='binary_crossentropy',
-                  metrics=['accuracy'])
+                  metrics=['accuracy', auc_roc])
     print(model.summary())
     return model

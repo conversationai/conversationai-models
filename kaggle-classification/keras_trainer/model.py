@@ -27,6 +27,7 @@ from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
 from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
+from keras_trainer.custom_metrics import auc_roc
 
 FLAGS = None
 
@@ -45,7 +46,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     sequence_length=250,
     embedding_dim=100,
     train_embedding=False,
-    model_type='cnn_with_attention',
+    model_type='single_layer_cnn',
     filter_sizes=[3,4,5],
     num_filters=[128,128,128],
     attention_intermediate_size=128)
@@ -128,7 +129,7 @@ class ModelRunner():
   def _load_model(self):
     try:
       tf.gfile.Copy(self.model_path, TEMPORARY_MODEL_PATH, overwrite=True)
-      self.model = load_model(TEMPORARY_MODEL_PATH)
+      self.model = load_model(TEMPORARY_MODEL_PATH, custom_objects={'auc_roc': auc_roc})
       tf.gfile.Remove(TEMPORARY_MODEL_PATH)
       print('Model loaded from: {}'.format(self.model_path))
     except NotFoundError:
