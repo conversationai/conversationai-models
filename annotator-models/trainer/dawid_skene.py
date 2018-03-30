@@ -360,9 +360,10 @@ def parse_results(df, label, item_classes, index_to_unit_id_map):
     """
     LABEL_HAT = '{}_hat'.format(label)
     LABEL_MEAN = '{}_mean'.format(label)
+    ROUND_DEC = 4
 
     df_predictions = pd.DataFrame()
-    df_predictions[LABEL_HAT] = [round(i[1],5) for i in item_classes]
+    df_predictions[LABEL_HAT] = [round(i[1], ROUND_DEC) for i in item_classes]
     df_predictions['_unit_index'] = range(len(item_classes))
 
     # Use the _unit_index to map to the original _unit_id
@@ -373,6 +374,7 @@ def parse_results(df, label, item_classes, index_to_unit_id_map):
     df[label] = df[label].astype(float)
     mean_labels = df.groupby('_unit_id', as_index=False)[label]\
                    .mean()\
+                   .round(ROUND_DEC)\
                    .rename(index=int, columns={label: LABEL_MEAN})
     df_predictions = pd.merge(mean_labels, df_predictions, on='_unit_id')
 
@@ -408,7 +410,11 @@ def main(FLAGS):
     # TK
 
     # save predictions as CSV to Cloud Storage
+    n = len(df)
+    path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
 
+    with tf.gfile.Open(path, 'w') as fileobj:
+      df_predictions.to_csv(fileobj, encoding='utf-8')
 
 
 if __name__ == '__main__':
