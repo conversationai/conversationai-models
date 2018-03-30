@@ -77,7 +77,7 @@ class ModelRunner():
     self.embeddings_matrix = self._setup_embeddings_matrix()
     print('Loading model...')
     self._load_model()
-  
+
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
       model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
@@ -176,11 +176,11 @@ if __name__ == '__main__':
 
   # Hyper-parameters
   parser.add_argument(
-      '--learning_rate', type=float, default='', help='Learning rate.')
+      '--learning_rate', type=float, default=0.00005, help='Learning rate.')
   parser.add_argument(
-      '--dropout_rate', type=float, default='', help='Dropout rate.')
+      '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
   parser.add_argument(
-      '--batch_size', type=int, default='', help='Batch size.')
+      '--batch_size', type=int, default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
