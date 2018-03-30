@@ -4,11 +4,14 @@
 # A script to train the kaggle model locally.
 # Assumes that train.csv and test.csv are downloaded into the local_data/
 # directory.
-#
+#!/bin/bash
+
 DATE=`date '+%Y%m%d_%H%M%S'`
+BUCKET_NAME=annotator_models
 
 gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
-     --data-path=gs://annotator_models/dawid_skene_training_data_10k.csv \
-     --label='obscene'
+     --data-path=gs://${BUCKET_NAME}/dawid_skene_training_data_1mil.csv \
+     --label='obscene' \
+     --job-dir='results'
