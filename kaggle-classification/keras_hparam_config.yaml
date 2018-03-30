@@ -11,7 +11,7 @@ trainingInput:
   # parameterServerCount: 3
   hyperparameters:
     goal: MAXIMIZE
-    hyperparameterMetricTag: val_toxic_auc_roc
+    hyperparameterMetricTag: val_auc_roc
     maxTrials: 20
     maxParallelTrials: 3
     enableTrialEarlyStopping: TRUE
