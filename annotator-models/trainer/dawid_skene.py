@@ -140,7 +140,7 @@ def responses_to_counts(df, label):
     unique_items = index_to_unit_id_map.keys()
     unique_classes = index_to_y_map.keys()
 
-    return (unique_items, unique_raters, unique_classes, counts)
+    return unique_items, unique_raters, unique_classes, counts, index_to_unit_id_map
 
 
 def initialize(counts):
@@ -348,20 +348,49 @@ def majority_voting(counts):
 
     return item_classes
 
+def parse_results(df, label, item_classes, index_to_unit_id_map):
+    """
+    Given the original data df, the predicted item_classes, and
+    the data mappings, returns a DataFrame with the fields:
+      * _unit_index: the 0,1,...nItems index
+      * _unit_id: the original item ID
+      * {LABEL}_hat: the predicted probability of the item being labeled 1 as
+               learned from the Dawid-Skene algorithm
+      * {LABEL}_mean: the mean of the original ratings
+    """
+    LABEL_HAT = '{}_hat'.format(label)
+    LABEL_MEAN = '{}_mean'.format(label)
+
+    df_predictions = pd.DataFrame()
+    df_predictions[LABEL_HAT] = [round(i[1],5) for i in item_classes]
+    df_predictions['_unit_index'] = range(len(item_classes))
+
+    # Use the _unit_index to map to the original _unit_id
+    df_predictions['_unit_id'] = df_predictions['_unit_index']\
+                                 .apply(lambda i: int(index_to_unit_id_map[i]))
+
+    # Calculate the y_mean from the original data and join on _unit_id
+    df[label] = df[label].astype(float)
+    mean_labels = df.groupby('_unit_id', as_index=False)[label]\
+                   .mean()\
+                   .rename(index=int, columns={label: LABEL_MEAN})
+    df_predictions = pd.merge(mean_labels, df_predictions, on='_unit_id')
+
+    return df_predictions
+
 def main(FLAGS):
-    # configure logging
     logging.basicConfig(level=logging.INFO)
 
     # load data, each row is an annotation
     n_examples= FLAGS.n_examples
     label = FLAGS.label
-
     df = load_data(FLAGS.data_path)[0:n_examples]
 
     logging.info('Running on {0} examples for label {1}'.format(len(df), label))
 
     # convert responses to counts
-    (items, raters, classes, counts) = responses_to_counts(df, label)
+    items, raters, classes, counts, index_to_unit_id_map = responses_to_counts(df, label)
+
     logging.info('num items: {0}'.format(len(items)))
     logging.info('num raters: {0}'.format(len(raters)))
     logging.info('num classes: {0}'.format(len(classes)))
@@ -372,6 +401,15 @@ def main(FLAGS):
         items, raters, classes, counts, label=label, max_iter=50, tol=.1)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
+
+    df_predictions = parse_results(df, label, item_classes, index_to_unit_id_map)
+
+    # save error_rates, item_classes and class_marginals
+    # TK
+
+    # save predictions as CSV to Cloud Storage
+
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
