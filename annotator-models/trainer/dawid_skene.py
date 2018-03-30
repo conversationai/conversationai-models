@@ -41,7 +41,8 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
     # item_classes is a matrix of estimates of true item classes of size
     # [items, classes]
-    item_classes = initialize(counts)
+    #item_classes = initialize(counts)
+    item_classes = random_initialization(counts)
 
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-ER\tdelta-Y_hat')
 
@@ -51,7 +52,7 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
         # M-step - updated error rates and class marginals given new
         #          distribution over true item classes
-        old_item_classes=item_classes
+        old_item_classes = item_classes
         (class_marginals, error_rates) = m_step(counts, item_classes)
 
         # E-setp - calculate expected item classes given error rates and
@@ -64,7 +65,8 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
         # check for convergence
         if old_class_marginals is not None:
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
-            error_rates_diff = np.sum(np.abs(error_rates - old_error_rates))
+            # error_rates_diff = np.sum(np.abs(error_rates - old_error_rates))
+            error_rates_diff = np.sum(np.round(np.abs(error_rates - old_error_rates),6))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
             logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}\t{4:.4f}'.format(
@@ -190,19 +192,31 @@ def m_step(counts, item_classes):
     # compute class marginals
     class_marginals = np.sum(item_classes, 0)/float(nItems)
 
-    # compute error rates for each rater, each predicted class
-    # and each true class
+    # # compute error rates for each rater, each predicted class
+    # # and each true class
+    # error_rates_1 = np.matmul(counts.T, item_classes)
+
+    # # Re-order axes so its of size [nItems x nClasses x nClasses]
+    # error_rates_1 = np.einsum('abc->bca', error_rates_1)
+
+    # # Divide each row by the sum of the error rates over all observation classes
+    # sum_over_responses = np.sum(error_rates_1, axis=2)[:,:,None]
+    # error_rates_1 = np.divide(error_rates_1, sum_over_responses, where=sum_over_responses!=0)
+
+    # tol = 1e-8
+    # error_rates_1[np.abs(error_rates_1) < tol] = 0.0
+    # #error_rates_1 = np.round(error_rates_1, 8)
+
     error_rates = np.zeros([nRaters, nClasses, nClasses])
+
     for k in range(nRaters):
-        for j in range(nClasses):
-            for l in range(nClasses):
+        error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
 
-                error_rates[k, j, l] = np.dot(item_classes[:,j], counts[:,k,l])
+        sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
 
-            # normalize by summing over all observation classes
-            sum_over_responses = np.sum(error_rates[k,j,:])
-            if sum_over_responses > 0:
-                error_rates[k,j,:] = error_rates[k,j,:]/float(sum_over_responses)
+        # Divide each row by the sum over all observation classes
+        error_rates[k,:,:] = np.divide(
+            error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
 
     return (class_marginals, error_rates)
 
@@ -364,7 +378,8 @@ if __name__ == '__main__':
     parser.add_argument('--data-path',
                         help='The path to data to run on, local or in Cloud Storage.')
     parser.add_argument('--n_examples',
-                        help='The number of annotations to use.', default=10000000)
+                        help='The number of annotations to use.', default=10000000,
+                        type=int)
     parser.add_argument('--label', help='The label to train on, e.g. "obscene" or "threat"',
                         default='obscene')
     parser.add_argument("--job-dir", type=str, default="",
