@@ -17,7 +17,7 @@
 #
 
 # Edit these!
-BUCKET_NAME=kaggle-model-experiments
+BUCKET_NAME=annotator_models
 CONFIG=gpu_config.yaml
 JOB_NAME=${USER}_kaggle_training
 
