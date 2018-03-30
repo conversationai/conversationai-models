@@ -11,6 +11,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
 import numpy as np
 import pandas as pd
 import os
@@ -98,7 +99,8 @@ class ModelRunner():
         batch_size=self.hparams.batch_size,
         epochs=self.hparams.epochs,
         validation_split=0.1,
-        callbacks=callbacks)
+        callbacks=callbacks,
+        verbose=2)
 
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
@@ -183,13 +185,17 @@ if __name__ == '__main__':
   FLAGS = parser.parse_args()
 
   hparams = DEFAULT_HPARAMS
-  hparams.parse({
-      'learning_rate': FLAGS.learning_rate,
-      'dropout_rate': FLAGS.dropout_rate,
-      'batch_size': FLAGS.batch_size
-  })
+  hparams.learning_rate = FLAGS.learning_rate
+  hparams.dropout_rate = FLAGS.dropout_rate
+  hparams.batch_size = FLAGS.batch_size
 
-  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=FLAGS.log_path, hparams=hparams)
+  trial_log_path = os.path.join(
+      FLAGS.log_path,
+      json.loads(
+          os.environ.get('TF_CONFIG', '{}')
+      ).get('task', {}).get('trial', '')
+  )
+  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
