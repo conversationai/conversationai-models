@@ -43,7 +43,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.5,
     batch_size=128,
-    epochs=10,
+    epochs=1,
     sequence_length=250,
     embedding_dim=100,
     train_embedding=False,
@@ -100,7 +100,7 @@ class ModelRunner():
         epochs=self.hparams.epochs,
         validation_split=0.1,
         callbacks=callbacks,
-        verbose=2)
+        verbose=2) # Output one line per epoch
 
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
@@ -189,6 +189,7 @@ if __name__ == '__main__':
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
 
+  # Used to scope logs to a given trial (when hyper param tuning) so that they don't run over each other.
   trial_log_path = os.path.join(
       FLAGS.log_path,
       json.loads(
