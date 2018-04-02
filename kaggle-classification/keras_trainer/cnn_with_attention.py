@@ -62,14 +62,9 @@ class CNNWithAttention(base_model.BaseModel):
     X = Dropout(self.hparams.dropout_rate)(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
-    toxic_out = Dense(1, activation='sigmoid', name='toxic')(X)
-    severe_toxic_out = Dense(1, activation='sigmoid', name='severe_toxic')(X)
-    obscene_out = Dense(1, activation='sigmoid', name='obscene')(X)
-    threat_out = Dense(1, activation='sigmoid', name='threat')(X)
-    insult_out = Dense(1, activation='sigmoid', name='insult')(X)
-    identity_hate_out = Dense(1, activation='sigmoid', name='identity_hate')(X)
+    Output = Dense(6, activation='sigmoid', name='outputs')(X)
 
-    model = Model(inputs=I, outputs=[toxic_out, severe_toxic_out, obscene_out, threat_out, insult_out, identity_hate_out])
+    model = Model(inputs=I, outputs=Output)
     model.compile(optimizer='rmsprop',
                   loss='binary_crossentropy',
                   metrics=['accuracy', auc_roc])

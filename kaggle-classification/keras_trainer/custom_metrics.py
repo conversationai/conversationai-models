@@ -11,7 +11,7 @@ import tensorflow as tf
 
 def auc_roc(y_true, y_pred):
   # any tensorflow metric
-  value, update_op = tf.contrib.metrics.streaming_auc(y_pred, y_true)
+  value, update_op = tf.metrics.auc(y_true, y_pred)
 
   # find all variables created for this metric
   metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]

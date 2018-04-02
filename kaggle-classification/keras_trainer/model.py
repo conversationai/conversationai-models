@@ -42,7 +42,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
     dropout_rate=0.5,
     batch_size=128,
-    epochs=10,
+    epochs=1,
     sequence_length=250,
     embedding_dim=100,
     train_embedding=False,
@@ -83,7 +83,7 @@ class ModelRunner():
     else:
       raise ValueError('You have specified an invalid model type.')
     train_comment = self._prep_texts(train['comment_text'])
-    train_labels = [train[label] for label in LABELS]
+    train_labels = np.array(list(zip(*[train[label] for label in LABELS])))
 
     callbacks = [
         ModelCheckpoint(
@@ -115,13 +115,13 @@ class ModelRunner():
 
   def score_auc(self, data):
     predictions = self.predict(data['comment_text'])
-    scores = []
-    for idx, label in enumerate(LABELS):
-      labels = np.array(data[label])
-      score = metrics.roc_auc_score(labels, predictions[idx].flatten())
-      scores.append(score)
-      print('{} has AUC {}'.format(label, score))
-    print('Avg AUC {}'.format(np.mean(scores)))
+    # Get an array where each element is a list of all the labels for the
+    # specific instance.
+    labels = np.array(list(zip(*[data[label] for label in LABELS])))
+    individual_auc_scores = metrics.roc_auc_score(labels, predictions, average=None)
+    print("Individual AUCs: {}".format(list(zip(LABELS, individual_auc_scores))))
+    mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
+    print("Mean AUC: {}".format(mean_auc_score))
 
   def _prep_texts(self, texts):
     return pad_sequences(self.tokenizer.texts_to_sequences(texts), maxlen=self.hparams.sequence_length)
