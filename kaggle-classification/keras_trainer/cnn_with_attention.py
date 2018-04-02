@@ -62,9 +62,9 @@ class CNNWithAttention(base_model.BaseModel):
     X = Dropout(self.hparams.dropout_rate)(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
-    O = Dense(6, activation='sigmoid', name='outputs')(X)
+    Output = Dense(6, activation='sigmoid', name='outputs')(X)
 
-    model = Model(inputs=I, outputs=O)
+    model = Model(inputs=I, outputs=Output)
     model.compile(optimizer='rmsprop',
                   loss='binary_crossentropy',
                   metrics=['accuracy', auc_roc])
