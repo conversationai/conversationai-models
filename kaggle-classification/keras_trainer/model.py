@@ -189,13 +189,16 @@ if __name__ == '__main__':
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
 
-  # Used to scope logs to a given trial (when hyper param tuning) so that they don't run over each other.
+  # Used to scope logs to a given trial (when hyper param tuning) so that they
+  # don't run over each other. When running locally it will just use the passed
+  # in log path.
   trial_log_path = os.path.join(
       FLAGS.log_path,
       json.loads(
           os.environ.get('TF_CONFIG', '{}')
       ).get('task', {}).get('trial', '')
   )
+
   model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
