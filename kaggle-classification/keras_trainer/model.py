@@ -46,7 +46,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     sequence_length=250,
     embedding_dim=100,
     train_embedding=False,
-    model_type='cnn_with_attention',
+    model_type='single_layer_cnn',
     filter_sizes=[3,4,5],
     num_filters=[128,128,128],
     attention_intermediate_size=128)
@@ -115,6 +115,8 @@ class ModelRunner():
 
   def score_auc(self, data):
     predictions = self.predict(data['comment_text'])
+    # Get an array where each element is a list of all the labels for the
+    # specific instance.
     labels = np.array(list(zip(*[data[label] for label in LABELS])))
     individual_auc_scores = metrics.roc_auc_score(labels, predictions, average=None)
     print("Individual AUCs: {}".format(list(zip(LABELS, individual_auc_scores))))
