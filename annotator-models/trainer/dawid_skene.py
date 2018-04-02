@@ -12,6 +12,7 @@ Series C (Applied Statistics), Vol. 28, No. 1, pp. 20-28.
 
 import argparse
 import tensorflow as tf
+from scipy import stats
 import logging
 import numpy as np
 import pandas as pd
@@ -41,10 +42,10 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
     # item_classes is a matrix of estimates of true item classes of size
     # [items, classes]
-    #item_classes = initialize(counts)
-    item_classes = random_initialization(counts)
+    item_classes = initialize(counts)
+    # item_classes = random_initialization(counts)
 
-    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-ER\tdelta-Y_hat')
+    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
 
     # while not converged do:
     while not converged:
@@ -65,14 +66,13 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
         # check for convergence
         if old_class_marginals is not None:
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
-            # error_rates_diff = np.sum(np.abs(error_rates - old_error_rates))
-            error_rates_diff = np.sum(np.round(np.abs(error_rates - old_error_rates),6))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}\t{4:.4f}'.format(
-                iter, log_L, class_marginals_diff, error_rates_diff, item_class_diff))
+            logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}'.format(
+                iter, log_L, class_marginals_diff, item_class_diff))
 
-            if (class_marginals_diff < tol and error_rates_diff < tol) or iter > max_iter:
+
+            if (class_marginals_diff < tol and item_class_diff < tol) or iter > max_iter:
                 converged = True
         else:
             logging.info('{0}\t{1:.1f}'.format(iter, log_L))
@@ -192,33 +192,32 @@ def m_step(counts, item_classes):
     # compute class marginals
     class_marginals = np.sum(item_classes, 0)/float(nItems)
 
-    # # compute error rates for each rater, each predicted class
-    # # and each true class
-    # error_rates_1 = np.matmul(counts.T, item_classes)
+    # compute error rates for each rater, each predicted class
+    # and each true class
+    error_rates_1 = np.matmul(counts.T, item_classes)
 
-    # # Re-order axes so its of size [nItems x nClasses x nClasses]
-    # error_rates_1 = np.einsum('abc->bca', error_rates_1)
+    # Re-order axes so its of size [nItems x nClasses x nClasses]
+    error_rates_1 = np.einsum('abc->bca', error_rates_1)
 
-    # # Divide each row by the sum of the error rates over all observation classes
-    # sum_over_responses = np.sum(error_rates_1, axis=2)[:,:,None]
-    # error_rates_1 = np.divide(error_rates_1, sum_over_responses, where=sum_over_responses!=0)
-
+    # Divide each row by the sum of the error rates over all observation classes
+    sum_over_responses = np.sum(error_rates_1, axis=2)[:,:,None]
+    error_rates_1 = np.divide(error_rates_1, sum_over_responses, where=sum_over_responses!=0)
+    #error_rates_1 = np.round(error_rates_1, 5)
     # tol = 1e-8
     # error_rates_1[np.abs(error_rates_1) < tol] = 0.0
-    # #error_rates_1 = np.round(error_rates_1, 8)
 
-    error_rates = np.zeros([nRaters, nClasses, nClasses])
+    # error_rates = np.zeros([nRaters, nClasses, nClasses])
 
-    for k in range(nRaters):
-        error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
+    # for k in range(nRaters):
+    #     # [nClasses, nClasses] = [nClasses x nItems], [nItems, nClasses]
+    #     error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
+    #     sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
 
-        sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
+    #     # Divide each row by the sum over all observation classes
+    #     error_rates[k,:,:] = np.divide(
+    #         error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
 
-        # Divide each row by the sum over all observation classes
-        error_rates[k,:,:] = np.divide(
-            error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
-
-    return (class_marginals, error_rates)
+    return (class_marginals, error_rates_1)
 
 def e_step(counts, class_marginals, error_rates):
     """
@@ -242,6 +241,12 @@ def e_step(counts, class_marginals, error_rates):
     item_classes = np.zeros([nItems, nClasses])
 
     for i in range(nItems):
+
+        # counts_i = np.stack([counts[i,:,:],counts[i,:,:]],axis=1)
+        # estimate_1 = np.prod(np.power(error_rates,counts_i), axis=(0,2))
+        # estimate_1 = class_marginals *  estimate_1
+        # item_classes[i,:] = estimate_1
+
         for j in range(nClasses):
             estimate = class_marginals[j]
             estimate *= np.prod(np.power(error_rates[:,j,:], counts[i,:,:]))
@@ -400,7 +405,7 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items, raters, classes, counts, label=label, max_iter=50, tol=.1)
+        items, raters, classes, counts, label=label, max_iter=18, tol=.1)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
@@ -411,9 +416,8 @@ def main(FLAGS):
 
     # save predictions as CSV to Cloud Storage
     n = len(df)
-    path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
-
-    with tf.gfile.Open(path, 'w') as fileobj:
+    prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+    with tf.gfile.Open(prediction_path, 'w') as fileobj:
       df_predictions.to_csv(fileobj, encoding='utf-8')
 
 
@@ -427,7 +431,10 @@ if __name__ == '__main__':
     parser.add_argument('--label', help='The label to train on, e.g. "obscene" or "threat"',
                         default='obscene')
     parser.add_argument("--job-dir", type=str, default="",
-                        help="The directory where the job is staged")
+                        help="The directory where the job is staged.")
+    parser.add_argument('--max-iter',
+                        help='The max number of iteration to run.', type=int,
+                        default=25)
 
     FLAGS = parser.parse_args()
 
