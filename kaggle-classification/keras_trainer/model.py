@@ -11,6 +11,7 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+import json
 import numpy as np
 import pandas as pd
 import os
@@ -76,7 +77,7 @@ class ModelRunner():
     self.embeddings_matrix = self._setup_embeddings_matrix()
     print('Loading model...')
     self._load_model()
-  
+
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
       model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
@@ -98,7 +99,8 @@ class ModelRunner():
         batch_size=self.hparams.batch_size,
         epochs=self.hparams.epochs,
         validation_split=0.1,
-        callbacks=callbacks)
+        callbacks=callbacks,
+        verbose=2) # Output one line per epoch
 
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
@@ -171,15 +173,33 @@ if __name__ == '__main__':
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
       '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+
+  # Hyper-parameters
   parser.add_argument(
-      '--hparams', type=str, default='', help='Comma separated list of "name=value" pairs.')
+      '--learning_rate', type=float, default=0.00005, help='Learning rate.')
+  parser.add_argument(
+      '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
+  parser.add_argument(
+      '--batch_size', type=int, default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
   hparams = DEFAULT_HPARAMS
-  hparams.parse(FLAGS.hparams)
+  hparams.learning_rate = FLAGS.learning_rate
+  hparams.dropout_rate = FLAGS.dropout_rate
+  hparams.batch_size = FLAGS.batch_size
 
-  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=FLAGS.log_path, hparams=hparams)
+  # Used to scope logs to a given trial (when hyper param tuning) so that they
+  # don't run over each other. When running locally it will just use the passed
+  # in log path.
+  trial_log_path = os.path.join(
+      FLAGS.log_path,
+      json.loads(
+          os.environ.get('TF_CONFIG', '{}')
+      ).get('task', {}).get('trial', '')
+  )
+
+  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
