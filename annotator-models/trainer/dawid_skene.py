@@ -58,7 +58,7 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
         # E-setp - calculate expected item classes given error rates and
         #          class marginals
-        item_classes = e_step(counts, class_marginals, error_rates)
+        item_classes = e_step_verbose(counts, class_marginals, error_rates)
 
         # check likelihood
         log_L = calc_likelihood(counts, class_marginals, error_rates)
@@ -194,30 +194,53 @@ def m_step(counts, item_classes):
 
     # compute error rates for each rater, each predicted class
     # and each true class
-    error_rates_1 = np.matmul(counts.T, item_classes)
+    error_rates = np.matmul(counts.T, item_classes)
 
-    # Re-order axes so its of size [nItems x nClasses x nClasses]
-    error_rates_1 = np.einsum('abc->bca', error_rates_1)
+    # reorder axes so its of size [nItems x nClasses x nClasses]
+    error_rates = np.einsum('abc->bca', error_rates)
 
-    # Divide each row by the sum of the error rates over all observation classes
-    sum_over_responses = np.sum(error_rates_1, axis=2)[:,:,None]
-    error_rates_1 = np.divide(error_rates_1, sum_over_responses, where=sum_over_responses!=0)
-    #error_rates_1 = np.round(error_rates_1, 5)
-    # tol = 1e-8
-    # error_rates_1[np.abs(error_rates_1) < tol] = 0.0
+    # divide each row by the sum of the error rates over all observation classes
+    sum_over_responses = np.sum(error_rates, axis=2)[:,:,None]
+    error_rates = np.divide(error_rates, sum_over_responses, where=sum_over_responses!=0)
 
-    # error_rates = np.zeros([nRaters, nClasses, nClasses])
+    return (class_marginals, error_rates)
 
-    # for k in range(nRaters):
-    #     # [nClasses, nClasses] = [nClasses x nItems], [nItems, nClasses]
-    #     error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
-    #     sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
+def m_step_verbose(counts, item_classes):
+    """
+    Get estimates for the prior class probabilities (p_j) and the error
+    rates (pi_jkl) using MLE with current estimates of true item classes
+    See equations 2.3 and 2.4 in Dawid-Skene (1979)
 
-    #     # Divide each row by the sum over all observation classes
-    #     error_rates[k,:,:] = np.divide(
-    #         error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
+    Same as m_step function but with embedded for loops. For verbose, less
+    fast, but more readable.
 
-    return (class_marginals, error_rates_1)
+    Input:
+      counts: Array of how many times each rating was given by each rater
+        for each item
+      item_classes: Matrix of current assignments of items to classes
+
+    Returns:
+      p_j: class marginals [classes]
+      pi_kjl: error rates - the probability of rater k giving
+          response l for an item in class j [observers, classes, classes]
+    """
+    [nItems, nRaters, nClasses] = np.shape(counts)
+
+    # compute class marginals
+    class_marginals = np.sum(item_classes, 0)/float(nItems)
+
+    # computer error rates
+    error_rates = np.zeros([nRaters, nClasses, nClasses])
+    for k in range(nRaters):
+        # [nClasses, nClasses] = [nClasses x nItems], [nItems, nClasses]
+        error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
+        sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
+
+        # divide each row by the sum over all observation classes
+        error_rates[k,:,:] = np.divide(
+            error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
+
+    return (class_marginals, error_rates)
 
 def e_step(counts, class_marginals, error_rates):
     """
@@ -242,11 +265,40 @@ def e_step(counts, class_marginals, error_rates):
 
     for i in range(nItems):
 
-        # counts_i = np.stack([counts[i,:,:],counts[i,:,:]],axis=1)
-        # estimate_1 = np.prod(np.power(error_rates,counts_i), axis=(0,2))
-        # estimate_1 = class_marginals *  estimate_1
-        # item_classes[i,:] = estimate_1
+        counts_i = np.stack([counts[i,:,:],counts[i,:,:]],axis=1)
+        estimate_1 = np.prod(np.power(error_rates,counts_i), axis=(0,2))
+        estimate_1 = class_marginals *  estimate_1
+        item_classes[i,:] = estimate_1
 
+        # normalize error rates by dividing by the sum over all classes
+        item_sum = np.sum(item_classes[i,:])
+        if item_sum > 0:
+            item_classes[i,:] = item_classes[i,:]/float(item_sum)
+
+    return item_classes
+
+def e_step_verbose(counts, class_marginals, error_rates):
+    """
+    Determine the probability of each item belonging to each class,
+    given current ML estimates of the parameters from the M-step
+    See equation 2.5 in Dawid-Skene (1979)
+
+    Inputs:
+      counts: Array of how many times each rating was given
+          by each rater for each item
+      class_marginals: probability of a random item belonging to each class
+      error_rates: probability of rater k assigning a item in class j
+          to class l [raters, classes, classes]
+
+    Returns:
+      item_classes: Soft assignments of items to classes
+          [items x classes]
+    """
+    [nItems, nRaters, nClasses] = np.shape(counts)
+
+    item_classes = np.zeros([nItems, nClasses])
+
+    for i in range(nItems):
         for j in range(nClasses):
             estimate = class_marginals[j]
             estimate *= np.prod(np.power(error_rates[:,j,:], counts[i,:,:]))
