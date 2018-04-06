@@ -43,7 +43,6 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
     # item_classes is a matrix of estimates of true item classes of size
     # [items, classes]
     item_classes = initialize(counts)
-    # item_classes = random_initialization(counts)
 
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
 
@@ -70,7 +69,6 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='aver
 
             logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}'.format(
                 iter, log_L, class_marginals_diff, item_class_diff))
-
 
             if (class_marginals_diff < tol and item_class_diff < tol) or iter > max_iter:
                 converged = True
