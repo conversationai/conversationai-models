@@ -14,12 +14,11 @@ import argparse
 import tensorflow as tf
 from scipy import stats
 import logging
+import math
 import numpy as np
 import pandas as pd
 import sys
 import time
-
-np.set_printoptions(precision=2, suppress=True)
 
 FLAGS = None
 
@@ -194,12 +193,16 @@ def m_step(counts, item_classes):
     # and each true class
     error_rates = np.matmul(counts.T, item_classes)
 
+    # round very low error rates
+    error_rates[np.abs(error_rates) < 1e-10] = 0
+
     # reorder axes so its of size [nItems x nClasses x nClasses]
     error_rates = np.einsum('abc->bca', error_rates)
 
     # divide each row by the sum of the error rates over all observation classes
     sum_over_responses = np.sum(error_rates, axis=2)[:,:,None]
-    error_rates = np.divide(error_rates, sum_over_responses, where=sum_over_responses!=0)
+    error_rates = np.divide(error_rates, sum_over_responses,
+                            where=sum_over_responses!=0)
 
     return (class_marginals, error_rates)
 
@@ -306,8 +309,10 @@ def e_step_verbose(counts, class_marginals, error_rates):
         # normalize error rates by dividing by the sum over all classes
         item_sum = np.sum(item_classes[i,:])
 
-        if abs(item_sum) > 1e-15:
-            item_classes[i,:] = item_classes[i,:]/float(item_sum)
+        if item_sum == 0 or math.isnan(item_sum):
+            continue
+
+        item_classes[i,:] = item_classes[i,:]/float(item_sum)
 
     return item_classes
 
@@ -436,8 +441,42 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map):
 
     return df_predictions
 
-def parse_error_rates(df, label, index_to_unit_id_map):
-    pass
+def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
+    """
+    Given the original data DataFrame, the predicted error_rates and the mappings
+    between the indexes and ids, returns a DataFrame with the fields:
+
+      * _worker_index: the 0,1,...nItems index
+      * _worker_id: the original item ID
+      * _error_rate_{k}_{k}: probability the worker would choose class k when
+          the true class is k (for accurate workers, these numbers are high).
+    """
+    columns = ['_worker_id', '_worker_index']
+
+    df_error_rates = pd.DataFrame()
+
+    # add the integer _worker_index
+    df_error_rates['_worker_index'] = index_to_worker_id_map.keys()
+
+    # add the original _worker_id
+    df_error_rates['_worker_id'] = [j for (i,j) in index_to_worker_id_map.items()]
+
+    # add annotation counts for each worker
+
+    worker_counts = df.groupby(
+        by='_worker_id', as_index=False)['_unit_id']\
+                      .count()\
+                      .rename(index=int, columns={'_unit_id': 'n_annotations'})
+
+    df_error_rates = pd.merge(df_error_rates, worker_counts, on='_worker_id')
+
+    # add the diagonal error rates, i.e. for each class k, add a column
+    # for p(rater will pick k | the item's true class is k)
+    for y_index in index_to_y_map.keys():
+        col_name = 'error_rate_{0}_{0}'.format(y_index)
+        df_error_rates[col_name] = [e[y_index, y_index] for e in error_rates]
+
+    return df_error_rates
 
 def main(FLAGS):
     logging.basicConfig(level=logging.INFO)
@@ -499,20 +538,17 @@ def main(FLAGS):
     df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map)
 
     # join rater error_rates
-    #df_error_rates = parse_error_rates(df, label, item_classes, index_to_unit_id_map)
+    df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map)
 
-    # save error_rates, item_classes and class_marginals
-
-    # save predictions as CSV to Cloud Storage
+    # save predictions and error_rates as CSV
     n = len(df)
     prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
-    error_rates_path = '{0}/error_rates.csv'.format(FLAGS.job_dir)
+    error_rates_path = '{0}/error_rates_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
       df_predictions.to_csv(fileobj, encoding='utf-8')
 
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
-      df.to_csv(fileobj, encoding='utf-8')
-
+      df_error_rates.to_csv(fileobj, encoding='utf-8', index=False)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
