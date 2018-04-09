@@ -23,7 +23,7 @@ np.set_printoptions(precision=2, suppress=True)
 
 FLAGS = None
 
-def run(items, raters, classes, counts, label, tol=0.1, max_iter=100, init='average'):
+def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='average'):
     """
     Run the Dawid-Skene estimator on response data
 
@@ -305,7 +305,8 @@ def e_step_verbose(counts, class_marginals, error_rates):
 
         # normalize error rates by dividing by the sum over all classes
         item_sum = np.sum(item_classes[i,:])
-        if item_sum > 0:
+
+        if abs(item_sum) > 1e-15:
             item_classes[i,:] = item_classes[i,:]/float(item_sum)
 
     return item_classes
@@ -403,7 +404,7 @@ def majority_voting(counts):
 
     return item_classes
 
-def parse_results(df, label, item_classes, index_to_unit_id_map):
+def parse_item_classes(df, label, item_classes, index_to_unit_id_map):
     """
     Given the original data df, the predicted item_classes, and
     the data mappings, returns a DataFrame with the fields:
@@ -435,6 +436,9 @@ def parse_results(df, label, item_classes, index_to_unit_id_map):
 
     return df_predictions
 
+def parse_error_rates(df, label, index_to_unit_id_map):
+    pass
+
 def main(FLAGS):
     logging.basicConfig(level=logging.INFO)
 
@@ -445,30 +449,69 @@ def main(FLAGS):
 
     logging.info('Running on {0} examples for label {1}'.format(len(df), label))
 
-    # convert responses to counts
-    items, raters, classes, counts, index_to_unit_id_map = responses_to_counts(df, label)
+    # convert rater, item and label IDs to integers starting at 0
+    #
+    #   * worker_id_to_index_map: _worker_id -> index
+    #   * index_to_worker_id_map: index -> worker
+    #   * unit_id_to_index_map: _unit_id -> index
+    #   * index_to_unit_id_map: index -> _unit_id
+    #   * y_to_index_map: label -> index
+    #   * index_to_y_map: index -> label
+    worker_id_to_index_map = {w: i for (i,w) in enumerate(df["_worker_id"].unique())}
+    index_to_worker_id_map = {i: w for (w,i) in  worker_id_to_index_map.items()}
+    unit_id_to_index_map = {w: i for (i,w) in enumerate(df['_unit_id'].unique())}
+    index_to_unit_id_map = {i: w for (w,i) in  unit_id_to_index_map.items()}
+    y_to_index_map = {w: i for (i,w) in enumerate(df[label].unique())}
+    index_to_y_map = {i: w for (w,i) in  y_to_index_map.items()}
 
-    logging.info('num items: {0}'.format(len(items)))
-    logging.info('num raters: {0}'.format(len(raters)))
-    logging.info('num classes: {0}'.format(len(classes)))
+    # create list of unique raters, items and labels
+    raters = list(df['_worker_id'].apply(lambda x: worker_id_to_index_map[x]))
+    items = list(df['_unit_id'].apply(lambda x: unit_id_to_index_map[x]))
+    y = list(df[label].apply(lambda x: y_to_index_map[x]))
+
+    nClasses = len(df[label].unique())
+    nItems = len(df['_unit_id'].unique())
+    nRaters = len(df['_worker_id'].unique())
+    counts = np.zeros([nItems, nRaters, nClasses])
+
+    # convert responses to counts
+    for i,item_index in enumerate(items):
+        rater_index = raters[i]
+        y_index = y[i]
+        counts[item_index,rater_index,y_index] += 1
+
+    raters_unique = index_to_worker_id_map.keys()
+    items_unique = index_to_unit_id_map.keys()
+    classes_unique = index_to_y_map.keys()
+
+    logging.info('num items: {0}'.format(len(items_unique)))
+    logging.info('num raters: {0}'.format(len(raters_unique)))
+    logging.info('num classes: {0}'.format(len(classes_unique)))
 
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items, raters, classes, counts, label=label, max_iter=18, tol=.1)
+        items_unique, raters_unique, classes_unique, counts, label=label, tol=.1)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
-    df_predictions = parse_results(df, label, item_classes, index_to_unit_id_map)
+    # join comment_text, old labels and new labels
+    df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map)
+
+    # join rater error_rates
+    #df_error_rates = parse_error_rates(df, label, item_classes, index_to_unit_id_map)
 
     # save error_rates, item_classes and class_marginals
-    # TK
 
     # save predictions as CSV to Cloud Storage
     n = len(df)
     prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+    error_rates_path = '{0}/error_rates.csv'.format(FLAGS.job_dir)
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
       df_predictions.to_csv(fileobj, encoding='utf-8')
+
+    with tf.gfile.Open(error_rates_path, 'w') as fileobj:
+      df.to_csv(fileobj, encoding='utf-8')
 
 
 if __name__ == '__main__':
