@@ -1,6 +1,6 @@
 # Modeling Anotators
 
-This is an implementation of the Dawid-Skene algorithm to model annotator error rate and get predictions of true comment labels.
+This is an implementation of the [Dawid-Skene algorithm](http://crowdsourcing-class.org/readings/downloads/ml/EM.pdf) to model annotator error rate and get predictions of true comment labels.
 
 ## To Run Locally
 
@@ -55,3 +55,8 @@ This is an implementation of the Dawid-Skene algorithm to model annotator error 
     Google Cloud (you can run `gcloud auth application-default login` to do
     this) and you must have access to the cloud bucket where the data is located
     (you can test this by running `gsutil ls  gs://kaggle-model-experiments/`).
+
+5. The output will be written to the job directory specified in the run script.
+It will output a file that looks like `error_rates_{LABEL}_{N_ANNOTATIONS}.csv`
+with the per-worker error rates and a file that looks like `predictions_{LABEL}_{N_ANNOTATIONS}.csv`
+that has the predicted labels.
