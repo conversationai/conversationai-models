@@ -34,7 +34,7 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='avera
     """
 
     # initialize
-    iter = 0
+    iteration = 0
     converged = False
     old_class_marginals = None
     old_error_rates = None
@@ -45,16 +45,15 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='avera
 
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
 
-    # while not converged do:
     while not converged:
-        iter += 1
+        iteration += 1
 
         # M-step - updated error rates and class marginals given new
         #          distribution over true item classes
         old_item_classes = item_classes
         (class_marginals, error_rates) = m_step(counts, item_classes)
 
-        # E-setp - calculate expected item classes given error rates and
+        # E-step - calculate expected item classes given error rates and
         #          class marginals
         item_classes = e_step_verbose(counts, class_marginals, error_rates)
 
@@ -66,20 +65,20 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='avera
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.1f}\t{2:.4f}\t{3:.4f}'.format(
-                iter, log_L, class_marginals_diff, item_class_diff))
+            logging.info('{0}\t{1:.1f}\t\t{2:.4f}\t\t{3:.4f}'.format(
+                iteration, log_L, class_marginals_diff, item_class_diff))
 
-            if (class_marginals_diff < tol and item_class_diff < tol) or iter > max_iter:
+            if (class_marginals_diff < tol and item_class_diff < tol) \
+               or iteration > max_iter:
                 converged = True
         else:
-            logging.info('{0}\t{1:.1f}'.format(iter, log_L))
+            logging.info('{0}\t{1:.1f}'.format(iteration, log_L))
 
         # update current values
         old_class_marginals = class_marginals
         old_error_rates = error_rates
 
     return class_marginals, error_rates, item_classes
-
 
 def load_data(path):
     logging.info('Loading data from {0}'.format(path))
@@ -139,7 +138,6 @@ def responses_to_counts(df, label):
 
     return unique_items, unique_raters, unique_classes, counts, index_to_unit_id_map
 
-
 def initialize(counts):
     """
     Get initial estimates for the true item classes using counts
@@ -192,9 +190,6 @@ def m_step(counts, item_classes):
     # compute error rates for each rater, each predicted class
     # and each true class
     error_rates = np.matmul(counts.T, item_classes)
-
-    # round very low error rates
-    error_rates[np.abs(error_rates) < 1e-10] = 0
 
     # reorder axes so its of size [nItems x nClasses x nClasses]
     error_rates = np.einsum('abc->bca', error_rates)
