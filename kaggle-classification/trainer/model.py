@@ -199,7 +199,7 @@ def get_cnn_model(embedding_size, num_filters, dropout_keep_prob):
       scores = tf.nn.xw_plus_b(h_drop, W, b, name="scores")
 
     return estimator_spec_for_softmax_classification(
-      logits=scores, labels=labels, mode=mode, learning_rate = FLAGS.learning_rate)
+      logits=scores, labels=labels, mode=mode, learning_rate=FLAGS.learning_rate)
   return cnn_model
 
 def bag_of_words_model(features, labels, mode):
@@ -224,7 +224,7 @@ def bag_of_words_model(features, labels, mode):
   logits = tf.layers.dense(bow, MAX_LABEL, activation=None)
 
   return estimator_spec_for_softmax_classification(
-      logits=logits, labels=labels, mode=mode)
+      logits=logits, labels=labels, mode=mode, learning_rate=FLAGS.learning_rate)
 
 def main(FLAGS):
     global n_words
