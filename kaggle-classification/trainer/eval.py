@@ -1,12 +1,12 @@
 """
 Evaluates a model on data. Takes a path to a directory with a TensorFlow
-SavedModel and a path to a CSV with data, and outputs the predictions of the
-model on the data.
+SavedModel and a path to a CSV with data, and writes the predictions of the
+model on the data to the same directory as the provided model_dir.
 
 Example usage:
 
 python trainer/eval.py  \
-  --model_dir=saved_models/{timestamp}/ \
+  --model_dir={path_to_saved_model}/ \
   --test_data=local_data/test.csv
   --n_examples=1000
 """
@@ -57,7 +57,6 @@ def predict(data, saved_model):
     return scores
 
 def load_model(session, model_dir):
-
     """Loads SavedModelPredictor model"""
     tf.saved_model.loader.load(
         session, [tf.saved_model.tag_constants.SERVING], model_dir)
