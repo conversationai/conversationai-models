@@ -90,54 +90,6 @@ def load_data(path):
     df = df[df.isnull().any(axis=1) == False]
     return df
 
-def responses_to_counts(df, label):
-    """
-    Convert a matrix of annotations to count data
-
-    Inputs:
-      df: pandas DataFrame that includes columns '_worker_id', '_unit_id' and label
-      label: string of the toxicity type to use, e.g. 'toxic_score' or 'obscene'
-
-    Return:
-      items: list of items
-      raters: list of raters
-      classes: list of possible item classes
-      counts: 3d array of counts: [items x raters x classes]
-    """
-    # _worker_id -> index and index -> worker
-    worker_id_to_index_map = {w: i for (i,w) in enumerate(df["_worker_id"].unique())}
-    index_to_worker_id_map = {i: w for (w,i) in  worker_id_to_index_map.items()}
-
-    # _unit_id -> index and index -> _unit_id
-    unit_id_to_index_map = {w: i for (i,w) in enumerate(df['_unit_id'].unique())}
-    index_to_unit_id_map = {i: w for (w,i) in  unit_id_to_index_map.items()}
-
-    # label -> index and index -> label
-    y_to_index_map = {w: i for (i,w) in enumerate(df[label].unique())}
-    index_to_y_map = {i: w for (w,i) in  y_to_index_map.items()}
-
-    raters = list(df['_worker_id'].apply(lambda x: worker_id_to_index_map[x]))
-    items = list(df['_unit_id'].apply(lambda x: unit_id_to_index_map[x]))
-
-    y = list(df[label].apply(lambda x: y_to_index_map[x]))
-
-    nClasses = len(df[label].unique())
-    nItems = len(df['_unit_id'].unique())
-    nRaters = len(df['_worker_id'].unique())
-    counts = np.zeros([nItems, nRaters, nClasses])
-
-    # convert responses to counts
-    for i,item_index in enumerate(items):
-        rater_index = raters[i]
-        y_index = y[i]
-        counts[item_index,rater_index,y_index] += 1
-
-    unique_raters = index_to_worker_id_map.keys()
-    unique_items = index_to_unit_id_map.keys()
-    unique_classes = index_to_y_map.keys()
-
-    return unique_items, unique_raters, unique_classes, counts, index_to_unit_id_map
-
 def initialize(counts):
     """
     Get initial estimates for the true item classes using counts
