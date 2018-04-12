@@ -20,7 +20,8 @@
 BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
 JOB_NAME=${USER}_kaggle_training
-LABEL=obscene
+LABEL=toxic_score
+MAX_ITER=50
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
@@ -61,4 +62,5 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
      --region $REGION \
      --verbosity debug -- \
      --data-path=gs://annotator_models/dawid_skene_training_data_100k.csv \
-     --label=$LABEL
+     --label=$LABEL \
+     --max-iter=$MAX_ITER

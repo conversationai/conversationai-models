@@ -12,6 +12,7 @@ BUCKET_NAME=annotator_models
 gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
-     --data-path=gs://${BUCKET_NAME}/dawid_skene_training_data_1mil.csv \
-     --label='obscene' \
-     --job-dir='results'
+     --data-path=gs://${BUCKET_NAME}/dawid_skene_training_data_10k.csv \
+     --label='toxic_score' \
+     --job-dir='results' \
+     --max-iter=10
