@@ -21,6 +21,7 @@ import sys
 import time
 
 FLAGS = None
+np.set_printoptions(precision=2)
 
 def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='average'):
     """
@@ -137,7 +138,7 @@ def m_step(counts, item_classes):
     [nItems, nRaters, nClasses] = np.shape(counts)
 
     # compute class marginals
-    class_marginals = np.sum(item_classes, 0)/float(nItems)
+    class_marginals = np.sum(item_classes, axis=0)/float(nItems)
 
     # compute error rates for each rater, each predicted class
     # and each true class
@@ -148,19 +149,25 @@ def m_step(counts, item_classes):
 
     # divide each row by the sum of the error rates over all observation classes
     sum_over_responses = np.sum(error_rates, axis=2)[:,:,None]
-    error_rates = np.divide(error_rates, sum_over_responses,
-                            where=sum_over_responses!=0)
+
+    # for cases where an annotator has never used a label, set their sum over
+    # responses for that label to 1 to avoid nan when we divide. The result will
+    # be error_rate[k, i, j] is 0 if annotator k never used label i.
+    sum_over_responses[sum_over_responses==0] = 1
+
+    error_rates = np.divide(error_rates, sum_over_responses)
 
     return (class_marginals, error_rates)
 
 def m_step_verbose(counts, item_classes):
     """
+    This method is the verbose (i.e. not vectorized) version of the m_step.
+    It is currently not used because the vectorized version is faster, but we
+    leave it here for future debugging.
+
     Get estimates for the prior class probabilities (p_j) and the error
     rates (pi_jkl) using MLE with current estimates of true item classes
     See equations 2.3 and 2.4 in Dawid-Skene (1979)
-
-    Same as m_step function but with embedded for loops. For verbose, less
-    fast, but more readable.
 
     Input:
       counts: Array of how many times each rating was given by each rater
@@ -177,16 +184,19 @@ def m_step_verbose(counts, item_classes):
     # compute class marginals
     class_marginals = np.sum(item_classes, 0)/float(nItems)
 
-    # computer error rates
+    # compute error rates for each rater, each predicted class
+    # and each true class
     error_rates = np.zeros([nRaters, nClasses, nClasses])
     for k in range(nRaters):
-        # [nClasses, nClasses] = [nClasses x nItems], [nItems, nClasses]
-        error_rates[k, :, :] = np.matmul(item_classes.T, counts[:,k,:])
-        sum_over_responses = np.sum(error_rates[k,:,:], axis=1)[:,None]
+        for j in range(nClasses):
+            for l in range(nClasses):
+                error_rates[k, j, l] = np.dot(item_classes[:,j], counts[:,k,l])
 
-        # divide each row by the sum over all observation classes
-        error_rates[k,:,:] = np.divide(
-            error_rates[k,:,:], sum_over_responses, where=sum_over_responses!=0)
+            # normalize by summing over all observation classes
+            sum_over_responses = np.sum(error_rates[k,j,:])
+
+            if sum_over_responses > 0:
+                error_rates[k,j,:] = error_rates[k,j,:]/float(sum_over_responses)
 
     return (class_marginals, error_rates)
 
@@ -213,7 +223,7 @@ def e_step(counts, class_marginals, error_rates):
 
     for i in range(nItems):
 
-        counts_i = np.stack([counts[i,:,:],counts[i,:,:]],axis=1)
+        counts_i = np.stack([counts[i,:,:],counts[i,:,:]], axis=1)
         estimate_1 = np.prod(np.power(error_rates,counts_i), axis=(0,2))
         estimate_1 = class_marginals *  estimate_1
         item_classes[i,:] = estimate_1
@@ -255,7 +265,6 @@ def e_step_verbose(counts, class_marginals, error_rates):
 
         # normalize error rates by dividing by the sum over all classes
         item_sum = np.sum(item_classes[i,:])
-
         if item_sum == 0 or math.isnan(item_sum):
             continue
 
@@ -356,7 +365,7 @@ def majority_voting(counts):
 
     return item_classes
 
-def parse_item_classes(df, label, item_classes, index_to_unit_id_map):
+def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y_map):
     """
     Given the original data df, the predicted item_classes, and
     the data mappings, returns a DataFrame with the fields:
@@ -369,9 +378,30 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map):
     LABEL_HAT = '{}_hat'.format(label)
     LABEL_MEAN = '{}_mean'.format(label)
     ROUND_DEC = 4
+    _, N_ClASSES = np.shape(item_classes)
 
     df_predictions = pd.DataFrame()
-    df_predictions[LABEL_HAT] = [round(i[1], ROUND_DEC) for i in item_classes]
+
+    # Add columns for predictions for each class
+    col_names = []
+    for k in range(N_ClASSES):
+        # y is the original value of the class. When we train, we re-map
+        # all the classes to 0,1,....K. But our data has classes like
+        # -2,-1,0,1,2. In that case, of k is 0, then y would be -2
+        y = index_to_y_map[k]
+        col_name = '{0}_{1}'.format(LABEL_HAT, y)
+        col_names.append(col_name)
+
+        df_predictions[col_name] = [round(i[k], ROUND_DEC) for i in item_classes]
+
+    # To get a prediction of the mean label, multiply our predictions with the
+    # true y values.
+    y_values = index_to_y_map.values()
+    df_predictions['y_hat_mean'] = np.dot(df_predictions[col_names], y_values)
+
+    # Add a column for the mean predictions
+    col_name = '{0}_hat_mean'.format(label)
+
     df_predictions['_unit_index'] = range(len(item_classes))
 
     # Use the _unit_index to map to the original _unit_id
@@ -477,12 +507,14 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items_unique, raters_unique, classes_unique, counts, label=label, tol=.1)
+        items_unique, raters_unique, classes_unique, counts, label=label, tol=.1,
+        max_iter=FLAGS.max_iter)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
     # join comment_text, old labels and new labels
-    df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map)
+    df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map,
+                                        index_to_y_map)
 
     # join rater error_rates
     df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map)
@@ -492,7 +524,7 @@ def main(FLAGS):
     prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
     error_rates_path = '{0}/error_rates_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
-      df_predictions.to_csv(fileobj, encoding='utf-8')
+      df_predictions.to_csv(fileobj, encoding='utf-8', index=False)
 
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
       df_error_rates.to_csv(fileobj, encoding='utf-8', index=False)
