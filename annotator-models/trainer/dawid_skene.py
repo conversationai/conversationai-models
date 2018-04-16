@@ -269,15 +269,11 @@ def e_step_verbose(counts, class_marginals, error_rates):
         for j in range(nClasses):
             estimate = class_marginals[j]
             estimate *= np.prod(np.power(error_rates[:,j,:], counts[i,:,:]))
-
             item_classes[i,j] = estimate
 
-        # normalize error rates by dividing by the sum over all classes
-        item_sum = np.sum(item_classes[i,:])
-        if item_sum == 0 or math.isnan(item_sum):
-            continue
-
-        item_classes[i,:] = item_classes[i,:]/float(item_sum)
+    # normalize error rates by dividing by the sum over all classes
+    item_sum = np.sum(item_classes, axis=1, keepdims=True)
+    item_classes = np.divide(item_classes, np.tile(item_sum, (1, nClasses)))
 
     return item_classes
 
