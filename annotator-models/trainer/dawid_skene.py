@@ -402,7 +402,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     # To get a prediction of the mean label, multiply our predictions with the
     # true y values.
     y_values = index_to_y_map.values()
-    df_predictions['y_hat_mean'] = np.dot(df_predictions[col_names], y_values)
+    df_predictions[label + '_hat_mean'] = np.dot(df_predictions[col_names], y_values)
 
     # Add a column for the mean predictions
     col_name = '{0}_hat_mean'.format(label)
@@ -444,7 +444,6 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
     df_error_rates['_worker_id'] = [j for (i,j) in index_to_worker_id_map.items()]
 
     # add annotation counts for each worker
-
     worker_counts = df.groupby(
         by='_worker_id', as_index=False)['_unit_id']\
                       .count()\
@@ -454,8 +453,11 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
 
     # add the diagonal error rates, i.e. for each class k, add a column
     # for p(rater will pick k | the item's true class is k)
-    for y_index in index_to_y_map.keys():
-        col_name = 'error_rate_{0}_{0}'.format(y_index)
+    #
+    # y_label is the original y value in the data and y_index is the
+    # integer we mapped it tto, i.e. 0, 1, ..., |Y|
+    for y_index, y_label in index_to_y_map.items():
+        col_name = 'error_rate_{0}_{0}'.format(y_label)
         df_error_rates[col_name] = [e[y_index, y_index] for e in error_rates]
 
     return df_error_rates
@@ -524,15 +526,15 @@ def main(FLAGS):
     # join rater error_rates
     df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map)
 
-    # save predictions and error_rates as CSV
+    # write predictions and error_rates out as JSON lines
     n = len(df)
-    prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
-    error_rates_path = '{0}/error_rates_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+    prediction_path = '{0}/predictions_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
+    error_rates_path = '{0}/error_rates_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
-      df_predictions.to_csv(fileobj, encoding='utf-8', index=False)
+      df_predictions.to_json(fileobj, lines=True, orient='records')
 
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
-      df_error_rates.to_csv(fileobj, encoding='utf-8', index=False)
+      df_error_rates.to_json(fileobj, lines=True, orient='records')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
