@@ -44,10 +44,11 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='avera
     # [items, classes]
     item_classes = initialize(counts)
 
-    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
+    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat\tIter Secs')
 
     while not converged:
         iteration += 1
+        start_iter = time.time()
 
         # M-step - updated error rates and class marginals given new
         #          distribution over true item classes
@@ -61,13 +62,16 @@ def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='avera
         # check likelihood
         log_L = calc_likelihood(counts, class_marginals, error_rates)
 
+        # calculate the number of seconds the last iteration took
+        iter_time = time.time() - start_iter
+
         # check for convergence
         if old_class_marginals is not None:
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.1f}\t\t{2:.4f}\t\t{3:.4f}'.format(
-                iteration, log_L, class_marginals_diff, item_class_diff))
+            logging.info('{0}\t{1:.1f}\t{2:.4f}\t\t{3:.2f}\t{4:3.2f}'.format(
+                iteration, log_L, class_marginals_diff, item_class_diff, iter_time))
 
             if (class_marginals_diff < tol and item_class_diff < tol) \
                or iteration > max_iter:
@@ -221,22 +225,27 @@ def e_step(counts, class_marginals, error_rates):
 
     item_classes = np.zeros([nItems, nClasses])
 
-    for i in range(nItems):
+    error_rates_tiled = np.tile(error_rates, (nItems,1,1,1))
+    counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
 
-        counts_i = np.stack([counts[i,:,:],counts[i,:,:]], axis=1)
-        estimate_1 = np.prod(np.power(error_rates,counts_i), axis=(0,2))
-        estimate_1 = class_marginals *  estimate_1
-        item_classes[i,:] = estimate_1
+    power = np.power(error_rates_tiled, counts_tiled)
 
-        # normalize error rates by dividing by the sum over all classes
-        item_sum = np.sum(item_classes[i,:])
-        if item_sum > 0:
-            item_classes[i,:] = item_classes[i,:]/float(item_sum)
+    # Note, multiplying over axis 1 and then 2 is substantially faster than
+    # the equivalent np.prod(power, axis=(1,3)
+    item_classes = class_marginals * np.prod(np.prod(power, axis=1), axis=2)
+
+    # normalize error rates by dividing by the sum over all classes
+    item_sum = np.sum(item_classes, axis=1, keepdims=True)
+    item_classes = np.divide(item_classes, np.tile(item_sum, (1, nClasses)))
 
     return item_classes
 
 def e_step_verbose(counts, class_marginals, error_rates):
     """
+    This method is the verbose (i.e. not vectorized) version of
+    the e_step. It is actually faster than the vectorized e_step
+    function (16 seconds vs 25 seconds respectively on 10k ratings).
+
     Determine the probability of each item belonging to each class,
     given current ML estimates of the parameters from the M-step
     See equation 2.5 in Dawid-Skene (1979)
@@ -333,8 +342,8 @@ def random_initialization(counts):
     # for each item, choose a random initial class, weighted in proportion
     # to the counts from all raters
     for p in range(nItems):
-        average = response_sums[p,:] / np.sum(response_sums[p,:],dtype=float)
-        item_classes[p,np.random.choice(np.arange(nClasses), p=average)] = 1
+        weights = response_sums[p,:] / np.sum(response_sums[p,:],dtype=float)
+        item_classes[p,np.random.choice(np.arange(nClasses), p=weights)] = 1
 
     return item_classes
 
