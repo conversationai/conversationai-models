@@ -454,13 +454,13 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
 
     df_error_rates = pd.merge(df_error_rates, worker_counts, on='_worker_id')
 
-    # add the diagonal error rates, i.e. for each class k, add a column
-    # for p(rater will pick k | the item's true class is k)
-    #
+    # add the diagonal error rates, which are the per-class accuracy rates,
+    # for each class k, we add a column for p(rater will pick k | item's true class is k)
+
     # y_label is the original y value in the data and y_index is the
-    # integer we mapped it tto, i.e. 0, 1, ..., |Y|
+    # integer we mapped it to, i.e. 0, 1, ..., |Y|
     for y_index, y_label in index_to_y_map.items():
-        col_name = 'error_rate_{0}_{0}'.format(y_label)
+        col_name = 'accuracy_rate_{0}'.format(y_label)
         df_error_rates[col_name] = [e[y_index, y_index] for e in error_rates]
 
     return df_error_rates
