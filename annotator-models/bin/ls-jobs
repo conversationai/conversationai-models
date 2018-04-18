@@ -1,5 +1,3 @@
 #!/bin/bash
 
-DATE=`date '+%Y-%m-%d'`
-
-gcloud ml-engine jobs list | grep $DATE
+gcloud ml-engine jobs list | grep $USER
