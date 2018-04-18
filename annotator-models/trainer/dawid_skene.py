@@ -23,7 +23,7 @@ import time
 FLAGS = None
 np.set_printoptions(precision=2)
 
-def run(items, raters, classes, counts, label, tol=0.1, max_iter=25, init='average'):
+def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average'):
     """
     Run the Dawid-Skene estimator on response data
 
