@@ -218,10 +218,11 @@ def e_step(counts_tiled, class_marginals, error_rates):
     Inputs:
       counts_tiled: A matrix of how many times each rating was given
           by each rater for each item, repeated for each class to make matrix
-          multiplication fasterr. [nItems, nRaters, nClasses, nClasses]
-      class_marginals: probability of a random item belonging to each class
+          multiplication fasterr. Size: [nItems, nRaters, nClasses, nClasses]
+      class_marginals: probability of a random item belonging to each class.
+          Size: [nClasses]
       error_rates: probability of rater k assigning a item in class j
-          to class l [raters, classes, classes]
+          to class l. Size [nRaters, nClasses, nClasses]
 
     Returns:
       item_classes: Soft assignments of items to classes
