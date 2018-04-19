@@ -43,6 +43,11 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
     # item_classes is a matrix of estimates of true item classes of size
     # [items, classes]
     item_classes = initialize(counts)
+    [nItems, nRaters, nClasses] = np.shape(counts)
+
+    # create a tiled version of the counts to speed up calculations in the
+    # e step
+    counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
 
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat\tIter Secs')
 
@@ -57,7 +62,7 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
 
         # E-step - calculate expected item classes given error rates and
         #          class marginals
-        item_classes = e_step_verbose(counts, class_marginals, error_rates)
+        item_classes = e_step(counts_tiled, class_marginals, error_rates)
 
         # check likelihood
         log_L = calc_likelihood(counts, class_marginals, error_rates)
@@ -204,30 +209,28 @@ def m_step_verbose(counts, item_classes):
 
     return (class_marginals, error_rates)
 
-def e_step(counts, class_marginals, error_rates):
+def e_step(counts_tiled, class_marginals, error_rates):
     """
     Determine the probability of each item belonging to each class,
     given current ML estimates of the parameters from the M-step
     See equation 2.5 in Dawid-Skene (1979)
 
     Inputs:
-      counts: Array of how many times each rating was given
-          by each rater for each item
-      class_marginals: probability of a random item belonging to each class
+      counts_tiled: A matrix of how many times each rating was given
+          by each rater for each item, repeated for each class to make matrix
+          multiplication fasterr. Size: [nItems, nRaters, nClasses, nClasses]
+      class_marginals: probability of a random item belonging to each class.
+          Size: [nClasses]
       error_rates: probability of rater k assigning a item in class j
-          to class l [raters, classes, classes]
+          to class l. Size [nRaters, nClasses, nClasses]
 
     Returns:
       item_classes: Soft assignments of items to classes
           [items x classes]
     """
-    [nItems, nRaters, nClasses] = np.shape(counts)
-
-    item_classes = np.zeros([nItems, nClasses])
+    [nItems, _, nClasses, _] = np.shape(counts_tiled)
 
     error_rates_tiled = np.tile(error_rates, (nItems,1,1,1))
-    counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
-
     power = np.power(error_rates_tiled, counts_tiled)
 
     # Note, multiplying over axis 1 and then 2 is substantially faster than
