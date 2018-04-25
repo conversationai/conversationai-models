@@ -20,6 +20,8 @@ DATE=`date '+%Y%m%d_%H%M%S'`
 OUTPUT_PATH=gs://${BUCKET_NAME}/keras_runs/${USER}/${DATE}
 LOG_PATH=${OUTPUT_PATH}/logs/
 HPARAM_CONFIG=keras_hparam_config.yaml
+COMET_KEY_FILE='comet_api_key.txt'
+COMET_KEY=$(cat ${COMET_KEY_FILE})
 
 echo "Writing to $OUTPUT_PATH"
 
@@ -36,7 +38,8 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --train_path ${INPUT_PATH}/train.csv \
     --validation_path ${INPUT_PATH}/validation.csv \
     --embeddings_path ${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
-    --log_path ${LOG_PATH}
+    --log_path ${LOG_PATH} \
+    --comet_key ${COMET_KEY}
 
 
 echo "You can view the tensorboard for this job with the command:"

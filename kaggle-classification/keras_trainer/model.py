@@ -115,6 +115,7 @@ class ModelRunner():
 
   def predict(self, texts):
     data = self._prep_texts(texts)
+    self._load_model()
     return self.model.predict(data)
 
   def score_auc(self, data):
@@ -175,6 +176,8 @@ if __name__ == '__main__':
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
       '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+  parser.add_argument(
+      '--comet_key', type=str, default=None, help='Path to file containing comet.ml api key. Set to None to disable comet.ml.')
 
   # Hyper-parameters
   parser.add_argument(
@@ -184,19 +187,24 @@ if __name__ == '__main__':
   parser.add_argument(
       '--batch_size', type=int, default=64, help='Batch size.')
 
-  FLAGS = parser.parse_args()
 
-  
-  experiment = Experiment(api_key="W5nxJnW9gXgbErD6LzKgCDRj5", 
-    project_name='comet_trial_run', 
-    auto_param_logging=False)
+  FLAGS = parser.parse_args()
 
   hparams = DEFAULT_HPARAMS
   hparams.learning_rate = FLAGS.learning_rate
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
 
-  experiment.log_multiple_params(hparams)
+  if FLAGS.comet_key:
+    experiment = Experiment(api_key=FLAGS.comet_key, 
+      project_name='comet_trial_run', 
+      auto_param_logging=False,
+      parse_args=False)
+    experiment.log_multiple_params(hparams.values())
+    experiment.log_parameter('test_data_path', FLAGS.train_path)
+    experiment.log_parameter('valid_data_path', FLAGS.validation_path)
+    experiment.log_parameter('embeddings_path', FLAGS.embeddings_path)
+    experiment.log_parameter('model_path', FLAGS.job_dir)
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed
@@ -211,13 +219,13 @@ if __name__ == '__main__':
   model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
-  experiment.log_dataset_hash(train)
-  with experiment.train():
-    model.train(train)
+  if FLAGS.comet_key:
+    experiment.log_dataset_hash(train)
+  model.train(train)
 
   with tf.gfile.Open(FLAGS.validation_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
-  with experiment.test():
+  if FLAGS.comet_key:
     experiment.log_metric("test_auc", model.score_auc(test_data))
 
   model.predict(['This sentence is benign'])
