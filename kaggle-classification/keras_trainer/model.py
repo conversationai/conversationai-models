@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import os
 import os.path
+from comet_ml import Experiment
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -29,6 +30,7 @@ from tensorflow.python.framework.errors_impl import NotFoundError
 from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
 from keras_trainer.custom_metrics import auc_roc
+
 
 FLAGS = None
 
@@ -184,10 +186,17 @@ if __name__ == '__main__':
 
   FLAGS = parser.parse_args()
 
+  
+  experiment = Experiment(api_key="W5nxJnW9gXgbErD6LzKgCDRj5", 
+    project_name='comet_trial_run', 
+    auto_param_logging=False)
+
   hparams = DEFAULT_HPARAMS
   hparams.learning_rate = FLAGS.learning_rate
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
+
+  experiment.log_multiple_params(hparams)
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed
@@ -202,10 +211,13 @@ if __name__ == '__main__':
   model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
-  model.train(train)
+  experiment.log_dataset_hash(train)
+  with experiment.train():
+    model.train(train)
 
   with tf.gfile.Open(FLAGS.validation_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
-  model.score_auc(test_data)
+  with experiment.test():
+    experiment.log_metric("test_auc", model.score_auc(test_data))
 
   model.predict(['This sentence is benign'])
