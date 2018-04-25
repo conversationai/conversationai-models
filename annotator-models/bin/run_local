@@ -7,12 +7,18 @@
 #!/bin/bash
 
 DATE=`date '+%Y%m%d_%H%M%S'`
-BUCKET_NAME=annotator_models
+
+# the path to the CSV with the rating data
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
+
+# the path to the CSV with the full comment text
+COMMENT_TEXT_PATH=gs://annotator_models/q42017_comment_text.csv
 
 gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
-     --data-path=gs://${BUCKET_NAME}/dawid_skene_training_data_10k.csv \
-     --label='toxic_score' \
+     --data-path=$DATA_PATH \
+     --comment-text-path=$COMMENT_TEXT_PATH \
+     --label='obscene' \
      --job-dir='results' \
      --max-iter=10

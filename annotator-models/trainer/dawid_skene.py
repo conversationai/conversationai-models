@@ -405,24 +405,29 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     # To get a prediction of the mean label, multiply our predictions with the
     # true y values.
     y_values = index_to_y_map.values()
-    df_predictions[label + '_hat_mean'] = np.dot(df_predictions[col_names], y_values)
-
-    # Add a column for the mean predictions
     col_name = '{0}_hat_mean'.format(label)
-
-    df_predictions['_unit_index'] = range(len(item_classes))
+    df_predictions[col_name] = np.dot(df_predictions[col_names], y_values)
 
     # Use the _unit_index to map to the original _unit_id
+    df_predictions['_unit_index'] = range(len(item_classes))
     df_predictions['_unit_id'] = df_predictions['_unit_index']\
                                  .apply(lambda i: int(index_to_unit_id_map[i]))
 
     # Calculate the y_mean from the original data and join on _unit_id
+    # Add a column for the mean predictions
     df[label] = df[label].astype(float)
     mean_labels = df.groupby('_unit_id', as_index=False)[label]\
                    .mean()\
                    .round(ROUND_DEC)\
                    .rename(index=int, columns={label: LABEL_MEAN})
     df_predictions = pd.merge(mean_labels, df_predictions, on='_unit_id')
+
+    # add the comment text
+    with tf.gfile.Open(FLAGS.comment_text_path, 'r') as fileobj:
+        logging.info('Loading comment text data')
+        df_comments = pd.read_csv(fileobj)
+
+    df_predictions = df_predictions.merge(df_comments, on='_unit_id')
 
     return df_predictions
 
@@ -454,13 +459,13 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
 
     df_error_rates = pd.merge(df_error_rates, worker_counts, on='_worker_id')
 
-    # add the diagonal error rates, i.e. for each class k, add a column
-    # for p(rater will pick k | the item's true class is k)
-    #
+    # add the diagonal error rates, which are the per-class accuracy rates,
+    # for each class k, we add a column for p(rater will pick k | item's true class is k)
+
     # y_label is the original y value in the data and y_index is the
-    # integer we mapped it tto, i.e. 0, 1, ..., |Y|
+    # integer we mapped it to, i.e. 0, 1, ..., |Y|
     for y_index, y_label in index_to_y_map.items():
-        col_name = 'error_rate_{0}_{0}'.format(y_label)
+        col_name = 'accuracy_rate_{0}'.format(y_label)
         df_error_rates[col_name] = [e[y_index, y_index] for e in error_rates]
 
     return df_error_rates
@@ -543,6 +548,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--data-path',
                         help='The path to data to run on, local or in Cloud Storage.')
+    parser.add_argument('--comment-text-path',
+                        help='The path to comment text, local or in  Cloud Storage.')
     parser.add_argument('--n_examples',
                         help='The number of annotations to use.', default=10000000,
                         type=int)
