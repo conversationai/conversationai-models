@@ -57,7 +57,7 @@ LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate
 
 class ModelRunner():
   """Toxicity model using CNN + Attention"""
-  
+
   def __init__(self,
                job_dir,
                embeddings_path,
@@ -108,7 +108,7 @@ class ModelRunner():
     tf.gfile.Copy(TEMPORARY_MODEL_PATH, self.model_path, overwrite=True)
     tf.gfile.Remove(TEMPORARY_MODEL_PATH)
     print('Saved model to {}'.format(self.model_path))
-    
+
     self._load_model()
 
   def predict(self, texts):
@@ -166,7 +166,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--train_path', type=str, default='local_data/train.csv', help='Path to the training data.')
   parser.add_argument(
-      '--validation_path', type=str, default='local_data/validation.csv', help='Path to the test data.')
+      '--test_path', type=str, default='local_data/validation.csv', help='Path to the test data.')
   parser.add_argument(
       '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
   parser.add_argument(
@@ -204,7 +204,7 @@ if __name__ == '__main__':
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
 
-  with tf.gfile.Open(FLAGS.validation_path, 'rb') as f:
+  with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
   model.score_auc(test_data)
 
