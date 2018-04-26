@@ -1,3 +1,4 @@
+#!/bin/bash
 
 DATE=`date '+%Y%m%d_%H%M%S'`
 OUTPUT_PATH=runs/${DATE}
@@ -17,7 +18,7 @@ echo ""
 
 python -m keras_trainer.model \
 	--train_path=${INPUT_PATH}/train.csv \
-	--validation_path=${INPUT_PATH}/validation.csv \
+	--test_path=${INPUT_PATH}/validation.csv \
 	--embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
 	--job-dir=${OUTPUT_PATH} \
 	--log_path=${LOG_PATH}
