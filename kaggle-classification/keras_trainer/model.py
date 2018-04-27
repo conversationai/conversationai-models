@@ -52,9 +52,6 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     num_filters=[128,128,128],
     attention_intermediate_size=128)
 
-LABELS = ['toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate']
-
-
 class ModelRunner():
   """Toxicity model using CNN + Attention"""
 
@@ -62,7 +59,8 @@ class ModelRunner():
                job_dir,
                embeddings_path,
                log_path,
-               hparams):
+               hparams,
+               labels):
     if os.path.exists(TEMPORARY_MODEL_PATH):
       raise FileExistsError('The following file path already exists: {}'.format(TEMPORARY_MODEL_PATH))
 
@@ -71,6 +69,7 @@ class ModelRunner():
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
+    self.labels = [l.strip() for l in FLAGS.labels.split(',')]
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
     print('Setting up embedding matrix...')
@@ -83,8 +82,9 @@ class ModelRunner():
       model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
     else:
       raise ValueError('You have specified an invalid model type.')
+
     train_comment = self._prep_texts(train['comment_text'])
-    train_labels = np.array(list(zip(*[train[label] for label in LABELS])))
+    train_labels = np.array(list(zip(*[train[label] for label in self.labels])))
 
     callbacks = [
         ModelCheckpoint(
@@ -119,9 +119,9 @@ class ModelRunner():
     predictions = self.predict(data['comment_text'])
     # Get an array where each element is a list of all the labels for the
     # specific instance.
-    labels = np.array(list(zip(*[data[label] for label in LABELS])))
+    labels = np.array(list(zip(*[data[label] for label in self.labels])))
     individual_auc_scores = metrics.roc_auc_score(labels, predictions, average=None)
-    print("Individual AUCs: {}".format(list(zip(LABELS, individual_auc_scores))))
+    print("Individual AUCs: {}".format(list(zip(self.labels, individual_auc_scores))))
     mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
     print("Mean AUC: {}".format(mean_auc_score))
 
@@ -173,6 +173,9 @@ if __name__ == '__main__':
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
       '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+  parser.add_argument(
+    '--labels', default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
+    help='A comma separated list of labels to predict.')
 
   # Hyper-parameters
   parser.add_argument(
@@ -180,7 +183,7 @@ if __name__ == '__main__':
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
   parser.add_argument(
-      '--batch_size', type=int, default=64, help='Batch size.')
+      '--batch_size',  default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
@@ -199,7 +202,8 @@ if __name__ == '__main__':
       ).get('task', {}).get('trial', '')
   )
 
-  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path, log_path=trial_log_path, hparams=hparams)
+  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path,
+                      log_path=trial_log_path, hparams=hparams, labels=FLAGS.labels)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
