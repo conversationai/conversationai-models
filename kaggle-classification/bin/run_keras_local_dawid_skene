@@ -1,0 +1,14 @@
+#!/bin/bash
+
+DATE=`date '+%Y%m%d_%H%M%S'`
+OUTPUT_PATH=runs/${DATE}
+INPUT_PATH=local_data
+LOG_PATH=${OUTPUT_PATH}/logs/
+
+python -m keras_trainer.model \
+	--train_path=${INPUT_PATH}/train_mean_q42017_10k.csv \
+	--test_path=${INPUT_PATH}/test_mean_q42017.csv \
+	--embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
+	--job-dir=${OUTPUT_PATH} \
+	--log_path=${LOG_PATH} \
+	--labels=threat,flirtation,identity_hate,insult,obscene,sexual_explicit
