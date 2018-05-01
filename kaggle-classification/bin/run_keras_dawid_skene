@@ -16,7 +16,7 @@ JOB_NAME=${USER}_kaggle_training
 REGION=us-central1
 
 INPUT_PATH=gs://annotator_models/data_splits
-KAGGLE_TRAIN_PATH=gs://${BUCKET_NAME}/resources/train.csv
+EMBEDDING_PATH=gs://kaggle-model-experiments/resources/glove.6B/glove.6B.100d.txt
 
 DATE=`date '+%Y%m%d_%H%M%S'`
 OUTPUT_PATH=gs://${BUCKET_NAME}/keras_runs/${USER}/${DATE}
@@ -34,11 +34,12 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --verbosity debug \
     --config ${HPARAM_CONFIG} \
     -- \
-    --train_path $KAGGLE_TRAIN_PATH \
+    --train_path ${INPUT_PATH}/train_mean_q42017.csv \
     --test_path ${INPUT_PATH}/test_mean_q42017.csv \
-    --embeddings_path ${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
+    --embeddings_path $EMBEDDING_PATH \
     --log_path ${LOG_PATH} \
     --labels threat,flirtation,identity_hate,insult,obscene,sexual_explicit
 
 
 #    --train_path ${INPUT_PATH}/train_mean_q42017_10k.csv \
+#    --test_path ${INPUT_PATH}/test_mean_q42017.csv \

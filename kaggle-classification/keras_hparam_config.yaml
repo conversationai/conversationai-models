@@ -12,23 +12,22 @@ trainingInput:
   hyperparameters:
     goal: MAXIMIZE
     hyperparameterMetricTag: val_auc_roc
-    maxTrials: 10
+    maxTrials: 20
     maxParallelTrials: 3
     enableTrialEarlyStopping: TRUE
     params:
       - parameterName: learning_rate
         type: DOUBLE
-        minValue: 0.00005
+        minValue: 0.0005
         maxValue: 0.1
         scaleType: UNIT_LOG_SCALE
       - parameterName: dropout_rate
         type: DOUBLE
         minValue: 0
-        maxValue: 1
+        maxValue: .4
         scaleType: UNIT_LINEAR_SCALE
       - parameterName: batch_size
         type: DISCRETE
         discreteValues:
-        - 64
         - 128
         - 256
