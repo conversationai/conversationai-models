@@ -64,7 +64,7 @@ class ModelRunner():
 
     self.job_dir = job_dir
     self.model_path = os.path.join(job_dir, 'model.h5')
-    self.prediction_path = os.path.join(job_dir, 'test_scored.csv')
+    self.prediction_path = os.path.join(job_dir, 'test_scored.json')
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
