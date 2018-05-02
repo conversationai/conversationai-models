@@ -49,7 +49,7 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
     # e step
     counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
 
-    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat\tIter Secs')
+    logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
 
     while not converged:
         iteration += 1
@@ -75,7 +75,7 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
             class_marginals_diff = np.sum(np.abs(class_marginals - old_class_marginals))
             item_class_diff = np.sum(np.abs(item_classes - old_item_classes))
 
-            logging.info('{0}\t{1:.1f}\t{2:.4f}\t\t{3:.2f}\t{4:3.2f}'.format(
+            logging.info('{0}\t{1:.1f}\t{2:.4f}\t\t{3:.2f}\t({4:3.2f} secs)'.format(
                 iteration, log_L, class_marginals_diff, item_class_diff, iter_time))
 
             if (class_marginals_diff < tol and item_class_diff < tol) \
@@ -411,7 +411,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     # Use the _unit_index to map to the original _unit_id
     df_predictions['_unit_index'] = range(len(item_classes))
     df_predictions['_unit_id'] = df_predictions['_unit_index']\
-                                 .apply(lambda i: int(index_to_unit_id_map[i]))
+                                 .apply(lambda i: index_to_unit_id_map[i])
 
     # Calculate the y_mean from the original data and join on _unit_id
     # Add a column for the mean predictions
@@ -423,12 +423,12 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     df_predictions = pd.merge(mean_labels, df_predictions, on='_unit_id')
 
     # add the comment text
-    with tf.gfile.Open(FLAGS.comment_text_path, 'r') as fileobj:
-        logging.info('Loading comment text data')
+    comment_text_path = FLAGS.comment_text_path
+    with tf.gfile.Open(comment_text_path, 'r') as fileobj:
+        logging.info('Loading comment text data from {}'.format(comment_text_path))
         df_comments = pd.read_csv(fileobj)
 
     df_predictions = df_predictions.merge(df_comments, on='_unit_id')
-
     return df_predictions
 
 def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
@@ -538,9 +538,12 @@ def main(FLAGS):
     n = len(df)
     prediction_path = '{0}/predictions_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
     error_rates_path = '{0}/error_rates_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
+
+    logging.info('Writing predictions to {}'.format(prediction_path))
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
       df_predictions.to_json(fileobj, lines=True, orient='records')
 
+    logging.info('Writing error rates to {}'.format(error_rates_path))
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
       df_error_rates.to_json(fileobj, lines=True, orient='records')
 
