@@ -1,18 +1,33 @@
 #!/bin/bash
 
 #
-# A script to train the kaggle model locally.
-# Assumes that train.csv and test.csv are downloaded into the local_data/
-# directory.
-#!/bin/bash
+# A script to train the Dawid Skene model locally.
+#
+# The DATA_PATH is the path to the CSV with the annotation-level data. The data
+# must be a CSV with the fields:
+#   * _unit_id: a unique ID for each item
+#   * _worker_id: a unique ID corresponding to each rater
+#   * {LABEL}: a categorical rating for the given label
+#
+#    _unit_id,_worker_id,obscene
+#    1519346288,129,0
+#    1519346288,114,0
+#    1519346289,129,1
+#    1519346289,130,1
+#    ....
+#
+# The COMMENT_TEXT_PATH is the path to a CSV with item-level data. The data
+# must be a CSV with the fields:
+#   * _unit_id: a unique ID for each item
+#   * comment_text: the text associated with each item
+#
+#    _unit_id,comment_text
+#    1519346288,"This is the first comment."
+#    1519346289,"This is the second f*ing comment."
 
-DATE=`date '+%Y%m%d_%H%M%S'`
 
-# the path to the CSV with the rating data
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
-
-# the path to the CSV with the full comment text
-COMMENT_TEXT_PATH=gs://annotator_models/q42017_comment_text.csv
+DATA_PATH=local_data/sample_training_data.csv
+COMMENT_TEXT_PATH=local_data/sample_comment_text.csv
 
 gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
