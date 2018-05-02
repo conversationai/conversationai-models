@@ -23,7 +23,8 @@ import time
 FLAGS = None
 np.set_printoptions(precision=2)
 
-def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average'):
+def run(items, raters, classes, counts, label, tol=1, max_iter=25,
+        init='average', pseudo_count=3):
     """
     Run the Dawid-Skene estimator on response data
 
@@ -58,7 +59,8 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25, init='average
         # M-step - updated error rates and class marginals given new
         #          distribution over true item classes
         old_item_classes = item_classes
-        (class_marginals, error_rates) = m_step(counts, item_classes)
+
+        (class_marginals, error_rates) = m_step(counts, item_classes, pseudo_count)
 
         # E-step - calculate expected item classes given error rates and
         #          class marginals
@@ -128,7 +130,7 @@ def initialize(counts):
 
     return item_classes
 
-def m_step(counts, item_classes):
+def m_step(counts, item_classes, psuedo_count):
     """
     Get estimates for the prior class probabilities (p_j) and the error
     rates (pi_jkl) using MLE with current estimates of true item classes
@@ -138,6 +140,9 @@ def m_step(counts, item_classes):
       counts: Array of how many times each rating was given by each rater
         for each item
       item_classes: Matrix of current assignments of items to classes
+      psuedo_count: A pseudo count used to smooth the error rates. For each rater k
+        and for each class i and class j, we pretend rater k has rated
+        psuedo_count examples with class i when class j was the true class.
 
     Returns:
       p_j: class marginals [classes]
@@ -151,7 +156,7 @@ def m_step(counts, item_classes):
 
     # compute error rates for each rater, each predicted class
     # and each true class
-    error_rates = np.matmul(counts.T, item_classes)
+    error_rates = np.matmul(counts.T, item_classes) + psuedo_count
 
     # reorder axes so its of size [nItems x nClasses x nClasses]
     error_rates = np.einsum('abc->bca', error_rates)
@@ -168,7 +173,7 @@ def m_step(counts, item_classes):
 
     return (class_marginals, error_rates)
 
-def m_step_verbose(counts, item_classes):
+def m_step_verbose(counts, item_classes, psuedo_count):
     """
     This method is the verbose (i.e. not vectorized) version of the m_step.
     It is currently not used because the vectorized version is faster, but we
@@ -182,6 +187,9 @@ def m_step_verbose(counts, item_classes):
       counts: Array of how many times each rating was given by each rater
         for each item
       item_classes: Matrix of current assignments of items to classes
+      psuedo_count: A pseudo count used to smooth the error rates. For each rater k
+        and for each class i and class j, we pretend rater k has rated
+        psuedo_count examples with class i when class j was the true class.
 
     Returns:
       p_j: class marginals [classes]
@@ -199,7 +207,8 @@ def m_step_verbose(counts, item_classes):
     for k in range(nRaters):
         for j in range(nClasses):
             for l in range(nClasses):
-                error_rates[k, j, l] = np.dot(item_classes[:,j], counts[:,k,l])
+                error_rates[k, j, l] = np.dot(item_classes[:,j], counts[:,k,l]) \
+                                       + psuedo_count
 
             # normalize by summing over all observation classes
             sum_over_responses = np.sum(error_rates[k,j,:])
@@ -523,7 +532,7 @@ def main(FLAGS):
     start = time.time()
     class_marginals, error_rates, item_classes = run(
         items_unique, raters_unique, classes_unique, counts, label=label, tol=.1,
-        max_iter=FLAGS.max_iter)
+        max_iter=FLAGS.max_iter, pseudo_count=FLAGS.pseudo_count)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
@@ -563,6 +572,8 @@ if __name__ == '__main__':
     parser.add_argument('--max-iter',
                         help='The max number of iteration to run.', type=int,
                         default=25)
+    parser.add_argument('--pseudo-count', help='The pseudo count to smooth error rates.',
+                        type=int, default=3)
 
     FLAGS = parser.parse_args()
 
