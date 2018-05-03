@@ -14,8 +14,10 @@ class HANClassifierModel():
                vocab_size,
                embedding_size,
                classes,
-               word_cell,
-               sentence_cell,
+               fw_word_cell,
+               bw_word_cell,
+               fw_sentence_cell,
+               bw_sentence_cell,
                word_output_size,
                sentence_output_size,
                max_grad_norm,
@@ -27,9 +29,11 @@ class HANClassifierModel():
     self.vocab_size = vocab_size
     self.embedding_size = embedding_size
     self.classes = classes
-    self.word_cell = word_cell
+    self.fw_word_cell = fw_word_cell
+    self.bw_word_cell = bw_word_cell
     self.word_output_size = word_output_size
-    self.sentence_cell = sentence_cell
+    self.fw_sentence_cell = fw_sentence_cell
+    self.bw_sentence_cell = bw_sentence_cell
     self.sentence_output_size = sentence_output_size
     self.max_grad_norm = max_grad_norm
     self.dropout_keep_proba = dropout_keep_proba
@@ -114,7 +118,7 @@ class HANClassifierModel():
 
       with tf.variable_scope('word') as scope:
         word_encoder_output, _ = bidirectional_rnn(
-          self.word_cell, self.word_cell,
+          self.fw_word_cell, self.bw_word_cell,
           word_level_inputs, word_level_lengths,
           scope=scope)
 
@@ -137,7 +141,7 @@ class HANClassifierModel():
 
       with tf.variable_scope('sentence') as scope:
         sentence_encoder_output, _ = bidirectional_rnn(
-          self.sentence_cell, self.sentence_cell, sentence_inputs, self.sentence_lengths, scope=scope)
+          self.fw_sentence_cell, self.bw_sentence_cell, sentence_inputs, self.sentence_lengths, scope=scope)
 
         with tf.variable_scope('attention') as scope:
           sentence_level_output = task_specific_attention(
@@ -186,8 +190,10 @@ if __name__ == '__main__':
       vocab_size=10,
       embedding_size=5,
       classes=2,
-      word_cell=GRUCell(10),
-      sentence_cell=GRUCell(10),
+      fw_word_cell=GRUCell(10),
+      bw_word_cell=GRUCell(10),
+      fw_sentence_cell=GRUCell(10),
+      bw_sentence_cell=GRUCell(10),
       word_output_size=10,
       sentence_output_size=10,
       max_grad_norm=5.0,
