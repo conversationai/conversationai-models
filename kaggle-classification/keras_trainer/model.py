@@ -115,7 +115,6 @@ class ModelRunner():
 
   def predict(self, texts):
     data = self._prep_texts(texts)
-    self._load_model()
     return self.model.predict(data)
 
   def score_auc(self, data):
