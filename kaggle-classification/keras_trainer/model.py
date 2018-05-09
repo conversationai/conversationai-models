@@ -28,6 +28,7 @@ from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
 from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
+from keras_trainer.rnn import RNN
 from keras_trainer.custom_metrics import auc_roc
 
 FLAGS = None
@@ -36,7 +37,8 @@ TEMPORARY_MODEL_PATH = 'model.h5'
 
 VALID_MODELS = {
   'cnn_with_attention': CNNWithAttention,
-  'single_layer_cnn': SingleLayerCnn
+  'single_layer_cnn': SingleLayerCnn,
+  'rnn': RNN
 }
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
@@ -177,6 +179,10 @@ if __name__ == '__main__':
     '--labels', default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
     help='A comma separated list of labels to predict.')
 
+  parser.add_argument(
+      '--model_type',  default='single_layer_cnn',
+      help='Model type. Valid choices are {}'.format(list(VALID_MODELS.keys())))
+
   # Hyper-parameters
   parser.add_argument(
       '--learning_rate', type=float, default=0.00005, help='Learning rate.')
@@ -191,6 +197,7 @@ if __name__ == '__main__':
   hparams.learning_rate = FLAGS.learning_rate
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
+  hparams.model_type = FLAGS.model_type
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed

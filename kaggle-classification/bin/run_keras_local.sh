@@ -21,4 +21,5 @@ python -m keras_trainer.model \
 	--test_path=${INPUT_PATH}/validation.csv \
 	--embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
 	--job-dir=${OUTPUT_PATH} \
-	--log_path=${LOG_PATH}
+	--log_path=${LOG_PATH} \
+        --model_type=rnn
