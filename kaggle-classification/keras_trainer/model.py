@@ -204,6 +204,7 @@ if __name__ == '__main__':
     experiment.log_parameter('valid_data_path', FLAGS.validation_path)
     experiment.log_parameter('embeddings_path', FLAGS.embeddings_path)
     experiment.log_parameter('model_path', FLAGS.job_dir)
+    experiment.log_parameter('model', hparams.model_type)
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed
