@@ -98,7 +98,7 @@ class ModelRunner():
 
     model.fit(
         x=train_comment, y=train_labels,
-        batch_size=self.hparams.batch_size,
+        batch_size=int(self.hparams.batch_size),
         epochs=self.hparams.epochs,
         validation_split=0.1,
         callbacks=callbacks,
