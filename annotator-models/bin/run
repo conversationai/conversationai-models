@@ -19,7 +19,12 @@ BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
 LABEL=toxic_score
 MAX_ITER=50
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_10mil.csv
+TOLERANCE=100
+PSEUDO_COUNT=0.05
+
+declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
+#declare -a LABELS=("toxic_score")
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
@@ -54,15 +59,23 @@ done
 echo "Writing to $OUTPUT_PATH"
 
 # Remote
-gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
-     --job-dir=${OUTPUT_PATH} \
-     --runtime-version=1.4 \
-     --config=${CONFIG} \
-     --module-name=trainer.dawid_skene \
-     --package-path=trainer \
-     --region=$REGION \
-     --verbosity=debug -- \
-     --data-path=$DATA_PATH \
-     --comment-text-path=$COMMENT_TEXT_PATH \
-     --label=$LABEL \
-     --max-iter=$MAX_ITER
+for label in "${LABELS[@]}"
+do
+    echo "Running on $label"
+    JOB_NAME=${USER}_dawid_skene_q42017_${label}
+
+    gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+	   --job-dir=${OUTPUT_PATH} \
+	   --runtime-version=1.4 \
+	   --config=${CONFIG} \
+	   --module-name=trainer.dawid_skene \
+	   --package-path=trainer \
+	   --region=$REGION \
+	   --verbosity=debug -- \
+	   --data-path=$DATA_PATH \
+	   --comment-text-path=$COMMENT_TEXT_PATH \
+	   --label=$label \
+	   --max-iter=$MAX_ITER \
+           --tolerance=$TOLERANCE \
+	   --pseudo-count=$PSEUDO_COUNT
+done

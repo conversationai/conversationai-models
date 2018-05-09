@@ -46,10 +46,6 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25,
     item_classes = initialize(counts)
     [nItems, nRaters, nClasses] = np.shape(counts)
 
-    # create a tiled version of the counts to speed up calculations in the
-    # e step
-    counts_tiled = np.stack([counts for a in range(nClasses)], axis=2)
-
     logging.info('Iter\tlog-likelihood\tdelta-CM\tdelta-Y_hat')
 
     while not converged:
@@ -64,7 +60,7 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25,
 
         # E-step - calculate expected item classes given error rates and
         #          class marginals
-        item_classes = e_step(counts_tiled, class_marginals, error_rates)
+        item_classes = e_step_verbose(counts, class_marginals, error_rates)
 
         # check likelihood
         log_L = calc_likelihood(counts, class_marginals, error_rates)
@@ -156,6 +152,8 @@ def m_step(counts, item_classes, psuedo_count):
 
     # compute error rates for each rater, each predicted class
     # and each true class
+
+    # error_rates = np.matmul(counts.T, item_classes) + psuedo_count
     error_rates = np.matmul(counts.T, item_classes) + psuedo_count
 
     # reorder axes so its of size [nItems x nClasses x nClasses]
@@ -531,8 +529,8 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items_unique, raters_unique, classes_unique, counts, label=label, tol=.1,
-        max_iter=FLAGS.max_iter, pseudo_count=FLAGS.pseudo_count)
+        items_unique, raters_unique, classes_unique, counts, label=label,
+        tol=FLAGS.tolerance, max_iter=FLAGS.max_iter, pseudo_count=FLAGS.pseudo_count)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
@@ -573,8 +571,13 @@ if __name__ == '__main__':
                         help='The max number of iteration to run.', type=int,
                         default=25)
     parser.add_argument('--pseudo-count', help='The pseudo count to smooth error rates.',
-                        type=int, default=3)
+                        type=float, default=0.1)
+    parser.add_argument('--tolerance',
+                        help='Stop training when variables change less than this value.',
+                        type=int, default=1)
 
     FLAGS = parser.parse_args()
+
+    print('FLAGS', FLAGS)
 
     main(FLAGS)
