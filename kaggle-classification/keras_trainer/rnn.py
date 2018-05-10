@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Input, GRU, Dense, Embedding, Dropout
+from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
@@ -31,7 +31,7 @@ class RNN(base_model.BaseModel):
         weights=[self.embeddings_matrix],
         input_length=self.hparams.sequence_length,
         trainable=self.hparams.train_embedding)(I)
-    X = GRU(128, return_sequences=False)(E)
+    X = Bidirectional(GRU(128, return_sequences=False))(E)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     Output = Dense(6, activation='sigmoid')(X)
