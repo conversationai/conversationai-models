@@ -543,18 +543,18 @@ def main(FLAGS):
     # join rater error_rates
     df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map)
 
-    # write predictions and error_rates out as JSON lines
+    # write predictions and error_rates out as CSV files
     n = len(df)
-    prediction_path = '{0}/predictions_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
-    error_rates_path = '{0}/error_rates_{1}_{2}.json'.format(FLAGS.job_dir, label, n)
 
-    logging.info('Writing predictions to {}'.format(prediction_path))
+    prediction_path = '{0}/predictions_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+    error_rates_path = '{0}/error_rates_{1}_{2}.csv'.format(FLAGS.job_dir, label, n)
+
     with tf.gfile.Open(prediction_path, 'w') as fileobj:
-      df_predictions.to_json(fileobj, lines=True, orient='records')
+      df_predictions.to_csv(fileobj, encoding='utf-8')
 
     logging.info('Writing error rates to {}'.format(error_rates_path))
     with tf.gfile.Open(error_rates_path, 'w') as fileobj:
-      df_error_rates.to_json(fileobj, lines=True, orient='records')
+      df_error_rates.to_csv(fileobj, encoding='utf-8')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
