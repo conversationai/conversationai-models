@@ -31,7 +31,7 @@ class RNNModel(base_model.BaseModel):
         self.hparams.vocab_size,
         self.hparams.embedding_dim,
         weights=[self.embeddings_matrix],
-        input_length=self.hparams.sequence_length,
+        input_length=sequence_length,
         trainable=self.hparams.train_embedding)(
             I)
     H = Bidirectional(GRU(128, return_sequences=True))(E)
