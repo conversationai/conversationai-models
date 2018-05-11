@@ -15,6 +15,11 @@ class TFRecordBatchGenerator(Generator):
   """Batch Generator
   """
 
+  TARGETS = [
+      'frac_neg', 'frac_very_neg', 'obscene', 'threat', 'insult',
+      'identity_hate'
+  ]
+
   def __init__(self, tfrecord_file):
     dataset = tf.data.TFRecordDataset(filenames=tfrecord_file)
     dataset = dataset.map(self._parse_function)
@@ -31,13 +36,10 @@ class TFRecordBatchGenerator(Generator):
   def _parse_function(self, serialized):
     features = {
         'comment_text': tf.FixedLenFeature([], tf.string),
-        'frac_neg': tf.FixedLenFeature([], tf.float32),  # toxic
-        'frac_very_neg': tf.FixedLenFeature([], tf.float32),  # severe_toxic
-        'obscene': tf.FixedLenFeature([], tf.float32),
-        'threat': tf.FixedLenFeature([], tf.float32),
-        'insult': tf.FixedLenFeature([], tf.float32),
-        'identity_hate': tf.FixedLenFeature([], tf.float32)
     }
+    for target in TARGETS:
+      features[target] = tf.FixedLenFeature([], tf.float32)
+
     # Parse the serialized data so we get a dict with our data.
     parsed_example = tf.parse_single_example(
         serialized=serialized, features=features)
