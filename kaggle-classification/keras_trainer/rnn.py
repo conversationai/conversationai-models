@@ -35,10 +35,11 @@ class RNNModel(base_model.BaseModel):
         trainable=self.hparams.train_embedding)(
             I)
     H = Bidirectional(GRU(128, return_sequences=True))(E)
-    A = TimeDistributed(Dense(3), input_shape=(sequence_length, 256))(H)
-    A = Flatten()(A)
-    A = Dense(sequence_length, activation='softmax')(A)
+    A = TimeDistributed(
+        Dense(1, activation='softmax'), input_shape=(sequence_length, 256))(
+            H)
     X = Dot((1, 1))([H, A])
+    X = Flatten()(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     Output = Dense(6, activation='sigmoid')(X)

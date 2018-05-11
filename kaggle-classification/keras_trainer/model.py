@@ -213,7 +213,7 @@ if __name__ == '__main__':
       '--learning_rate', type=float, default=0.00005, help='Learning rate.')
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
-  parser.add_argument('--batch_size', default=64, help='Batch size.')
+  parser.add_argument('--batch_size', type=int, default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
