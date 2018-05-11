@@ -10,7 +10,7 @@ from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
 
 
-class RNN(base_model.BaseModel):
+class RNNModel(base_model.BaseModel):
   """ RNN
 
   hparams:
