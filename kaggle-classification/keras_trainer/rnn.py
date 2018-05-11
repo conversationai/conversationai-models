@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape
+from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape, GlobalAveragePooling1D
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
@@ -40,7 +40,7 @@ class RNNModel(base_model.BaseModel):
     A = Dense(sequence_length, activation='softmax')(A)
     A = Reshape((250, 1))(A)
     X = Multiply()([H, A])
-    X = Flatten()(X)
+    X = GlobalAveragePooling1D()(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     Output = Dense(6, activation='sigmoid')(X)
