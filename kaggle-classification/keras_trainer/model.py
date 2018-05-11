@@ -30,7 +30,6 @@ from keras_trainer.single_layer_cnn import SingleLayerCnn
 from keras_trainer.rnn import RNNModel
 from keras_trainer.custom_metrics import auc_roc
 
-
 FLAGS = None
 
 TEMPORARY_MODEL_PATH = 'model.h5'
@@ -189,9 +188,17 @@ if __name__ == '__main__':
   parser.add_argument(
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
-      '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+      '--log_path',
+      type=str,
+      default='local_data/logs/',
+      help='Path to write tensorboard logs.')
   parser.add_argument(
-      '--comet_key', type=str, default=None, help='Path to file containing comet.ml api key. Set to None to disable comet.ml.')
+      '--comet_key',
+      type=str,
+      default=None,
+      help=
+      'Path to file containing comet.ml api key. Set to None to disable comet.ml.'
+  )
   parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
@@ -206,8 +213,7 @@ if __name__ == '__main__':
       '--learning_rate', type=float, default=0.00005, help='Learning rate.')
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
-  parser.add_argument('--batch_size', default=64, help='Batch size.')
-
+  parser.add_argument('--batch_size', type=int, default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
@@ -218,10 +224,11 @@ if __name__ == '__main__':
   hparams.model_type = FLAGS.model_type
 
   if FLAGS.comet_key:
-    experiment = Experiment(api_key=FLAGS.comet_key, 
-      project_name='comet_trial_run', 
-      auto_param_logging=False,
-      parse_args=False)
+    experiment = Experiment(
+        api_key=FLAGS.comet_key,
+        project_name='comet_trial_run',
+        auto_param_logging=False,
+        parse_args=False)
     experiment.log_multiple_params(hparams.values())
     experiment.log_parameter('test_data_path', FLAGS.train_path)
     experiment.log_parameter('valid_data_path', FLAGS.validation_path)
@@ -252,6 +259,6 @@ if __name__ == '__main__':
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
   if FLAGS.comet_key:
-    experiment.log_metric("test_auc", model.score_auc(test_data))
+    experiment.log_metric('test_auc', model.score_auc(test_data))
 
   model.predict(['This sentence is benign'])
