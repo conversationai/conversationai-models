@@ -4,10 +4,11 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape, GlobalAveragePooling1D
+from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape, Dot
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
+import keras.backend as K
 
 
 class RNNModel(base_model.BaseModel):
@@ -38,9 +39,7 @@ class RNNModel(base_model.BaseModel):
     A = TimeDistributed(Dense(3), input_shape=(sequence_length, 256))(H)
     A = Flatten()(A)
     A = Dense(sequence_length, activation='softmax')(A)
-    A = Reshape((250, 1))(A)
-    X = Multiply()([H, A])
-    X = GlobalAveragePooling1D()(X)
+    X = Dot((1, 1))([H, A])
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     Output = Dense(6, activation='sigmoid')(X)
