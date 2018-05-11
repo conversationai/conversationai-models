@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import os
 import os.path
+from comet_ml import Experiment
 import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.callbacks import ModelCheckpoint
@@ -28,6 +29,7 @@ from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
 from keras_trainer.rnn import RNNModel
 from keras_trainer.custom_metrics import auc_roc
+
 
 FLAGS = None
 
@@ -187,15 +189,13 @@ if __name__ == '__main__':
   parser.add_argument(
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
-      '--log_path',
-      type=str,
-      default='local_data/logs/',
-      help='Path to write tensorboard logs.')
+      '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+  parser.add_argument(
+      '--comet_key', type=str, default=None, help='Path to file containing comet.ml api key. Set to None to disable comet.ml.')
   parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
       help='A comma separated list of labels to predict.')
-
   parser.add_argument(
       '--model_type',
       default='single_layer_cnn',
@@ -208,6 +208,7 @@ if __name__ == '__main__':
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
   parser.add_argument('--batch_size', default=64, help='Batch size.')
 
+
   FLAGS = parser.parse_args()
 
   hparams = DEFAULT_HPARAMS
@@ -215,6 +216,18 @@ if __name__ == '__main__':
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
   hparams.model_type = FLAGS.model_type
+
+  if FLAGS.comet_key:
+    experiment = Experiment(api_key=FLAGS.comet_key, 
+      project_name='comet_trial_run', 
+      auto_param_logging=False,
+      parse_args=False)
+    experiment.log_multiple_params(hparams.values())
+    experiment.log_parameter('test_data_path', FLAGS.train_path)
+    experiment.log_parameter('valid_data_path', FLAGS.validation_path)
+    experiment.log_parameter('embeddings_path', FLAGS.embeddings_path)
+    experiment.log_parameter('model_path', FLAGS.job_dir)
+    experiment.log_parameter('model', hparams.model_type)
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed
@@ -232,10 +245,13 @@ if __name__ == '__main__':
       labels=FLAGS.labels)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
+  if FLAGS.comet_key:
+    experiment.log_dataset_hash(train)
   model.train(train)
 
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
-  model.score_auc(test_data)
+  if FLAGS.comet_key:
+    experiment.log_metric("test_auc", model.score_auc(test_data))
 
   model.predict(['This sentence is benign'])

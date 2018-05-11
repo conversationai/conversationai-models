@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape
+from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Flatten, Dot
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
@@ -31,16 +31,14 @@ class RNNModel(base_model.BaseModel):
         self.hparams.vocab_size,
         self.hparams.embedding_dim,
         weights=[self.embeddings_matrix],
-        input_length=self.hparams.sequence_length,
+        input_length=sequence_length,
         trainable=self.hparams.train_embedding)(
             I)
     H = Bidirectional(GRU(128, return_sequences=True))(E)
     A = TimeDistributed(Dense(3), input_shape=(sequence_length, 256))(H)
     A = Flatten()(A)
     A = Dense(sequence_length, activation='softmax')(A)
-    A = Reshape((250, 1))(A)
-    X = Multiply()([H, A])
-    X = Flatten()(X)
+    X = Dot((1, 1))([H, A])
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
     Output = Dense(6, activation='sigmoid')(X)
