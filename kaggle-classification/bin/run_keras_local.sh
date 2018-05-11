@@ -17,8 +17,9 @@ echo "This will populate after a model checkpoint is saved."
 echo ""
 
 python -m keras_trainer.model \
-	--train_path=${INPUT_PATH}/train.csv \
-	--test_path=${INPUT_PATH}/validation.csv \
-	--embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
-	--job-dir=${OUTPUT_PATH} \
-	--log_path=${LOG_PATH}
+       --train_path=${INPUT_PATH}/train.csv \
+       --test_path=${INPUT_PATH}/validation.csv \
+       --embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
+       --job-dir=${OUTPUT_PATH} \
+       --log_path=${LOG_PATH} \
+       --model_type=rnn

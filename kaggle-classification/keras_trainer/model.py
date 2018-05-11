@@ -1,6 +1,4 @@
-"""
-Classifiers for the Toxic Comment Classification Kaggle challenge,
-https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
+"""Classifiers for the Toxic Comment Classification Kaggle challenge, https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge
 
 To run locally:
   python keras-trainer/model.py
@@ -28,6 +26,7 @@ from sklearn import metrics
 from tensorflow.python.framework.errors_impl import NotFoundError
 from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
+from keras_trainer.rnn import RNNModel
 from keras_trainer.custom_metrics import auc_roc
 
 FLAGS = None
@@ -35,8 +34,9 @@ FLAGS = None
 TEMPORARY_MODEL_PATH = 'model.h5'
 
 VALID_MODELS = {
-  'cnn_with_attention': CNNWithAttention,
-  'single_layer_cnn': SingleLayerCnn
+    'cnn_with_attention': CNNWithAttention,
+    'single_layer_cnn': SingleLayerCnn,
+    'rnn': RNNModel
 }
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
@@ -48,21 +48,18 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     embedding_dim=100,
     train_embedding=False,
     model_type='single_layer_cnn',
-    filter_sizes=[3,4,5],
-    num_filters=[128,128,128],
+    filter_sizes=[3, 4, 5],
+    num_filters=[128, 128, 128],
     attention_intermediate_size=128)
+
 
 class ModelRunner():
   """Toxicity model using CNN + Attention"""
 
-  def __init__(self,
-               job_dir,
-               embeddings_path,
-               log_path,
-               hparams,
-               labels):
+  def __init__(self, job_dir, embeddings_path, log_path, hparams, labels):
     if os.path.exists(TEMPORARY_MODEL_PATH):
-      raise FileExistsError('The following file path already exists: {}'.format(TEMPORARY_MODEL_PATH))
+      raise FileExistsError('The following file path already exists: {}'.format(
+          TEMPORARY_MODEL_PATH))
 
     self.job_dir = job_dir
     self.model_path = os.path.join(job_dir, 'model.h5')
@@ -79,7 +76,8 @@ class ModelRunner():
 
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
-      model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix, self.hparams).get_model()
+      model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix,
+                                                    self.hparams).get_model()
     else:
       raise ValueError('You have specified an invalid model type.')
 
@@ -89,18 +87,18 @@ class ModelRunner():
     callbacks = [
         ModelCheckpoint(
             TEMPORARY_MODEL_PATH, save_best_only=True, verbose=True),
-        EarlyStopping(
-            monitor='val_loss', mode='auto'),
+        EarlyStopping(monitor='val_loss', mode='auto'),
         TensorBoard(self.log_path)
     ]
 
     model.fit(
-        x=train_comment, y=train_labels,
-        batch_size=self.hparams.batch_size,
+        x=train_comment,
+        y=train_labels,
+        batch_size=int(self.hparams.batch_size),
         epochs=self.hparams.epochs,
         validation_split=0.1,
         callbacks=callbacks,
-        verbose=2) # Output one line per epoch
+        verbose=2)  # Output one line per epoch
 
     # Necessary because we can't save h5 files to cloud storage directly via
     # Checkpoint.
@@ -120,18 +118,23 @@ class ModelRunner():
     # Get an array where each element is a list of all the labels for the
     # specific instance.
     labels = np.array(list(zip(*[data[label] for label in self.labels])))
-    individual_auc_scores = metrics.roc_auc_score(labels, predictions, average=None)
-    print("Individual AUCs: {}".format(list(zip(self.labels, individual_auc_scores))))
+    individual_auc_scores = metrics.roc_auc_score(
+        labels, predictions, average=None)
+    print('Individual AUCs: {}'.format(
+        list(zip(self.labels, individual_auc_scores))))
     mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
-    print("Mean AUC: {}".format(mean_auc_score))
+    print('Mean AUC: {}'.format(mean_auc_score))
 
   def _prep_texts(self, texts):
-    return pad_sequences(self.tokenizer.texts_to_sequences(texts), maxlen=self.hparams.sequence_length)
+    return pad_sequences(
+        self.tokenizer.texts_to_sequences(texts),
+        maxlen=self.hparams.sequence_length)
 
   def _load_model(self):
     try:
       tf.gfile.Copy(self.model_path, TEMPORARY_MODEL_PATH, overwrite=True)
-      self.model = load_model(TEMPORARY_MODEL_PATH, custom_objects={'auc_roc': auc_roc})
+      self.model = load_model(
+          TEMPORARY_MODEL_PATH, custom_objects={'auc_roc': auc_roc})
       tf.gfile.Remove(TEMPORARY_MODEL_PATH)
       print('Model loaded from: {}'.format(self.model_path))
     except NotFoundError:
@@ -148,7 +151,8 @@ class ModelRunner():
     return tokenizer
 
   def _setup_embeddings_matrix(self):
-    embeddings_matrix = np.zeros((self.hparams.vocab_size, self.hparams.embedding_dim))
+    embeddings_matrix = np.zeros((self.hparams.vocab_size,
+                                  self.hparams.embedding_dim))
     with tf.gfile.Open(self.embeddings_path, 'r') as f:
       for line in f:
         values = line.split()
@@ -157,33 +161,52 @@ class ModelRunner():
           word_idx = self.tokenizer.word_index[word]
           word_embedding = np.asarray(values[1:], dtype='float32')
           embeddings_matrix[word_idx] = word_embedding
-    embeddings_matrix[self.hparams.vocab_size - 1] = embeddings_matrix.mean(axis=0)
+    embeddings_matrix[self.hparams.vocab_size -
+                      1] = embeddings_matrix.mean(axis=0)
     return embeddings_matrix
+
 
 if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--train_path', type=str, default='local_data/train.csv', help='Path to the training data.')
+      '--train_path',
+      type=str,
+      default='local_data/train.csv',
+      help='Path to the training data.')
   parser.add_argument(
-      '--test_path', type=str, default='local_data/validation.csv', help='Path to the test data.')
+      '--test_path',
+      type=str,
+      default='local_data/validation.csv',
+      help='Path to the test data.')
   parser.add_argument(
-      '--embeddings_path', type=str, default='local_data/glove.6B/glove.6B.100d.txt', help='Path to the embeddings.')
+      '--embeddings_path',
+      type=str,
+      default='local_data/glove.6B/glove.6B.100d.txt',
+      help='Path to the embeddings.')
   parser.add_argument(
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
-      '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+      '--log_path',
+      type=str,
+      default='local_data/logs/',
+      help='Path to write tensorboard logs.')
   parser.add_argument(
-    '--labels', default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
-    help='A comma separated list of labels to predict.')
+      '--labels',
+      default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
+      help='A comma separated list of labels to predict.')
+
+  parser.add_argument(
+      '--model_type',
+      default='single_layer_cnn',
+      help='Model type. Valid choices are {}'.format(list(VALID_MODELS.keys())))
 
   # Hyper-parameters
   parser.add_argument(
       '--learning_rate', type=float, default=0.00005, help='Learning rate.')
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
-  parser.add_argument(
-      '--batch_size',  default=64, help='Batch size.')
+  parser.add_argument('--batch_size', default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
@@ -191,19 +214,22 @@ if __name__ == '__main__':
   hparams.learning_rate = FLAGS.learning_rate
   hparams.dropout_rate = FLAGS.dropout_rate
   hparams.batch_size = FLAGS.batch_size
+  hparams.model_type = FLAGS.model_type
 
   # Used to scope logs to a given trial (when hyper param tuning) so that they
   # don't run over each other. When running locally it will just use the passed
   # in log path.
   trial_log_path = os.path.join(
       FLAGS.log_path,
-      json.loads(
-          os.environ.get('TF_CONFIG', '{}')
-      ).get('task', {}).get('trial', '')
-  )
+      json.loads(os.environ.get('TF_CONFIG', '{}')).get('task', {}).get(
+          'trial', ''))
 
-  model = ModelRunner(job_dir=FLAGS.job_dir, embeddings_path=FLAGS.embeddings_path,
-                      log_path=trial_log_path, hparams=hparams, labels=FLAGS.labels)
+  model = ModelRunner(
+      job_dir=FLAGS.job_dir,
+      embeddings_path=FLAGS.embeddings_path,
+      log_path=trial_log_path,
+      hparams=hparams,
+      labels=FLAGS.labels)
   with tf.gfile.Open(FLAGS.train_path, 'rb') as f:
     train = pd.read_csv(f, encoding='utf-8')
   model.train(train)
