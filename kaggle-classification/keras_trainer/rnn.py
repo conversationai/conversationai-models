@@ -8,7 +8,6 @@ from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, T
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
-import keras.backend as K
 
 
 class RNNModel(base_model.BaseModel):
