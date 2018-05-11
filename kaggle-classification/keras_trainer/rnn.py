@@ -4,7 +4,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Multiply, Flatten, Reshape, Dot
+from keras.layers import Input, GRU, Dense, Embedding, Dropout, Bidirectional, TimeDistributed, Flatten, Dot
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
