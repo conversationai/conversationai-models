@@ -1,0 +1,9 @@
+trainingInput:
+  scaleTier: CUSTOM
+  ## Custom scaleTier needed for using > 1 GPU machines.
+  # scaleTier: CUSTOM
+  masterType: large_model
+  # workerType: complex_model_m_gpu
+  # parameterServerType: large_model
+  # workerCount: 9
+  # parameterServerCount: 3

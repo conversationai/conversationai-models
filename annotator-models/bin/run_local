@@ -1,0 +1,39 @@
+#!/bin/bash
+
+#
+# A script to train the Dawid Skene model locally.
+#
+# The DATA_PATH is the path to the CSV with the annotation-level data. The data
+# must be a CSV with the fields:
+#   * _unit_id: a unique ID for each item
+#   * _worker_id: a unique ID corresponding to each rater
+#   * {LABEL}: a categorical rating for the given label
+#
+#    _unit_id,_worker_id,obscene
+#    1519346288,129,0
+#    1519346288,114,0
+#    1519346289,129,1
+#    1519346289,130,1
+#    ....
+#
+# The COMMENT_TEXT_PATH is the path to a CSV with item-level data. The data
+# must be a CSV with the fields:
+#   * _unit_id: a unique ID for each item
+#   * comment_text: the text associated with each item
+#
+#    _unit_id,comment_text
+#    1519346288,"This is the first comment."
+#    1519346289,"This is the second f*ing comment."
+
+
+DATA_PATH=local_data/sample_training_data.csv
+COMMENT_TEXT_PATH=local_data/sample_comment_text.csv
+
+gcloud ml-engine local train \
+     --module-name=trainer.dawid_skene \
+     --package-path=trainer -- \
+     --data-path=$DATA_PATH \
+     --comment-text-path=$COMMENT_TEXT_PATH \
+     --label='obscene' \
+     --job-dir='results' \
+     --max-iter=10
