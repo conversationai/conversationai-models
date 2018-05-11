@@ -53,6 +53,8 @@ vocab_size = task.vocab_size
 labels_rev = {int(v): k for k, v in labels.items()}
 vocab_rev = {int(v): k for k, v in vocab.items()}
 
+NUM_RNN_LAYERS = 5
+
 
 def HAN_model_1(session, restore_only=False):
   """Hierarhical Attention Network"""
@@ -67,16 +69,23 @@ def HAN_model_1(session, restore_only=False):
 
   is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
-  cell = BNLSTMCell(80, is_training) # h-h batchnorm LSTMCell
+  def bn_cell():
+    return BNLSTMCell(80, is_training) # h-h batchnorm LSTMCell
+
   # cell = GRUCell(30)
-  cell = MultiRNNCell([cell]*5)
+  fw_word_cell = MultiRNNCell([bn_cell() for _ in range(NUM_RNN_LAYERS)])
+  bw_word_cell = MultiRNNCell([bn_cell() for _ in range(NUM_RNN_LAYERS)])
+  fw_sentence_cell = MultiRNNCell([bn_cell() for _ in range(NUM_RNN_LAYERS)])
+  bw_sentence_cell = MultiRNNCell([bn_cell() for _ in range(NUM_RNN_LAYERS)])
 
   model = HANClassifierModel(
       vocab_size=vocab_size,
       embedding_size=200,
       classes=classes,
-      word_cell=cell,
-      sentence_cell=cell,
+      fw_word_cell=fw_word_cell,
+      bw_word_cell=bw_word_cell,
+      fw_sentence_cell=fw_sentence_cell,
+      bw_sentence_cell=bw_sentence_cell,
       word_output_size=100,
       sentence_output_size=100,
       device=args.device,
