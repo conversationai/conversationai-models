@@ -226,7 +226,7 @@ if __name__ == '__main__':
   if FLAGS.comet_key:
     experiment = Experiment(
         api_key=FLAGS.comet_key,
-        project_name='comet_trial_run',
+        project_name='compare-models',
         auto_param_logging=False,
         parse_args=False)
     experiment.log_multiple_params(hparams.values())
