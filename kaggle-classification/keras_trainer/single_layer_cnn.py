@@ -32,6 +32,7 @@ class SingleLayerCnn(base_model.BaseModel):
   def __init__(self, embeddings_matrix, hparams, labels):
     self.embeddings_matrix = embeddings_matrix
     self.hparams = hparams
+    self.labels = labels
     self.num_labels = len(labels)
 
   def get_model(self):
