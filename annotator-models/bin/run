@@ -24,7 +24,6 @@ TOLERANCE=100
 PSEUDO_COUNT=0.05
 
 declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
-#declare -a LABELS=("toxic_score")
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus

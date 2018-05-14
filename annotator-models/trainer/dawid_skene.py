@@ -153,7 +153,6 @@ def m_step(counts, item_classes, psuedo_count):
     # compute error rates for each rater, each predicted class
     # and each true class
 
-    # error_rates = np.matmul(counts.T, item_classes) + psuedo_count
     error_rates = np.matmul(counts.T, item_classes) + psuedo_count
 
     # reorder axes so its of size [nItems x nClasses x nClasses]
