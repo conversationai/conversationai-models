@@ -32,7 +32,7 @@ class CNNWithAttention(base_model.BaseModel):
     train_embedding
   """
 
-  def __init__(self, embeddings_matrix, hparams):
+  def __init__(self, embeddings_matrix, hparams, labels):
     self.embeddings_matrix = embeddings_matrix
     self.hparams = hparams
     self.labels = labels
