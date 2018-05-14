@@ -79,7 +79,7 @@ class ModelRunner():
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
       model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix,
-                                                    self.hparams).get_model()
+                                                    self.hparams, self.labels).get_model()
     else:
       raise ValueError('You have specified an invalid model type.')
 
@@ -120,12 +120,16 @@ class ModelRunner():
     # Get an array where each element is a list of all the labels for the
     # specific instance.
     labels = np.array(list(zip(*[data[label] for label in self.labels])))
-    individual_auc_scores = metrics.roc_auc_score(
-        labels, predictions, average=None)
-    print('Individual AUCs: {}'.format(
-        list(zip(self.labels, individual_auc_scores))))
-    mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
-    print('Mean AUC: {}'.format(mean_auc_score))
+    if len(self.labels)>1:
+      individual_auc_scores = metrics.roc_auc_score(
+          labels, predictions, average=None)
+      print('Individual AUCs: {}'.format(
+          list(zip(self.labels, individual_auc_scores))))
+      mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
+      print('Mean AUC: {}'.format(mean_auc_score))
+    else:
+      auc_score = metrics.roc_auc_score(labels, predictions)
+      print('AUC: {}'.format(auc_score))
 
   def _prep_texts(self, texts):
     return pad_sequences(

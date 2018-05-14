@@ -35,6 +35,7 @@ class CNNWithAttention(base_model.BaseModel):
   def __init__(self, embeddings_matrix, hparams):
     self.embeddings_matrix = embeddings_matrix
     self.hparams = hparams
+    self.num_labels = len(labels)
 
   def get_model(self):
     I = Input(shape=(self.hparams.sequence_length,), dtype='float32')
@@ -62,7 +63,7 @@ class CNNWithAttention(base_model.BaseModel):
     X = Dropout(self.hparams.dropout_rate)(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
-    Output = Dense(6, activation='sigmoid', name='outputs')(X)
+    Output = Dense(self.num_labels, activation='sigmoid', name='outputs')(X)
 
     model = Model(inputs=I, outputs=Output)
     model.compile(optimizer='rmsprop',
