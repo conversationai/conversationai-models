@@ -230,8 +230,8 @@ if __name__ == '__main__':
         auto_param_logging=False,
         parse_args=False)
     experiment.log_multiple_params(hparams.values())
-    experiment.log_parameter('test_data_path', FLAGS.train_path)
-    experiment.log_parameter('valid_data_path', FLAGS.validation_path)
+    experiment.log_parameter('train_data_path', FLAGS.train_path)
+    experiment.log_parameter('test_data_path', FLAGS.test_path)
     experiment.log_parameter('embeddings_path', FLAGS.embeddings_path)
     experiment.log_parameter('model_path', FLAGS.job_dir)
     experiment.log_parameter('model', hparams.model_type)
