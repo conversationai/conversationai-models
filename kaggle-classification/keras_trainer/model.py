@@ -67,7 +67,7 @@ class ModelRunner():
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
-    self.labels = [l.strip() for l in FLAGS.labels.split(',')]
+    self.labels = [l.strip() for l in labels.split(',')]
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
     print('Setting up embedding matrix...')
