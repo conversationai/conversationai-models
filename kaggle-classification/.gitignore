@@ -16,3 +16,6 @@ local_data/
 
 # Temporary directory for hacking stuff in
 tmp/
+
+# Comet API key
+comet_api_key.txt

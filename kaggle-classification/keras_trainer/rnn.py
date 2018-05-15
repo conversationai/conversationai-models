@@ -19,9 +19,11 @@ class RNNModel(base_model.BaseModel):
     train_embedding
   """
 
-  def __init__(self, embeddings_matrix, hparams):
+  def __init__(self, embeddings_matrix, hparams, labels):
     self.embeddings_matrix = embeddings_matrix
     self.hparams = hparams
+    self.labels = labels
+    self.num_labels = len(labels)
 
   def get_model(self):
     sequence_length = self.hparams.sequence_length
@@ -35,13 +37,15 @@ class RNNModel(base_model.BaseModel):
         trainable=self.hparams.train_embedding)(
             I)
     H = Bidirectional(GRU(128, return_sequences=True))(E)
-    A = TimeDistributed(Dense(3), input_shape=(sequence_length, 256))(H)
-    A = Flatten()(A)
-    A = Dense(sequence_length, activation='softmax')(A)
+    A = TimeDistributed(
+        Dense(128, activation='relu'), input_shape=(sequence_length, 256))(
+            H)
+    A = TimeDistributed(Dense(1, activation='softmax'))(H)
     X = Dot((1, 1))([H, A])
+    X = Flatten()(X)
     X = Dense(128, activation='relu')(X)
     X = Dropout(self.hparams.dropout_rate)(X)
-    Output = Dense(6, activation='sigmoid')(X)
+    Output = Dense(self.num_labels, activation='sigmoid')(X)
 
     model = Model(inputs=I, outputs=Output)
     model.compile(

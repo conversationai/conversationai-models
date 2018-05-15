@@ -32,7 +32,6 @@ from keras_trainer.custom_metrics import auc_roc
 from keras_trainer.base_model import BaseModel
 from typing import Dict, Type
 
-
 FLAGS = None
 
 TEMPORARY_MODEL_PATH = 'model.h5'
@@ -70,7 +69,7 @@ class ModelRunner():
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
-    self.labels = [l.strip() for l in FLAGS.labels.split(',')]
+    self.labels = [l.strip() for l in labels.split(',')]
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
     print('Setting up embedding matrix...')
@@ -81,7 +80,8 @@ class ModelRunner():
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
       model = VALID_MODELS[self.hparams.model_type](
-          self.embeddings_matrix, self.hparams).get_model()  # type: BaseModel
+          self.embeddings_matrix, self.hparams,
+          self.labels).get_model()  # type: BaseModel
     else:
       raise ValueError('You have specified an invalid model type.')
 
@@ -122,12 +122,17 @@ class ModelRunner():
     # Get an array where each element is a list of all the labels for the
     # specific instance.
     labels = np.array(list(zip(*[data[label] for label in self.labels])))
-    individual_auc_scores = metrics.roc_auc_score(
-        labels, predictions, average=None)
-    print('Individual AUCs: {}'.format(
-        list(zip(self.labels, individual_auc_scores))))
-    mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
-    print('Mean AUC: {}'.format(mean_auc_score))
+    if len(self.labels) > 1:
+      individual_auc_scores = metrics.roc_auc_score(
+          labels, predictions, average=None)
+      print('Individual AUCs: {}'.format(
+          list(zip(self.labels, individual_auc_scores))))
+      mean_auc_score = metrics.roc_auc_score(
+          labels, predictions, average='macro')
+      print('Mean AUC: {}'.format(mean_auc_score))
+    else:
+      auc_score = metrics.roc_auc_score(labels, predictions)
+      print('AUC: {}'.format(auc_score))
 
   def _prep_texts(self, texts):
     return pad_sequences(
@@ -191,9 +196,23 @@ if __name__ == '__main__':
   parser.add_argument(
       '--job-dir', type=str, default='local_data/', help='Path to model file.')
   parser.add_argument(
-      '--log_path', type=str, default='local_data/logs/', help='Path to write tensorboard logs.')
+      '--log_path',
+      type=str,
+      default='local_data/logs/',
+      help='Path to write tensorboard logs.')
   parser.add_argument(
-      '--comet_key', type=str, default=None, help='Path to file containing comet.ml api key. Set to None to disable comet.ml.')
+      '--comet_key',
+      type=str,
+      default=None,
+      help=
+      'Path to file containing comet.ml api key. Set to None to disable comet.ml.'
+  )
+  parser.add_argument(
+      '--comet_project_name',
+      type=str,
+      default=None,
+      help=
+      'Name of comet project that tracks results. Must be set if comet_key is.')
   parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
@@ -208,8 +227,7 @@ if __name__ == '__main__':
       '--learning_rate', type=float, default=0.00005, help='Learning rate.')
   parser.add_argument(
       '--dropout_rate', type=float, default=0.5, help='Dropout rate.')
-  parser.add_argument('--batch_size', default=64, help='Batch size.')
-
+  parser.add_argument('--batch_size', type=int, default=64, help='Batch size.')
 
   FLAGS = parser.parse_args()
 
@@ -220,13 +238,15 @@ if __name__ == '__main__':
   hparams.model_type = FLAGS.model_type
 
   if FLAGS.comet_key:
-    experiment = Experiment(api_key=FLAGS.comet_key, 
-      project_name='comet_trial_run', 
-      auto_param_logging=False,
-      parse_args=False)
+    experiment = Experiment(
+        api_key=FLAGS.comet_key,
+        project_name=FLAGS.comet_project_name,
+        team_name='jigsaw',
+        auto_param_logging=False,
+        parse_args=False)
     experiment.log_multiple_params(hparams.values())
-    experiment.log_parameter('test_data_path', FLAGS.train_path)
-    experiment.log_parameter('valid_data_path', FLAGS.validation_path)
+    experiment.log_parameter('train_data_path', FLAGS.train_path)
+    experiment.log_parameter('test_data_path', FLAGS.test_path)
     experiment.log_parameter('embeddings_path', FLAGS.embeddings_path)
     experiment.log_parameter('model_path', FLAGS.job_dir)
     experiment.log_parameter('model', hparams.model_type)
@@ -254,6 +274,6 @@ if __name__ == '__main__':
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
   if FLAGS.comet_key:
-    experiment.log_metric("test_auc", model.score_auc(test_data))
+    experiment.log_metric('test_auc', model.score_auc(test_data))
 
   model.predict(['This sentence is benign'])
