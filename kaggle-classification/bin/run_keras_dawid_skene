@@ -24,8 +24,8 @@ LOG_PATH=${OUTPUT_PATH}/logs/
 HPARAM_CONFIG=keras_hparam_config.yaml
 echo "Writing to $OUTPUT_PATH"
 
-# Remote
-gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+# mean labels
+gcloud ml-engine jobs submit training ${JOB_NAME}_mean_${DATE} \
     --job-dir $OUTPUT_PATH \
     --runtime-version 1.4 \
     --module-name keras_trainer.model \
@@ -38,8 +38,20 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --test_path ${INPUT_PATH}/test_mean_q42017.csv \
     --embeddings_path $EMBEDDING_PATH \
     --log_path ${LOG_PATH} \
-    --labels threat,flirtation,identity_hate,insult,obscene,sexual_explicit
+    --labels threat,flirtation,identity_hate,insult,obscene,sexual_explicit,frac_very_neg,frac_neg
 
-
-#    --train_path ${INPUT_PATH}/train_mean_q42017_10k.csv \
-#    --test_path ${INPUT_PATH}/test_mean_q42017.csv \
+# hat labels
+gcloud ml-engine jobs submit training ${JOB_NAME}_hat_${DATE} \
+    --job-dir $OUTPUT_PATH \
+    --runtime-version 1.4 \
+    --module-name keras_trainer.model \
+    --package-path keras_trainer \
+    --region $REGION \
+    --verbosity debug \
+    --config ${HPARAM_CONFIG} \
+    -- \
+    --train_path ${INPUT_PATH}/train_hat_q42017.csv \
+    --test_path ${INPUT_PATH}/test_hat_q42017.csv \
+    --embeddings_path $EMBEDDING_PATH \
+    --log_path ${LOG_PATH} \
+    --labels threat,flirtation,identity_hate,insult,obscene,sexual_explicit,frac_very_neg,frac_neg
