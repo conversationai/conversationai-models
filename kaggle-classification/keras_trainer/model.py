@@ -29,6 +29,8 @@ from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
 from keras_trainer.rnn import RNNModel
 from keras_trainer.custom_metrics import auc_roc
+from keras_trainer.base_model import BaseModel
+from typing import Dict, Type
 
 
 FLAGS = None
@@ -39,7 +41,7 @@ VALID_MODELS = {
     'cnn_with_attention': CNNWithAttention,
     'single_layer_cnn': SingleLayerCnn,
     'rnn': RNNModel
-}
+}  # type: Dict[str, Type[BaseModel]]
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
@@ -78,8 +80,8 @@ class ModelRunner():
 
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
-      model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix,
-                                                    self.hparams).get_model()
+      model = VALID_MODELS[self.hparams.model_type](
+          self.embeddings_matrix, self.hparams).get_model()  # type: BaseModel
     else:
       raise ValueError('You have specified an invalid model type.')
 
