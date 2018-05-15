@@ -6,6 +6,7 @@ INPUT_PATH=local_data
 LOG_PATH=${OUTPUT_PATH}/logs/
 COMET_KEY_FILE='comet_api_key.txt'
 COMET_KEY=$(cat ${COMET_KEY_FILE})
+COMET_PROJECT_NAME='compare-models'
 
 echo "You can view the tensorboard for this job with the command:"
 echo ""
@@ -25,4 +26,5 @@ python -m keras_trainer.model \
        --job-dir=${OUTPUT_PATH} \
        --log_path=${LOG_PATH} \
        --comet_key=${COMET_KEY} \
+       --comet_project_name=${COMET_PROJECT_NAME} \
        --model_type=rnn

@@ -204,6 +204,13 @@ if __name__ == '__main__':
       'Path to file containing comet.ml api key. Set to None to disable comet.ml.'
   )
   parser.add_argument(
+      '--comet_project_name',
+      type=str,
+      default=None,
+      help=
+      'Name of comet project that tracks results. Must be set if comet_key is.'
+  )
+  parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
       help='A comma separated list of labels to predict.')
@@ -230,7 +237,8 @@ if __name__ == '__main__':
   if FLAGS.comet_key:
     experiment = Experiment(
         api_key=FLAGS.comet_key,
-        project_name='compare-models',
+        project_name=FLAGS.comet_project_name,
+        team_name='jigsaw',
         auto_param_logging=False,
         parse_args=False)
     experiment.log_multiple_params(hparams.values())

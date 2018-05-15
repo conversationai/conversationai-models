@@ -22,6 +22,7 @@ LOG_PATH=${OUTPUT_PATH}/logs/
 HPARAM_CONFIG=keras_hparam_config.yaml
 COMET_KEY_FILE='comet_api_key.txt'
 COMET_KEY=$(cat ${COMET_KEY_FILE})
+COMET_PROJECT_NAME='compare-models'
 
 echo "Writing to $OUTPUT_PATH"
 
@@ -40,6 +41,7 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
     --log_path=${LOG_PATH} \
     --comet_key=${COMET_KEY} \
+    --comet_project_name=${COMET_PROJECT_NAME} \
     --model_type=rnn
 
 echo "You can view the tensorboard for this job with the command:"
