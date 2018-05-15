@@ -64,7 +64,6 @@ class ModelRunner():
 
     self.job_dir = job_dir
     self.model_path = os.path.join(job_dir, 'model.h5')
-    self.prediction_path = os.path.join(job_dir, 'test_scored.json')
     self.embeddings_path = embeddings_path
     self.log_path = log_path
     self.hparams = hparams
@@ -114,13 +113,6 @@ class ModelRunner():
   def predict(self, texts):
     data = self._prep_texts(texts)
     predictions = self.model.predict(data)
-
-    # Save the predicted scores and comment_text
-    col_names = [l+'_score' for l in model.labels]
-    df_predictions = pd.concat([pd.DataFrame(predictions, columns=col_names), texts], axis=1)
-
-    with tf.gfile.Open(self.prediction_path, 'w') as f:
-      df_predictions.to_json(f, lines=True, orient='records')
 
     return predictions
 
@@ -223,6 +215,17 @@ if __name__ == '__main__':
       '--model_type',
       default='single_layer_cnn',
       help='Model type. Valid choices are {}'.format(list(VALID_MODELS.keys())))
+  parser.add_argument(
+      '--write-scored-test-data',
+      default=False, help='If true, writes out the predictions on the test data')
+  parser.add_argument(
+      '--scored-test-data-filename',
+    default='test_scored.csv',
+    help='The name of the file in the job-dir to write out scores for test data.')
+  parser.add_argument(
+      '--run-training',
+      default=True, help='If true, runs training. Otherwise, only evaluates model.')
+
 
   # Hyper-parameters
   parser.add_argument(
@@ -270,7 +273,11 @@ if __name__ == '__main__':
     train = pd.read_csv(f, encoding='utf-8')
   if FLAGS.comet_key:
     experiment.log_dataset_hash(train)
-  model.train(train)
+
+  if FLAGS.run_training == False:
+    model.train(train)
+  else:
+    print('Skipping training because --run_training is set to False')
 
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
@@ -279,3 +286,12 @@ if __name__ == '__main__':
     experiment.log_metric('test_auc', model.score_auc(test_data))
 
   predictions = model.predict(test_data['comment_text'])
+
+  if FLAGS.write_scored_test_data:
+    df_scores = pd.DataFrame(predictions, columns=model.labels)
+    df_predictions = pd.concat([df_scores, test_data['comment_text']], axis=1)
+    prediction_path = os.path.join(model.job_dir, FLAGS.scored_test_data_filename)
+
+    print('Writing scored test data to {0}'.format(prediction_path))
+    with tf.gfile.Open(prediction_path, 'w') as f:
+      df_predictions.to_csv(f, encoding='utf-8', index=False)
