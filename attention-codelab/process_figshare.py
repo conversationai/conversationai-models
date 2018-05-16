@@ -28,9 +28,15 @@ from __future__ import print_function
 
 import pandas as pd
 import os
+import re
 from urllib.request import urlretrieve
 
 DEFAULT_DATA_DIR = 'data/'
+FIGSHARE_PATH = 'https://ndownloader.figshare.com/files/'
+FIGSHARE_URL_MAPPING = {
+    'toxicity_annotations.tsv': FIGSHARE_PATH + '7394539',
+    'toxicity_annotated_comments.tsv': FIGSHARE_PATH + '7394542'
+}
 
 def download_figshare(download_data_dir = DEFAULT_DATA_DIR):
     """
@@ -46,19 +52,16 @@ def download_figshare(download_data_dir = DEFAULT_DATA_DIR):
     for file in ['toxicity_annotations.tsv', 'toxicity_annotated_comments.tsv']:
         if not os.path.isfile(os.path.join(download_data_dir, file)):
             already_exist = False
+            print('Downloading %s...' % file, end = '')
+            urlretrieve(FIGSHARE_URL_MAPPING[file], 
+                        os.path.join(download_data_dir, file))
+            print('Done!')
     
     if already_exist:
         print('Figshare data already exists.')
         return
     
-    print('Downloading toxicity_annotations.tsv...', end = '')
-    urlretrieve('https://ndownloader.figshare.com/files/7394539', 
-                os.path.join(download_data_dir, 'toxicity_annotations.tsv'))
-    print('Done!')
-    print('Downloading toxicity_annotated_comments.tsv...', end = '')
-    urlretrieve('https://ndownloader.figshare.com/files/7394542', 
-                os.path.join(download_data_dir, 'toxicity_annotated_comments.tsv'))
-    print('Done!')
+    
 
 def process_figshare(input_data_dir = DEFAULT_DATA_DIR, output_data_dir = DEFAULT_DATA_DIR):
     """
@@ -80,16 +83,15 @@ def process_figshare(input_data_dir = DEFAULT_DATA_DIR, output_data_dir = DEFAUL
     print('Processing files...', end = '')
     toxicity_annotated_comments = pd.read_csv(os.path.join(input_data_dir, 'toxicity_annotated_comments.tsv'), 
                                               sep = '\t', 
-                                              dtypes = {'rev_id': 'str'})
+                                              dtype = {'rev_id': 'str'})
     toxicity_annotations = pd.read_csv(os.path.join(input_data_dir, 'toxicity_annotations.tsv'), 
                                        sep = '\t',
-                                       dtypes = {'rev_id': 'str'})
+                                       dtype = {'rev_id': 'str'})
 
     annotations_gped = toxicity_annotations.groupby('rev_id', as_index=False).agg({'toxicity': 'mean'})
     all_data = pd.merge(annotations_gped, toxicity_annotated_comments, on = 'rev_id')
 
-    all_data['comment'] = all_data['comment'].apply(lambda x: x.replace("NEWLINE_TOKEN", " "))
-    all_data['comment'] = all_data['comment'].apply(lambda x: x.replace("TAB_TOKEN", " "))
+    all_data['comment'] = all_data['comment'].apply(lambda x: re.sub("NEWLINE_TOKEN|TAB_TOKEN", " ", x))
 
     all_data['is_toxic'] = all_data['toxicity'] > 0.5
 
