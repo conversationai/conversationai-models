@@ -1,0 +1,23 @@
+#!/bin/bash
+
+OUTPUT_PATH=gs://kaggle-model-experiments/keras_runs/${USER}
+MEAN_MODEL_PATH=${OUTPUT_PATH}/20180517_125716/3
+DS_MODEL_PATH=${OUTPUT_PATH}/20180517_125720/4
+
+# mean model
+echo 'Mean Model Eval'
+echo '-------------'
+python bin/eval_on_gold.py \
+       --job-dir=$MEAN_MODEL_PATH \
+       --output-path=${MEAN_MODEL_PATH}/gold_mean_scored.csv \
+       --gold-path=local_data/gold_toxicity_subtypes.csv
+
+# dawid skene model
+echo ''
+echo ''
+echo 'Dawid Skene Model Eval'
+echo '-------------'
+python bin/eval_on_gold.py \
+       --job-dir=$DS_MODEL_PATH \
+       --output-path=${DS_MODEL_PATH}/gold_hat_scored.csv \
+       --gold-path=local_data/gold_toxicity_subtypes.csv

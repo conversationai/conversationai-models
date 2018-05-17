@@ -45,11 +45,11 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     dropout_rate=0.5,
     batch_size=128,
     epochs=10,
-    sequence_length=300,
+    sequence_length=500,
     embedding_dim=100,
     train_embedding=False,
     model_type='single_layer_cnn',
-    filter_sizes=[3, 4, 5],
+    filter_sizes=[2, 3, 4, 5],
     num_filters=[128, 128, 128],
     attention_intermediate_size=128)
 
@@ -66,7 +66,9 @@ class ModelRunner():
     self.model_path = os.path.join(job_dir, 'model.h5')
     self.embeddings_path = embeddings_path
     self.log_path = log_path
-    self.hparams = hparams
+    self.hparams = DEFAULT_HPARAMS
+    if hparams:
+      self.hparams = hparams
     self.labels = [l.strip() for l in labels.split(',')]
     print('Setting up tokenizer...')
     self.tokenizer = self._setup_tokenizer()
@@ -222,10 +224,6 @@ if __name__ == '__main__':
       '--scored-test-data-filename',
     default='test_scored.csv',
     help='The name of the file in the job-dir to write out scores for test data.')
-  parser.add_argument(
-      '--run-training',
-      default=True, help='If true, runs training. Otherwise, only evaluates model.')
-
 
   # Hyper-parameters
   parser.add_argument(
@@ -274,10 +272,7 @@ if __name__ == '__main__':
   if FLAGS.comet_key:
     experiment.log_dataset_hash(train)
 
-  if FLAGS.run_training == False:
-    model.train(train)
-  else:
-    print('Skipping training because --run_training is set to False')
+  model.train(train)
 
   with tf.gfile.Open(FLAGS.test_path, 'rb') as f:
     test_data = pd.read_csv(f, encoding='utf-8')
