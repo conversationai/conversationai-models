@@ -17,6 +17,7 @@
 # where the 'label' field corresponds with one of the heads of the model.
 import os
 import sys
+import json
 import argparse
 import pandas as pd
 import numpy as np
@@ -26,12 +27,25 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 from keras_trainer.model import ModelRunner
 
-def main(FLAGS):
-    base_path = 'gs://kaggle-model-experiments'
-    gold_path = base_path + '/resources/gold_toxicity_subtypes.csv'
+def calculate_auc(df_gold_scored):
+    # HACK: the comet-ml dependency in keras-trainer throws
+    # an error when you try to import sklearn.metrics before
+    # you import comet-ml.
+    from sklearn import metrics
 
+    # only examples with 0/1 gold labels
+    df = df_gold_scored[df_gold_scored['gold'].isin([0,1])]
+
+    y_score = [row[row['label']]  for _, row in df.iterrows()]
+    y_true = np.array(df['gold'])
+
+    auc = metrics.roc_auc_score(y_true, y_score)
+
+    return auc
+
+def main(FLAGS):
     # load gold data
-    with tf.gfile.Open(FLAGS.data_path, 'rb') as f:
+    with tf.gfile.Open(FLAGS.gold_path, 'rb') as f:
         df_gold = pd.read_csv(f, encoding='utf-8')
 
     # load model
@@ -53,15 +67,30 @@ def main(FLAGS):
     # is a float between 0 and 1
     df_gold_scored['bad_annotation'] = df_gold_scored['gold']\
                                        .apply(lambda x: x.strip() == '')
-    df_gold_scored = df_gold_scored['bad_annotation'] == False
+    df_gold_scored = df_gold_scored[df_gold_scored['bad_annotation'] == False]
+
     df_gold_scored['gold'] = df_gold_scored['gold'].astype('float64')
     df_gold_scored['abs_gold_diff'] = [
         np.abs(row[row['label']]  - row['gold'])
-        for i, row in df_gold_scored.iterrows()]
+        for _, row in df_gold_scored.iterrows()]
 
     # TODO: calculate more metrics
     avg_diff = df_gold_scored['abs_gold_diff'].mean()
-    print('Average Difference for {0}: {1}'.format(FLAGS.model_name, avg_diff))
+    print('Average Difference:', avg_diff)
+
+    auc = calculate_auc(df_gold_scored)
+    print('AUC', auc)
+
+    # write out evaluation results
+    evals = {
+        'auc': auc,
+        'avg_diff': avg_diff,
+        'gold_path': FLAGS.gold_path
+    }
+    eval_path = '{0}/gold_eval.json'.format(FLAGS.job_dir)
+
+    with tf.gfile.Open(eval_path, 'w') as f:
+        f.write(json.dumps(evals))
 
     # write out scored data
     print('Writing scored data to {0}'.format(FLAGS.output_path))
@@ -73,10 +102,10 @@ if __name__ == '__main__':
 
   parser = argparse.ArgumentParser()
   parser.add_argument(
-      '--data_path', type=str, default='local_data/gold.csv',
+      '--gold-path', type=str, default='local_data/gold_toxicity_subtypes.csv',
       help='Path to gold test data')
   parser.add_argument(
-      '--output_path', type=str, default='gold_scored.csv',
+      '--output-path', type=str, default='gold_scored.csv',
       help='Name of the file to write results to')
   parser.add_argument(
       '--job-dir', type=str,
@@ -92,10 +121,6 @@ if __name__ == '__main__':
       '--embeddings_path', type=str,
       default='local_data/glove.6B/glove.6B.100d.txt',
       help='Path to the embeddings.')
-  parser.add_argument(
-      '--model-name', type=str,
-      default='my-experimental-model',
-      help='The name of the model, only used for logging')
 
   FLAGS = parser.parse_args()
 
