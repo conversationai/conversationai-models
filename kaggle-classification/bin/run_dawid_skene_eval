@@ -10,7 +10,7 @@ echo '-------------'
 python bin/eval_on_gold.py \
        --job-dir=$MEAN_MODEL_PATH \
        --output-path=${MEAN_MODEL_PATH}/gold_mean_scored.csv \
-       --gold-path=local_data/gold_toxicity_subtypes.csv
+       --gold-path=local_data/gold.csv
 
 # dawid skene model
 echo ''
@@ -20,4 +20,4 @@ echo '-------------'
 python bin/eval_on_gold.py \
        --job-dir=$DS_MODEL_PATH \
        --output-path=${DS_MODEL_PATH}/gold_hat_scored.csv \
-       --gold-path=local_data/gold_toxicity_subtypes.csv
+       --gold-path=local_data/gold.csv

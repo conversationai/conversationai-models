@@ -16,7 +16,9 @@ JOB_NAME=${USER}_kaggle_training
 REGION=us-central1
 INPUT_PATH=gs://annotator_models/data_splits
 EMBEDDING_PATH=gs://kaggle-model-experiments/resources/glove.6B/glove.6B.100d.txt
-HPARAM_CONFIG=keras_hparam_config.yaml
+#CONFIG=keras_hparam_config.yaml
+CONFIG=config.yaml
+
 
 # --- mean labels
 DATE=`date '+%Y%m%d_%H%M%S'`
@@ -33,7 +35,7 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_mean_${DATE} \
     --package-path keras_trainer \
     --region $REGION \
     --verbosity debug \
-    --config ${HPARAM_CONFIG} \
+    --config ${CONFIG} \
     -- \
     --train_path ${INPUT_PATH}/train_mean_q42017.csv \
     --test_path ${INPUT_PATH}/test_mean_q42017.csv \

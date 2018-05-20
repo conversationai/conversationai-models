@@ -19,15 +19,14 @@ trainingInput:
       - parameterName: learning_rate
         type: DOUBLE
         minValue: 0.0005
-        maxValue: 0.05
+        maxValue: 0.1
         scaleType: UNIT_LOG_SCALE
       - parameterName: dropout_rate
         type: DOUBLE
         minValue: 0
-        maxValue: .4
+        maxValue: .5
         scaleType: UNIT_LINEAR_SCALE
       - parameterName: batch_size
         type: DISCRETE
         discreteValues:
         - 128
-        - 256

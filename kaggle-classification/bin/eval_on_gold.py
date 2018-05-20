@@ -43,6 +43,53 @@ def calculate_auc(df_gold_scored):
 
     return auc
 
+def score_gold(df_gold, model):
+    '''
+    Takes a DataFrame of gold data and augments it with model scores for the
+    comment_text field.
+    '''
+    scores = model.predict(df_gold['comment_text'])
+    df_scores = pd.DataFrame(scores, columns=model.labels)
+    df_gold_scored = pd.concat([df_scores, df_gold], axis=1)
+
+    return df_gold_scored
+
+def eval_gold(df_gold_scored):
+    '''
+    Given a DataFrame of scored gold data, returns a dict of evaluation
+    metrics.
+    '''
+
+    df_gold_scored['gold'] = df_gold_scored['gold'].astype('float64')
+
+    results = {}
+
+    # calculate average difference from gold to scores
+    df_gold_scored['abs_gold_diff'] = [
+        np.abs(row[row['label']]  - row['gold'])
+        for _, row in df_gold_scored.iterrows()]
+
+    results['avg_diff'] = df_gold_scored['abs_gold_diff'].mean()
+    results['auc_all'] = calculate_auc(df_gold_scored)
+
+    for label in df_gold_scored['label'].unique():
+        df_label = df_gold_scored[df_gold_scored['label'] == label]
+
+        # some labels have subcategories, e.g. we have gold labels for
+        # personal insult and general insult
+        for name in df_label['name'].unique():
+            if name == label:
+                results['auc_'+ label] = calculate_auc(df_label)
+                continue
+
+            df_label_name = df_label[df_label['name'] == name]
+            results['auc_'+ label + '_' + name] = calculate_auc(df_label_name)
+
+    return results
+
+def score_test_set():
+    pass
+
 def main(FLAGS):
     # load gold data
     with tf.gfile.Open(FLAGS.gold_path, 'rb') as f:
@@ -56,41 +103,19 @@ def main(FLAGS):
         hparams=None, # use the defualt params
         labels=FLAGS.labels)
 
-    print('Running data through model')
-    scores = model.predict(df_gold['comment_text'])
-    df_scores = pd.DataFrame(scores, columns=model.labels)
-    df_gold_scored = pd.concat([df_scores, df_gold], axis=1)
+    print('Scoring gold data')
+    df_gold_scored = score_gold(df_gold, model)
+    results = eval_gold(df_gold_scored)
 
-    # evaluate accuracy
-
-    # TODO: filter out bad annotations by checking if annotation
-    # is a float between 0 and 1
-    df_gold_scored['bad_annotation'] = df_gold_scored['gold']\
-                                       .apply(lambda x: x.strip() == '')
-    df_gold_scored = df_gold_scored[df_gold_scored['bad_annotation'] == False]
-
-    df_gold_scored['gold'] = df_gold_scored['gold'].astype('float64')
-    df_gold_scored['abs_gold_diff'] = [
-        np.abs(row[row['label']]  - row['gold'])
-        for _, row in df_gold_scored.iterrows()]
-
-    # TODO: calculate more metrics
-    avg_diff = df_gold_scored['abs_gold_diff'].mean()
-    print('Average Difference:', avg_diff)
-
-    auc = calculate_auc(df_gold_scored)
-    print('AUC', auc)
+    for key, value in results.items():
+        print('{0}:{1}'.format(key, value))
 
     # write out evaluation results
-    evals = {
-        'auc': auc,
-        'avg_diff': avg_diff,
-        'gold_path': FLAGS.gold_path
-    }
+    results['gold_path'] = FLAGS.gold_path
     eval_path = '{0}/gold_eval.json'.format(FLAGS.job_dir)
 
     with tf.gfile.Open(eval_path, 'w') as f:
-        f.write(json.dumps(evals))
+        f.write(json.dumps(results))
 
     # write out scored data
     print('Writing scored data to {0}'.format(FLAGS.output_path))
