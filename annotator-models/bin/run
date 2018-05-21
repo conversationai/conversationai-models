@@ -28,10 +28,7 @@ declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_h
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
 REGION=us-central1
-DATE=`date '+%Y%m%d_%H%M%S'`
-DATE_DAY_ONLY=`date '+%Y%m%d'`
-JOB_NAME=${USER}_dawid_skene_${LABEL}
-OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
+
 COMMENT_TEXT_PATH=gs://${BUCKET_NAME}/q42017_comment_text.csv
 
 while getopts :c:h opt; do
@@ -62,8 +59,12 @@ for label in "${LABELS[@]}"
 do
     echo "Running on $label"
     JOB_NAME=${USER}_dawid_skene_q42017_${label}
+    DATE=`date '+%Y%m%d_%H%M%S'`
+    DATE_DAY_ONLY=`date '+%Y%m%d'`
+    JOB_NAME=${USER}_dawid_skene
+    OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
 
-    gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+    gcloud ml-engine jobs submit training ${JOB_NAME}_$label_kaggle_${DATE} \
 	   --job-dir=${OUTPUT_PATH} \
 	   --runtime-version=1.4 \
 	   --config=${CONFIG} \

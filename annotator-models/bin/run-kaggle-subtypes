@@ -1,0 +1,55 @@
+#!/bin/bash
+
+#
+# A script to train the kaggle model remotely using ml-engine.
+#
+# To run with default hyperparameters from the kaggle-classification directory just enter:
+# './bin/run'
+#
+#
+# Setup Steps:
+# 1. Install the gcloud SDK
+# 2. Authenticate with the GCP project you want to use, `gcloud config set project [my-project]`
+# 3. Put the train and test data in Cloud Storage, `gsutil cp [DATA_FILE] gs://[BUCKET_NAME]/`
+#
+
+# Edit these!
+BUCKET_NAME=annotator_models
+CONFIG=cpu_config.yaml
+declare -a LABELS=("obscene" "threat" "identity_hate" "insult")
+MAX_ITER=50
+TOLERANCE=10 # early stopping conditions
+DATASET=kaggle
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_subtypes_kaggle_700k.csv
+PSEUDO_COUNT=0.01
+
+REGION=us-central1
+DATE=`date '+%Y%m%d_%H%M%S'`
+DATE_DAY_ONLY=`date '+%Y%m%d'`
+OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}_01_pseduo_count
+COMMENT_TEXT_PATH=gs://${BUCKET_NAME}/kaggle_subtypes_comment_text.csv
+
+echo "Writing to $OUTPUT_PATH"
+
+## run dawid-skene for each of the labels
+for label in "${LABELS[@]}"
+do
+    echo "Running on $label"
+    JOB_NAME=${USER}_dawid_skene_${DATASET}_${label}
+
+    gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+	   --job-dir=${OUTPUT_PATH} \
+	   --runtime-version=1.4 \
+	   --config=${CONFIG} \
+	   --module-name=trainer.dawid_skene \
+	   --package-path=trainer \
+	   --region=$REGION \
+	   --verbosity=debug -- \
+	   --data-path=$DATA_PATH \
+	   --comment-text-path=$COMMENT_TEXT_PATH \
+	   --label=$label \
+	   --max-iter=$MAX_ITER \
+	   --tolerance=$TOLERANCE \
+	   --pseudo-count=$PSEUDO_COUNT
+
+done
