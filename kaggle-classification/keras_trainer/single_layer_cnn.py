@@ -35,14 +35,15 @@ class SingleLayerCnn(base_model.BaseModel):
     self.labels = labels
     self.num_labels = len(labels)
 
-  def get_model(self):
+  def get_model(self) -> Model:
     I = Input(shape=(self.hparams.sequence_length,), dtype='float32')
     E = Embedding(
         self.hparams.vocab_size,
         self.hparams.embedding_dim,
         weights=[self.embeddings_matrix],
         input_length=self.hparams.sequence_length,
-        trainable=self.hparams.train_embedding)(I)
+        trainable=self.hparams.train_embedding)(
+            I)
     X5 = Conv1D(128, 5, activation='relu', padding='same')(E)
     X5 = MaxPooling1D(self.hparams.sequence_length, padding='same')(X5)
     X4 = Conv1D(128, 4, activation='relu', padding='same')(E)
@@ -57,8 +58,9 @@ class SingleLayerCnn(base_model.BaseModel):
     Output = Dense(self.num_labels, activation='sigmoid', name='outputs')(X)
 
     model = Model(inputs=I, outputs=Output)
-    model.compile(optimizer='rmsprop',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy', auc_roc])
+    model.compile(
+        optimizer='rmsprop',
+        loss='binary_crossentropy',
+        metrics=['accuracy', auc_roc])
     print(model.summary())
     return model
