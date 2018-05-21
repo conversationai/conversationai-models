@@ -1,0 +1,16 @@
+#!/bin/bash
+
+#declare -a LABELS=("obscene" "threat" "identity_hate" "insult" "sexual_explicit" "flirtation")
+declare -a LABELS=("toxic_score")
+
+for label in "${LABELS[@]}"
+do
+    prediction_file=gs://annotator_models/models/ericagreene/20180520_01_pseduo_count/predictions_${label}_1626593.csv
+    error_rates_file=gs://annotator_models/models/ericagreene/20180520_01_pseduo_count/error_rates_${label}_1626593.csv
+
+    prediction_table=conversation-ai-experiments:annotator_models.predictions_${label}_kaggle
+    error_rates_table=conversation-ai-experiments:annotator_models.error_rates_${label}_kaggle
+
+    bq load --source_format=CSV --autodetect $prediction_table $prediction_file
+    bq load --source_format=CSV --autodetect $error_rates_table $error_rates_file
+done
