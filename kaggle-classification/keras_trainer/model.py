@@ -29,6 +29,8 @@ from keras_trainer.cnn_with_attention import CNNWithAttention
 from keras_trainer.single_layer_cnn import SingleLayerCnn
 from keras_trainer.rnn import RNNModel
 from keras_trainer.custom_metrics import auc_roc
+from keras_trainer.base_model import BaseModel
+from typing import Dict, Type
 
 FLAGS = None
 
@@ -38,7 +40,7 @@ VALID_MODELS = {
     'cnn_with_attention': CNNWithAttention,
     'single_layer_cnn': SingleLayerCnn,
     'rnn': RNNModel
-}
+}  # type: Dict[str, Type[BaseModel]]
 
 DEFAULT_HPARAMS = tf.contrib.training.HParams(
     learning_rate=0.00005,
@@ -77,8 +79,9 @@ class ModelRunner():
 
   def train(self, train):
     if self.hparams.model_type in VALID_MODELS:
-      model = VALID_MODELS[self.hparams.model_type](self.embeddings_matrix,
-                                                    self.hparams, self.labels).get_model()
+      model = VALID_MODELS[self.hparams.model_type](
+          self.embeddings_matrix, self.hparams,
+          self.labels).get_model()  # type: BaseModel
     else:
       raise ValueError('You have specified an invalid model type.')
 
@@ -119,12 +122,13 @@ class ModelRunner():
     # Get an array where each element is a list of all the labels for the
     # specific instance.
     labels = np.array(list(zip(*[data[label] for label in self.labels])))
-    if len(self.labels)>1:
+    if len(self.labels) > 1:
       individual_auc_scores = metrics.roc_auc_score(
           labels, predictions, average=None)
       print('Individual AUCs: {}'.format(
           list(zip(self.labels, individual_auc_scores))))
-      mean_auc_score = metrics.roc_auc_score(labels, predictions, average='macro')
+      mean_auc_score = metrics.roc_auc_score(
+          labels, predictions, average='macro')
       print('Mean AUC: {}'.format(mean_auc_score))
     else:
       auc_score = metrics.roc_auc_score(labels, predictions)
@@ -208,8 +212,7 @@ if __name__ == '__main__':
       type=str,
       default=None,
       help=
-      'Name of comet project that tracks results. Must be set if comet_key is.'
-  )
+      'Name of comet project that tracks results. Must be set if comet_key is.')
   parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',
