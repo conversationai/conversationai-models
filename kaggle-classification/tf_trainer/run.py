@@ -14,7 +14,6 @@ from tf_trainer import types
 
 import argparse
 import tensorflow as tf
-import tensorflow_hub as hub
 
 from typing import Dict
 

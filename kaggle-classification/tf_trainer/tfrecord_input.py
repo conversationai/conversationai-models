@@ -24,14 +24,14 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._text_feature = text_feature  # type: str
     self._labels = labels  # type: Dict[str, tf.Dtype]
 
-  def train_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
+  def train_input_fn(self) -> Callable[[], tf.data.TFRecordDataset]:
     return functools.partial(self._input_fn_from_file, self._train_path)
 
-  def validate_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
+  def validate_input_fn(self) -> Callable[[], tf.data.TFRecordDataset]:
     return functools.partial(self._input_fn_from_file, self._validate_path)
 
   def _input_fn_from_file(self,
-                          filepath: types.Path) -> types.FeatureAndLabelTensors:
+                          filepath: types.Path) -> tf.data.TFRecordDataset:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
     text_feature = self._text_feature
 
