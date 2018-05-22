@@ -27,44 +27,32 @@ class TextPreprocessor():
   matrix to be used with a tensorflow graph.
   """
 
-  UNKNOWN = '<UNK>'
-
   def __init__(self, embeddings_path: types.Path) -> None:
-    nltk.download('punkt')
-    self._word2idx, self._embeddings_matrix = TextPreprocessor._get_word_idx_and_embeddings(
-        embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray]
+    self._word_to_idx, self._embeddings_matrix, self._unknown_token = TextPreprocessor._get_word_idx_and_embeddings(
+        embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def preprocess_text(self, text: str) -> List[int]:
-    tokens = nltk.word_tokenize(text)
-    return [
-        self._word2idx.get(t, self._word2idx.get(TextPreprocessor.UNKNOWN))
-        for t in tokens
-    ]
+  def word_to_idx_table(self) -> tf.contrib.lookup.HashTable:
+    keys = list(self._word_to_idx.keys())
+    values = list(self._word_to_idx.values())
+    table = tf.contrib.lookup.HashTable(
+        tf.contrib.lookup.KeyValueTensorInitializer(keys, values),
+        self._unknown_token)
+    return table
 
-  def embeddings_matrix(self, trainable: bool) -> tf.Variable:
-    """Returns embedding tf variable.
-
-    Use tf.nn.embedding_lookup to get embeddings.
-
-    Args:
-      word_embeddings: Numpy array of word embeddings.
-
-    Returns:
-      TF Variable initialized with the embeddings.
-    """
-
-    embeddings_shape = self._embeddings_matrix.shape,
+  def word_embeddings(self, trainable=False) -> tf.Variable:
+    embeddings_shape = self._embeddings_matrix.shape
     initial_embeddings_matrix = tf.constant_initializer(self._embeddings_matrix)
-    return tf.get_variable(
+    embeddings = tf.get_variable(
         name='word_embeddings',
         shape=embeddings_shape,
         initializer=initial_embeddings_matrix,
         trainable=trainable)
+    return embeddings
 
   @staticmethod
   def _get_word_idx_and_embeddings(embeddings_path: types.Path,
                                    max_words: Optional[int] = None
-                                  ) -> Tuple[Dict[str, int], np.ndarray]:
+                                  ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
 
     Args:
@@ -74,23 +62,24 @@ class TextPreprocessor():
         embedding.
 
     Returns:
-      Tuple of ord to idx mapping and Numpy array of word embeddings with shape
-      (vocab size, embedding size).
+      Tuple of vocab list, Numpy array of word embeddings with shape
+      (vocab size, embedding size), and the unknown token.
     """
-    word2idx = {}
+    word_to_idx = {}
     word_embeddings = []
     with tf.gfile.Open(embeddings_path, 'r') as f:
-      for idx, line in f:
+      for idx, line in enumerate(f):
         if max_words and idx >= max_words:
           break
 
         values = line.split()
         word = values[0]
         word_embedding = np.asarray(values[1:], dtype='float32')
-        word2idx[word] = idx
+        word_to_idx[word] = idx
         word_embeddings.append(word_embedding)
 
-    word2idx[TextPreprocessor.UNKNOWN] = len(word_embeddings)
+    unknown_token = len(word_embeddings)
     embeddings_matrix = np.asarray(word_embeddings, dtype=np.float32)
-    np.append(embeddings_matrix, [embeddings_matrix.mean(axis=0)], axis=0)
-    return word2idx, embeddings_matrix
+    embeddings_matrix = np.append(
+        embeddings_matrix, [embeddings_matrix.mean(axis=0)], axis=0)
+    return word_to_idx, embeddings_matrix, unknown_token

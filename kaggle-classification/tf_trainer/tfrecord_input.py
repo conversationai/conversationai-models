@@ -5,59 +5,61 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+import nltk
 import functools
+import numpy as np
 from tf_trainer import dataset_input
 from tf_trainer import types
-from typing import Dict, Set, Tuple, Callable
+from typing import Dict, Tuple, Callable, Iterator
 
 
 class TFRecordInput(dataset_input.DatasetInput):
   """TFRecord based DatasetInput."""
 
-  # TODO: Parameterize
-  LABELS = set([
-      "frac_neg", "frac_very_neg", "obscene", "threat", "insult",
-      "identity_hate"
-  ])  # type: Set[str]
-
-  def __init__(self, train_file: types.Path, validate_file: types.Path) -> None:
-    self._train_file = train_file  # type: types.Path
-    self._validate_file = validate_file  # type: types.Path
+  def __init__(self, train_path: types.Path, validate_path: types.Path,
+               text_feature: str, labels: Dict[str, tf.DType]) -> None:
+    nltk.download('punkt')
+    self._train_path = train_path  # type: types.Path
+    self._validate_path = validate_path  # type: types.Path
+    self._text_feature = text_feature  # type: str
+    self._labels = labels  # type: Dict[str, tf.Dtype]
 
   def train_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
-    return functools.partial(TFRecordInput.input_fn_from_file, self._train_file)
+    return functools.partial(self._input_fn_from_file, self._train_path)
 
   def validate_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
-    return functools.partial(TFRecordInput.input_fn_from_file,
-                             self._validate_file)
+    return functools.partial(self._input_fn_from_file, self._validate_path)
 
-  @staticmethod
-  def input_fn_from_file(
-      filename: types.Path) -> Tuple[types.Tensor, types.TensorDict]:
-    dataset = tf.data.TFRecordDataset(filename)  # type: tf.data.TFRecordDataset
+  def _input_fn_from_file(self,
+                          filepath: types.Path) -> types.FeatureAndLabelTensors:
+    dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
+    text_feature = self._text_feature
 
     def parser(
         record: tf.Tensor) -> Tuple[types.Tensor, Dict[str, types.Tensor]]:
-      # TODO: Consider adding defaults
-      keys_to_features = {
-          # Parameterize
-          "comment_text": tf.FixedLenFeature([], tf.string),
-      }
-      for label in TFRecordInput.LABELS:
-        keys_to_features[label] = tf.FixedLenFeature([], tf.float32)
+      keys_to_features = {}
+      keys_to_features[text_feature] = tf.FixedLenFeature([], tf.string)
+      for label, dtype in self._labels.items():
+        keys_to_features[label] = tf.FixedLenFeature([], dtype)
       parsed = tf.parse_single_example(
           record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-      comment_text = parsed["comment_text"]
-      labels = {label: parsed[label] for label in TFRecordInput.LABELS}
+      text = parsed[text_feature]
+      tokenized_text = tf.py_func(self._tokenize, [text], tf.string)
+      features = {text_feature: tokenized_text}
+      labels = {label: parsed[label] for label in self._labels}
 
-      return comment_text, labels
+      return features, labels
 
     dataset = dataset.map(parser)
-    dataset = dataset.shuffle(buffer_size=10000)
-    dataset = dataset.batch(128)
-    dataset = dataset.repeat(3)  # Num epochs
-    iterator = dataset.make_one_shot_iterator()
+    dataset = dataset.padded_batch(
+        64,
+        padded_shapes=({
+            text_feature: [None]
+        }, {label: [] for label in self._labels}))
 
-    features, labels = iterator.get_next()
-    return features, labels
+    return dataset
+
+  def _tokenize(self, text: bytes) -> np.ndarray:
+    return np.asarray(
+        [w.encode('utf-8') for w in nltk.word_tokenize(text.decode('utf-8'))])
