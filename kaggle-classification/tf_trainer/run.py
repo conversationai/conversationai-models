@@ -18,22 +18,34 @@ import tensorflow as tf
 from typing import Dict
 
 FEATURE = "comment_text"  # type: str
-# Missing fields are not handled properly yet.
+# TODO: Missing fields are not handled properly yet.
 LABELS = {
     "frac_neg": tf.float32,
-    # "frac_very_neg": tf.float32
 }  # type: Dict[str, tf.DType]
 
 
-def add_embedding_to_estimator(estimator,
-                               text_feature_name,
-                               text_preprocessor,
-                               trainable=False):
+def add_embedding_to_estimator(
+    estimator: tf.estimator.Estimator,
+    text_feature_name: str,
+    text_preprocessor: tf_trainer.text_preprocessor.TextPreprocessor,
+    trainable: bool = False) -> tf.estimator.Estimator:
+  """Takes an existing estimator and prepends the embedding layers to it.
+
+  Args:
+    estimator: A predefined Estimator that expects embeddings.
+    text_feature_name: The name of the feature containing the text.
+    text_preprocess: An instance of TextPreprocessor holding embedding info.
+    trainable: If we want to update the embedding.
+
+  Returns:
+    TF Estimator with embedding ops added.
+  """
   old_model_fn = estimator.model_fn
   old_config = estimator.config
   old_params = estimator.params
 
   def new_model_fn(features, labels, mode, params, config):
+    """model_fn used in defining the new TF Estimator"""
 
     word_to_idx_table = text_preprocessor.word_to_idx_table()
     word_ids = word_to_idx_table.lookup(features[text_feature_name])

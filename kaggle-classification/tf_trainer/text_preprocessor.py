@@ -22,9 +22,8 @@ FLAGS = flags.FLAGS
 class TextPreprocessor():
   """Text Preprocessor.
 
-  Takes an embedding and uses it to produce a preprocess method that can be
-  called on texts to get its int representation. Also produces an embedding
-  matrix to be used with a tensorflow graph.
+  Takes an embedding and uses it to produce a word to index mapping and an
+  embedding matrix.
   """
 
   def __init__(self, embeddings_path: types.Path) -> None:
@@ -32,6 +31,8 @@ class TextPreprocessor():
         embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
   def word_to_idx_table(self) -> tf.contrib.lookup.HashTable:
+    """Get word to index mapping as a TF HashTable."""
+
     keys = list(self._word_to_idx.keys())
     values = list(self._word_to_idx.values())
     table = tf.contrib.lookup.HashTable(
@@ -40,6 +41,8 @@ class TextPreprocessor():
     return table
 
   def word_embeddings(self, trainable=False) -> tf.Variable:
+    """Get word embedding TF Variable."""
+
     embeddings_shape = self._embeddings_matrix.shape
     initial_embeddings_matrix = tf.constant_initializer(self._embeddings_matrix)
     embeddings = tf.get_variable(

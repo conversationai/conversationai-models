@@ -5,9 +5,11 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from tf_trainer import types
 
 
-def roc_auc(y_true, y_pred, threshold=0.5):
+def roc_auc(y_true: types.Tensor, y_pred: types.Tensor,
+            threshold=0.5) -> types.Tensor:
   """ ROC AUC based on TF's metrics package.
 
   We assume true labels are 'soft' and pick 0 or 1 based on a threshold.

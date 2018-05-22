@@ -25,9 +25,11 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._labels = labels  # type: Dict[str, tf.Dtype]
 
   def train_input_fn(self) -> Callable[[], tf.data.TFRecordDataset]:
+    """input_fn for TF Estimators for training set."""
     return functools.partial(self._input_fn_from_file, self._train_path)
 
   def validate_input_fn(self) -> Callable[[], tf.data.TFRecordDataset]:
+    """input_fn for TF Estimators for validation set."""
     return functools.partial(self._input_fn_from_file, self._validate_path)
 
   def _input_fn_from_file(self,
@@ -61,5 +63,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     return dataset
 
   def _tokenize(self, text: bytes) -> np.ndarray:
+    # IMPORTANT: After tokenization we need to re-encode the text or there will
+    # be errors relating to unicode characters.
     return np.asarray(
         [w.encode('utf-8') for w in nltk.word_tokenize(text.decode('utf-8'))])
