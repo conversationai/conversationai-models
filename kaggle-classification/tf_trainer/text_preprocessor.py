@@ -1,7 +1,4 @@
-"""Text Preprocessor.
-
-Used to tokenize and then use embeddings for text.
-"""
+"""Text Preprocessor."""
 
 from __future__ import absolute_import
 from __future__ import division

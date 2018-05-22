@@ -14,7 +14,10 @@ from typing import Dict, Tuple, Callable, Iterator
 
 
 class TFRecordInput(dataset_input.DatasetInput):
-  """TFRecord based DatasetInput."""
+  """TFRecord based DatasetInput.
+
+  Handles parsing of TF Examples and tokenizing text (with nltk).
+  """
 
   def __init__(self, train_path: types.Path, validate_path: types.Path,
                text_feature: str, labels: Dict[str, tf.DType]) -> None:
