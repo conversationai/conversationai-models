@@ -27,7 +27,7 @@ LABELS = {
 def add_embedding_to_estimator(
     estimator: tf.estimator.Estimator,
     text_feature_name: str,
-    text_preprocessor: tf_trainer.text_preprocessor.TextPreprocessor,
+    text_preprocessor: text_preprocessor.TextPreprocessor,
     trainable: bool = False) -> tf.estimator.Estimator:
   """Takes an existing estimator and prepends the embedding layers to it.
 
