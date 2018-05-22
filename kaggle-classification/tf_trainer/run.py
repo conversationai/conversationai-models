@@ -59,7 +59,7 @@ def add_embedding_to_estimator(
     labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
     return old_model_fn(new_features, labels, mode=mode, config=config)
 
-  old_config.replace(model_dir="/tmp/new_model")
+  old_config = old_config.replace(model_dir="/tmp/new_model")
   return tf.estimator.Estimator(
       new_model_fn, config=old_config, params=old_params)
 
@@ -104,9 +104,9 @@ def main():
       keras_model=keras_model, model_dir="/tmp/keras_model")
 
   estimator = add_embedding_to_estimator(estimator, FEATURE, preprocessor)
-  estimator.train(input_fn=toxicity_q42017.train_input_fn(), steps=10000)
+  estimator.train(input_fn=toxicity_q42017.train_input_fn(), steps=50000)
   metrics = estimator.evaluate(
-      input_fn=toxicity_q42017.validate_input_fn(), steps=100)
+      input_fn=toxicity_q42017.validate_input_fn(), steps=1000)
   print(metrics)
 
 
