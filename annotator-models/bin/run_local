@@ -26,8 +26,7 @@
 #    1519346289,"This is the second f*ing comment."
 
 
-# DATA_PATH=local_data/sample_training_data.csv
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_10k.csv
+DATA_PATH=local_data/sample_training_data.csv
 COMMENT_TEXT_PATH=local_data/sample_comment_text.csv
 
 gcloud ml-engine local train \
@@ -35,7 +34,7 @@ gcloud ml-engine local train \
      --package-path=trainer -- \
      --data-path=$DATA_PATH \
      --comment-text-path=$COMMENT_TEXT_PATH \
-     --label='toxic_score' \
+     --label='obscene' \
      --job-dir='results' \
-     --max-iter=3 \
-     --pseudo-count=.1
+     --max-iter=10 \
+     --pseudo-count=.05
