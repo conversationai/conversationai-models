@@ -76,6 +76,6 @@ do
 	   --comment-text-path=$COMMENT_TEXT_PATH \
 	   --label=$label \
 	   --max-iter=$MAX_ITER \
-           --tolerance=$TOLERANCE \
+	   --tolerance=$TOLERANCE \
 	   --pseudo-count=$PSEUDO_COUNT
 done
