@@ -36,4 +36,5 @@ gcloud ml-engine local train \
      --comment-text-path=$COMMENT_TEXT_PATH \
      --label='obscene' \
      --job-dir='results' \
-     --max-iter=10
+     --max-iter=10 \
+     --pseudo-count=.05

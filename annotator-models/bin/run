@@ -19,15 +19,16 @@ BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
 LABEL=toxic_score
 MAX_ITER=50
-DATA_PATH=gs://annotator_models/dawid_skene_training_data_100k.csv
+DATA_PATH=gs://annotator_models/dawid_skene_training_data_10mil.csv
+TOLERANCE=100
+PSEUDO_COUNT=0.05
+
+declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
 REGION=us-central1
-DATE=`date '+%Y%m%d_%H%M%S'`
-DATE_DAY_ONLY=`date '+%Y%m%d'`
-JOB_NAME=${USER}_dawid_skene_${LABEL}
-OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
+
 COMMENT_TEXT_PATH=gs://${BUCKET_NAME}/q42017_comment_text.csv
 
 while getopts :c:h opt; do
@@ -54,15 +55,27 @@ done
 echo "Writing to $OUTPUT_PATH"
 
 # Remote
-gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
-     --job-dir=${OUTPUT_PATH} \
-     --runtime-version=1.4 \
-     --config=${CONFIG} \
-     --module-name=trainer.dawid_skene \
-     --package-path=trainer \
-     --region=$REGION \
-     --verbosity=debug -- \
-     --data-path=$DATA_PATH \
-     --comment-text-path=$COMMENT_TEXT_PATH \
-     --label=$LABEL \
-     --max-iter=$MAX_ITER
+for label in "${LABELS[@]}"
+do
+    echo "Running on $label"
+    JOB_NAME=${USER}_dawid_skene_q42017_${label}
+    DATE=`date '+%Y%m%d_%H%M%S'`
+    DATE_DAY_ONLY=`date '+%Y%m%d'`
+    JOB_NAME=${USER}_dawid_skene
+    OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
+
+    gcloud ml-engine jobs submit training ${JOB_NAME}_$label_kaggle_${DATE} \
+	   --job-dir=${OUTPUT_PATH} \
+	   --runtime-version=1.4 \
+	   --config=${CONFIG} \
+	   --module-name=trainer.dawid_skene \
+	   --package-path=trainer \
+	   --region=$REGION \
+	   --verbosity=debug -- \
+	   --data-path=$DATA_PATH \
+	   --comment-text-path=$COMMENT_TEXT_PATH \
+	   --label=$label \
+	   --max-iter=$MAX_ITER \
+	   --tolerance=$TOLERANCE \
+	   --pseudo-count=$PSEUDO_COUNT
+done
