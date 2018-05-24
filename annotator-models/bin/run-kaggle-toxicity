@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #
-# A script to train the kaggle model remotely using ml-engine.
+# A script to train the kaggle model remotely on the 5-class toxicity labels
+# using ml-engine.
 #
 # To run with default hyperparameters from the kaggle-classification directory just enter:
 # './bin/run'

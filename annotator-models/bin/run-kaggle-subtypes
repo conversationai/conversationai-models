@@ -1,11 +1,11 @@
 #!/bin/bash
 
 #
-# A script to train the kaggle model remotely using ml-engine.
+# A script to train the kaggle model remotely using ml-engine on the binary
+# subtype labels
 #
 # To run with default hyperparameters from the kaggle-classification directory just enter:
 # './bin/run'
-#
 #
 # Setup Steps:
 # 1. Install the gcloud SDK
