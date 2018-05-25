@@ -88,14 +88,14 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25,
 
     return class_marginals, error_rates, item_classes
 
-def load_data(path):
+def load_data(path, unit_id, worker_id, label):
     logging.info('Loading data from {0}'.format(path))
 
     with tf.gfile.Open(path, 'rb') as fileobj:
       df =  pd.read_csv(fileobj, encoding='utf-8')
 
     # Remove all rows with nan values
-    df = df[df.isnull().any(axis=1) == False]
+    df = df.dropna(subset=[unit_id, worker_id, label])
     return df
 
 def initialize(counts):
@@ -482,9 +482,9 @@ def main(FLAGS):
     # load data, each row is an annotation
     n_examples= FLAGS.n_examples
     label = FLAGS.label
-    df = load_data(FLAGS.data_path)[0:n_examples]
     unit_id = FLAGS.unit_id_col
     worker_id = FLAGS.worker_id_col
+    df = load_data(FLAGS.data_path, unit_id, worker_id, label)[0:n_examples]
 
     logging.info('Running on {0} examples for label {1}'.format(len(df), label))
 

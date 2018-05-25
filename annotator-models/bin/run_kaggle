@@ -18,7 +18,7 @@
 BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
 MAX_ITER=50
-TOLERANCE=100
+TOLERANCE=50
 PSEUDO_COUNT=0.05
 
 declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
@@ -76,6 +76,6 @@ do
          --max-iter=$MAX_ITER \
          --tolerance=$TOLERANCE \
          --pseudo-count=$PSEUDO_COUNT \
-         --worker-id='annotator_id' \
-         --unit-id='comment_id'
+         --worker-id-col='annotator_id' \
+         --unit-id-col='comment_id'
 done

@@ -18,6 +18,7 @@ do
      --comment-text-path=gs://${BUCKET_NAME}/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_combined_${label}.csv \
      --label=${label} \
      --job-dir='results' \
-     --worker-id='annotator_id' \
-     --unit-id='comment_id'
+     --worker-id-col='annotator_id' \
+     --unit-id-col='comment_id' \ 
+     --tolerance=50
 done
