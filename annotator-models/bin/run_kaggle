@@ -21,7 +21,8 @@ MAX_ITER=50
 TOLERANCE=50
 PSEUDO_COUNT=0.05
 
-declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
+#declare -a LABELS=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
+declare -a LABELS=("insult")
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus

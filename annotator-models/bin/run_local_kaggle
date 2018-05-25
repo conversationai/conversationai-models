@@ -5,20 +5,22 @@
 DATE=`date '+%Y%m%d_%H%M%S'`
 BUCKET_NAME=annotator_models
 
-declare -a arr=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
-#declare -a arr=("toxic")
+#declare -a arr=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
+declare -a arr=("insult")
 
 ## now loop through the above array
 for label in "${arr[@]}"
 do
+  data_path=gs://${BUCKET_NAME}/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_test_${label}.csv \
+
   gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
-     --data-path=gs://${BUCKET_NAME}/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_combined_${label}.csv \
-     --comment-text-path=gs://${BUCKET_NAME}/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_combined_${label}.csv \
+     --data-path=${data_path} \
+     --comment-text-path=${data_path} \
      --label=${label} \
      --job-dir='results' \
      --worker-id-col='annotator_id' \
-     --unit-id-col='comment_id' \ 
+     --unit-id-col='comment_id' \
      --tolerance=50
 done
