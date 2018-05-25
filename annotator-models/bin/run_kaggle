@@ -1,0 +1,81 @@
+#!/bin/bash
+
+#
+# A script to train the kaggle model remotely using ml-engine.
+#
+# To run with default hyperparameters from the kaggle-classification directory just enter:
+# './bin/run'
+#
+#
+#
+# Setup Steps:
+# 1. Install the gcloud SDK
+# 2. Authenticate with the GCP project you want to use, `gcloud config set project [my-project]`
+# 3. Put the train and test data in Cloud Storage, `gsutil cp [DATA_FILE] gs://[BUCKET_NAME]/`
+#
+
+# Edit these!
+BUCKET_NAME=annotator_models
+CONFIG=cpu_config.yaml
+MAX_ITER=50
+TOLERANCE=100
+PSEUDO_COUNT=0.05
+
+declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
+
+# Note: this must be compatible with cells that have GPUs. us-central1 works.
+# See: https://cloud.google.com/ml-engine/docs/using-gpus
+REGION=us-central1
+
+while getopts :c:h opt; do
+case ${opt} in
+h)
+    echo "Usage: run [-c config_filename.yaml]"
+    echo "Flags: "
+    echo -e " -c Specify a config file (e.g. use hparam_config to enable hyperparameter tuning)"
+    exit 0;;
+c)
+    echo "Using custom config ${OPTARG}"
+    CONFIG=${OPTARG};;
+:)
+    echo "Error: ${OPTARG} requires an argument."
+    echo "Use 'run -h' for help."
+    exit 1;;
+\?)
+    echo "Invalid flag. Use 'run -h' for help."
+    exit 1;;
+esac
+done
+
+
+echo "Writing to $OUTPUT_PATH"
+
+
+for label in "${LABELS[@]}"
+do
+  echo "Running on $label"
+  DATA_PATH=gs://annotator_models/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_combined_${label}.csv
+  COMMENT_TEXT_PATH=$DATA_PATH
+
+  JOB_NAME=${USER}_dawid_skene_kaggle_${label}
+  DATE=`date '+%Y%m%d_%H%M%S'`
+  DATE_DAY_ONLY=`date '+%Y%m%d'`
+  OUTPUT_PATH=gs://${BUCKET_NAME}/models/${USER}/${DATE_DAY_ONLY}
+
+  gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
+         --job-dir=${OUTPUT_PATH} \
+         --runtime-version=1.4 \
+         --config=${CONFIG} \
+         --module-name=trainer.dawid_skene \
+         --package-path=trainer \
+         --region=$REGION \
+         --verbosity=debug -- \
+         --data-path=$DATA_PATH \
+         --comment-text-path=$COMMENT_TEXT_PATH \
+         --label=$label \
+         --max-iter=$MAX_ITER \
+         --tolerance=$TOLERANCE \
+         --pseudo-count=$PSEUDO_COUNT \
+         --worker-id='annotator_id' \
+         --unit-id='comment_id'
+done
