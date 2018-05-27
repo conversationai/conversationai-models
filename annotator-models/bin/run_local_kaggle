@@ -5,8 +5,7 @@
 DATE=`date '+%Y%m%d_%H%M%S'`
 BUCKET_NAME=annotator_models
 
-#declare -a arr=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
-declare -a arr=("insult")
+declare -a arr=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
 
 ## now loop through the above array
 for label in "${arr[@]}"
