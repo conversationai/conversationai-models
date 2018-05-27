@@ -6,8 +6,6 @@ from __future__ import print_function
 
 import abc
 import tensorflow as tf
-from tf_trainer import types
-from typing import Callable
 
 
 class DatasetInput(abc.ABC):
@@ -18,9 +16,9 @@ class DatasetInput(abc.ABC):
   """
 
   @abc.abstractmethod
-  def train_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
+  def train_input_fn(self) -> tf.data.TFRecordDataset:
     pass
 
   @abc.abstractmethod
-  def validate_input_fn(self) -> Callable[[], types.FeatureAndLabelTensors]:
+  def validate_input_fn(self) -> tf.data.TFRecordDataset:
     pass

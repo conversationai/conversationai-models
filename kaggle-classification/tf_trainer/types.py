@@ -12,7 +12,7 @@ from typing import NewType, Union, Dict, Tuple
 Tensor = Union[tf.Tensor, tf.SparseTensor]
 TensorDict = Dict[str, Tensor]
 TensorOrTensorDict = Union[tf.Tensor, TensorDict]
-FeatureAndLabelTensors = Tuple[TensorOrTensorDict, TensorOrTensorDict]
+FeatureAndLabelTensors = Tuple[Tensor, TensorOrTensorDict]
 
 # New Types.
 

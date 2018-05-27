@@ -55,6 +55,10 @@ class TextPreprocessor():
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
 
+    We have two levels of indirection (e.g. word to idx and then idx to
+    embedding) which could reduce embedding size if multiple words map to the
+    same idx. This is not currently a use case.
+
     Args:
       embeddings_path: Local, GCS, or HDFS path to embedding file. Each line
         should be a word and its vector representation separated by a space.
@@ -67,7 +71,7 @@ class TextPreprocessor():
     """
     word_to_idx = {}
     word_embeddings = []
-    with tf.gfile.Open(embeddings_path, 'r') as f:
+    with tf.gfile.Open(embeddings_path) as f:
       for idx, line in enumerate(f):
         if max_words and idx >= max_words:
           break
@@ -78,6 +82,8 @@ class TextPreprocessor():
         word_to_idx[word] = idx
         word_embeddings.append(word_embedding)
 
+    # Convert embedding to numpy array and append the unknown word embedding,
+    # which is the mean of all other embeddings.
     unknown_token = len(word_embeddings)
     embeddings_matrix = np.asarray(word_embeddings, dtype=np.float32)
     embeddings_matrix = np.append(

@@ -6,27 +6,33 @@ from __future__ import print_function
 
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
-from tf_trainer import custom_metrics
+from tf_trainer import base_keras_model
+import tensorflow as tf
+
+from typing import Set
 
 
-class KerasRNNModel():
+class KerasRNNModel(base_keras_model.BaseKerasModel):
   """Keras RNN Model
 
   Keras implementation of a bidirectional GRU with attention. Inputs should be
   sequences of word embeddings.
   """
 
-  def __init__(self, labels):
+  MAX_SEQUENCE_LENGTH = 300
+
+  def __init__(self, labels: Set[str], optimizer='adam') -> None:
     self._labels = labels
 
-  def get_model(self):
-    sequence_length = 300
+  def _get_keras_model(self) -> models.Model:
     I = layers.Input(
-        shape=(sequence_length, 100), dtype='float32', name='comment_text')
+        shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 100),
+        dtype='float32',
+        name='comment_text')
     H = layers.Bidirectional(layers.GRU(128, return_sequences=True))(I)
     A = layers.TimeDistributed(
         layers.Dense(128, activation='relu'),
-        input_shape=(sequence_length, 256))(
+        input_shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 256))(
             H)
     A = layers.TimeDistributed(layers.Dense(1, activation='softmax'))(H)
     X = layers.Dot((1, 1))([H, A])
@@ -41,7 +47,7 @@ class KerasRNNModel():
     model.compile(
         optimizer='rmsprop',
         loss='binary_crossentropy',
-        metrics=['accuracy', custom_metrics.roc_auc])
+        metrics=['accuracy', super().roc_auc])
 
-    print(model.summary())
+    tf.logging.info(model.summary())
     return model
