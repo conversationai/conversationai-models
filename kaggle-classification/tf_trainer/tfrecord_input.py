@@ -26,13 +26,19 @@ class TFRecordInput(dataset_input.DatasetInput):
                validate_path: types.Path,
                text_feature: str,
                labels: Dict[str, tf.DType],
-               batch_size: int = 64) -> None:
+               word_to_idx: Dict[str, int],
+               unknown_token: int,
+               batch_size: int = 32,
+               max_seq_length: int = 300) -> None:
     nltk.download('punkt')
     self._train_path = train_path  # type: types.Path
     self._validate_path = validate_path  # type: types.Path
     self._text_feature = text_feature  # type: str
     self._labels = labels  # type: Dict[str, tf.Dtype]
     self._batch_size = batch_size  # type: int
+    self._max_seq_length = max_seq_length  # type: int
+    self._word_to_idx = word_to_idx  # type: Dict[str, int]
+    self._unknown_token = unknown_token  # type: int
 
   def train_input_fn(self) -> tf.data.TFRecordDataset:
     """input_fn for TF Estimators for training set."""
@@ -62,7 +68,7 @@ class TFRecordInput(dataset_input.DatasetInput):
           record, keys_to_features)  # type: Dict[str, types.Tensor]
 
       text = parsed[text_feature]
-      tokenized_text = tf.py_func(self._tokenize, [text], tf.string)
+      tokenized_text = tf.py_func(self._tokenize, [text], tf.int64)
       features = {text_feature: tokenized_text}
       labels = {label: parsed[label] for label in self._labels}
 
@@ -71,14 +77,19 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(readTFExample)
     batched_dataset = parsed_dataset.padded_batch(
         self._batch_size,
-        padded_shapes=({
-            text_feature: [None]
-        }, {label: [] for label in self._labels}))
+        padded_shapes=(
+            {
+                # TODO: truncate to max_seq_length
+                text_feature: [None]
+            },
+            {label: [] for label in self._labels}))
 
     return batched_dataset
 
   def _tokenize(self, text: bytes) -> np.ndarray:
     # IMPORTANT: After tokenization we need to re-encode the text or there will
     # be errors relating to unicode characters.
-    return np.asarray(
-        [w.encode('utf-8') for w in nltk.word_tokenize(text.decode('utf-8'))])
+    return np.asarray([
+        self._word_to_idx.get(w, self._unknown_token)
+        for w in nltk.word_tokenize(text.decode('utf-8'))
+    ])

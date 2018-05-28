@@ -6,6 +6,7 @@ from __future__ import print_function
 
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
+from tensorflow.python.keras import optimizers
 from tf_trainer import base_keras_model
 import tensorflow as tf
 
@@ -31,10 +32,10 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
         name='comment_text')
     H = layers.Bidirectional(layers.GRU(128, return_sequences=True))(I)
     A = layers.TimeDistributed(
-        layers.Dense(128, activation='relu'),
+        layers.Dense(1, activation='relu'),
         input_shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 256))(
             H)
-    A = layers.TimeDistributed(layers.Dense(1, activation='softmax'))(H)
+    #A = layers.TimeDistributed(layers.Dense(1, activation='softmax'))(A)
     X = layers.Dot((1, 1))([H, A])
     X = layers.Flatten()(X)
     X = layers.Dense(128, activation='relu')(X)
@@ -45,7 +46,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
     model = models.Model(inputs=I, outputs=outputs)
     model.compile(
-        optimizer='rmsprop',
+        optimizer=optimizers.Adam(lr=0.000003),
         loss='binary_crossentropy',
         metrics=['accuracy', super().roc_auc])
 

@@ -20,7 +20,7 @@ from typing import Dict
 # TODO: Missing fields are not handled properly yet.
 LABELS = {
     "frac_neg": tf.float32,
-    "frac_very_neg": tf.float32,
+    #"frac_very_neg": tf.float32,
 }  # type: Dict[str, tf.DType]
 
 
@@ -53,17 +53,23 @@ def main():
   embeddings_path = types.Path(args.embeddings_path)
   text_feature_name = args.text_feature_name
 
+  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
   dataset = tfrecord_input.TFRecordInput(
       train_path=train_path,
       validate_path=validate_path,
       text_feature=text_feature_name,
-      labels=LABELS)
-  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
+      labels=LABELS,
+      word_to_idx=preprocessor.word_to_idx(),
+      unknown_token=preprocessor.unknown_token())
 
-  estimator = keras_rnn_model.KerasRNNModel(set(LABELS.keys())).get_estimator(
-      preprocessor, text_feature_name)
+  estimator_no_embedding = keras_rnn_model.KerasRNNModel(set(
+      LABELS.keys())).get_estimator()
 
-  for _ in range(10):
+  # TODO: Move embedding into Keras model.
+  estimator = preprocessor.create_estimator_with_embedding(
+      estimator_no_embedding, text_feature_name)
+
+  for _ in range(50):
     estimator.train(input_fn=dataset.train_input_fn, steps=1000)
     metrics = estimator.evaluate(input_fn=dataset.validate_input_fn, steps=100)
     tf.logging.info(metrics)
