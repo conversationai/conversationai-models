@@ -394,7 +394,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     """
     LABEL_HAT = '{}_hat'.format(label)
     LABEL_MEAN = '{}_mean'.format(label)
-    ROUND_DEC = 4
+    ROUND_DEC = 8
     _, N_ClASSES = np.shape(item_classes)
 
     df_predictions = pd.DataFrame()
@@ -436,6 +436,9 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     with tf.gfile.Open(comment_text_path, 'r') as fileobj:
         logging.info('Loading comment text data from {}'.format(comment_text_path))
         df_comments = pd.read_csv(fileobj)
+
+        # drop duplicate comments
+        df_comments = df_comments.drop_duplicates(subset=unit_id)
 
     df_predictions = df_predictions.merge(df_comments, on=unit_id)
     return df_predictions
