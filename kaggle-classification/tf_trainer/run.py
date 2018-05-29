@@ -69,7 +69,7 @@ def main():
   estimator = preprocessor.create_estimator_with_embedding(
       estimator_no_embedding, text_feature_name)
 
-  for _ in range(50):
+  for _ in range(100):
     estimator.train(input_fn=dataset.train_input_fn, steps=1000)
     metrics = estimator.evaluate(input_fn=dataset.validate_input_fn, steps=100)
     tf.logging.info(metrics)

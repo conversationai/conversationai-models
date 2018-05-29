@@ -32,10 +32,12 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
         name='comment_text')
     H = layers.Bidirectional(layers.GRU(128, return_sequences=True))(I)
     A = layers.TimeDistributed(
-        layers.Dense(1, activation='relu'),
+        layers.Dense(64, activation='relu'),
         input_shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 256))(
             H)
-    #A = layers.TimeDistributed(layers.Dense(1, activation='softmax'))(A)
+    A = layers.TimeDistributed(layers.Dense(1))(A)
+    A = layers.Flatten()(A)
+    A = layers.Activation('softmax')(A)
     X = layers.Dot((1, 1))([H, A])
     X = layers.Flatten()(X)
     X = layers.Dense(128, activation='relu')(X)
