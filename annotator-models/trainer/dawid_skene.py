@@ -23,8 +23,8 @@ import time
 FLAGS = None
 np.set_printoptions(precision=2)
 
-def run(items, raters, classes, counts, label, tol=1, max_iter=25,
-        init='average', pseudo_count=3):
+def run(items, raters, classes, counts, label, pseudo_count, tol=1, max_iter=25,
+        init='average'):
     """
     Run the Dawid-Skene estimator on response data
 
@@ -533,8 +533,8 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items_unique, raters_unique, classes_unique, counts, label=label,
-        tol=FLAGS.tolerance, max_iter=FLAGS.max_iter, pseudo_count=FLAGS.pseudo_count)
+        items_unique, raters_unique, classes_unique, counts, label,
+        FLAGS.pseudo_count,tol=FLAGS.tolerance, max_iter=FLAGS.max_iter)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
@@ -578,7 +578,7 @@ if __name__ == '__main__':
                         help='The max number of iteration to run.', type=int,
                         default=25)
     parser.add_argument('--pseudo-count', help='The pseudo count to smooth error rates.',
-                        type=float, default=0.1)
+                        type=float, default=1.0)
     parser.add_argument('--tolerance',
                         help='Stop training when variables change less than this value.',
                         type=int, default=1)

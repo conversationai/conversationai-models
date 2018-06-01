@@ -19,9 +19,9 @@ BUCKET_NAME=annotator_models
 CONFIG=cpu_config.yaml
 MAX_ITER=50
 TOLERANCE=1
-PSEUDO_COUNT=10
+PSEUDO_COUNT=1
 
-declare -a LABELS=("toxic" "severe_toxic" "obscene" "threat" "insult" "identity_hate")
+declare -a LABELS=("obscene" "sexual_explicit" "threat" "flirtation" "identity_hate" "insult")
 
 # Note: this must be compatible with cells that have GPUs. us-central1 works.
 # See: https://cloud.google.com/ml-engine/docs/using-gpus
