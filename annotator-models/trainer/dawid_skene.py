@@ -23,8 +23,8 @@ import time
 FLAGS = None
 np.set_printoptions(precision=2)
 
-def run(items, raters, classes, counts, label, tol=1, max_iter=25,
-        init='average', pseudo_count=3):
+def run(items, raters, classes, counts, label, pseudo_count, tol=1, max_iter=25,
+        init='average'):
     """
     Run the Dawid-Skene estimator on response data
 
@@ -88,14 +88,14 @@ def run(items, raters, classes, counts, label, tol=1, max_iter=25,
 
     return class_marginals, error_rates, item_classes
 
-def load_data(path):
+def load_data(path, unit_id, worker_id, label):
     logging.info('Loading data from {0}'.format(path))
 
     with tf.gfile.Open(path, 'rb') as fileobj:
       df =  pd.read_csv(fileobj, encoding='utf-8')
 
-    # Remove all rows with nan values
-    df = df[df.isnull().any(axis=1) == False]
+    # only keep necessary columns
+    df = df[[unit_id, worker_id, label]]
     return df
 
 def initialize(counts):
@@ -379,7 +379,7 @@ def majority_voting(counts):
 
     return item_classes
 
-def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y_map):
+def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y_map, unit_id, worker_id):
     """
     Given the original data df, the predicted item_classes, and
     the data mappings, returns a DataFrame with the fields:
@@ -391,7 +391,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
     """
     LABEL_HAT = '{}_hat'.format(label)
     LABEL_MEAN = '{}_mean'.format(label)
-    ROUND_DEC = 4
+    ROUND_DEC = 8
     _, N_ClASSES = np.shape(item_classes)
 
     df_predictions = pd.DataFrame()
@@ -416,28 +416,31 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
 
     # Use the _unit_index to map to the original _unit_id
     df_predictions['_unit_index'] = range(len(item_classes))
-    df_predictions['_unit_id'] = df_predictions['_unit_index']\
+    df_predictions[unit_id] = df_predictions['_unit_index']\
                                  .apply(lambda i: index_to_unit_id_map[i])
 
     # Calculate the y_mean from the original data and join on _unit_id
     # Add a column for the mean predictions
     df[label] = df[label].astype(float)
-    mean_labels = df.groupby('_unit_id', as_index=False)[label]\
+    mean_labels = df.groupby(unit_id, as_index=False)[label]\
                    .mean()\
                    .round(ROUND_DEC)\
                    .rename(index=int, columns={label: LABEL_MEAN})
-    df_predictions = pd.merge(mean_labels, df_predictions, on='_unit_id')
+    df_predictions = pd.merge(mean_labels, df_predictions, on=unit_id)
 
-    # add the comment text
+    # join with data that contains the item-level comment text
     comment_text_path = FLAGS.comment_text_path
     with tf.gfile.Open(comment_text_path, 'r') as fileobj:
         logging.info('Loading comment text data from {}'.format(comment_text_path))
         df_comments = pd.read_csv(fileobj)
 
-    df_predictions = df_predictions.merge(df_comments, on='_unit_id')
+        # drop duplicate comments
+        df_comments = df_comments.drop_duplicates(subset=unit_id)
+
+    df_predictions = df_predictions.merge(df_comments, on=unit_id)
     return df_predictions
 
-def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
+def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map, unit_id, worker_id):
     """
     Given the original data DataFrame, the predicted error_rates and the mappings
     between the indexes and ids, returns a DataFrame with the fields:
@@ -447,7 +450,7 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
       * _error_rate_{k}_{k}: probability the worker would choose class k when
           the true class is k (for accurate workers, these numbers are high).
     """
-    columns = ['_worker_id', '_worker_index']
+    columns = [worker_id, '_worker_index']
 
     df_error_rates = pd.DataFrame()
 
@@ -455,15 +458,15 @@ def parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map):
     df_error_rates['_worker_index'] = index_to_worker_id_map.keys()
 
     # add the original _worker_id
-    df_error_rates['_worker_id'] = [j for (i,j) in index_to_worker_id_map.items()]
+    df_error_rates[worker_id] = [j for (i,j) in index_to_worker_id_map.items()]
 
     # add annotation counts for each worker
     worker_counts = df.groupby(
-        by='_worker_id', as_index=False)['_unit_id']\
+        by=worker_id, as_index=False)[unit_id]\
                       .count()\
-                      .rename(index=int, columns={'_unit_id': 'n_annotations'})
+                      .rename(index=int, columns={unit_id: 'n_annotations'})
 
-    df_error_rates = pd.merge(df_error_rates, worker_counts, on='_worker_id')
+    df_error_rates = pd.merge(df_error_rates, worker_counts, on=worker_id)
 
     # add the diagonal error rates, which are the per-class accuracy rates,
     # for each class k, we add a column for p(rater will pick k | item's true class is k)
@@ -482,7 +485,9 @@ def main(FLAGS):
     # load data, each row is an annotation
     n_examples= FLAGS.n_examples
     label = FLAGS.label
-    df = load_data(FLAGS.data_path)[0:n_examples]
+    unit_id = FLAGS.unit_id_col
+    worker_id = FLAGS.worker_id_col
+    df = load_data(FLAGS.data_path, unit_id, worker_id, label)[0:n_examples]
 
     logging.info('Running on {0} examples for label {1}'.format(len(df), label))
 
@@ -494,21 +499,21 @@ def main(FLAGS):
     #   * index_to_unit_id_map: index -> _unit_id
     #   * y_to_index_map: label -> index
     #   * index_to_y_map: index -> label
-    worker_id_to_index_map = {w: i for (i,w) in enumerate(df["_worker_id"].unique())}
+    worker_id_to_index_map = {w: i for (i,w) in enumerate(df[worker_id].unique())}
     index_to_worker_id_map = {i: w for (w,i) in  worker_id_to_index_map.items()}
-    unit_id_to_index_map = {w: i for (i,w) in enumerate(df['_unit_id'].unique())}
+    unit_id_to_index_map = {w: i for (i,w) in enumerate(df[unit_id].unique())}
     index_to_unit_id_map = {i: w for (w,i) in  unit_id_to_index_map.items()}
     y_to_index_map = {w: i for (i,w) in enumerate(df[label].unique())}
     index_to_y_map = {i: w for (w,i) in  y_to_index_map.items()}
 
     # create list of unique raters, items and labels
-    raters = list(df['_worker_id'].apply(lambda x: worker_id_to_index_map[x]))
-    items = list(df['_unit_id'].apply(lambda x: unit_id_to_index_map[x]))
+    raters = list(df[worker_id].apply(lambda x: worker_id_to_index_map[x]))
+    items = list(df[unit_id].apply(lambda x: unit_id_to_index_map[x]))
     y = list(df[label].apply(lambda x: y_to_index_map[x]))
 
     nClasses = len(df[label].unique())
-    nItems = len(df['_unit_id'].unique())
-    nRaters = len(df['_worker_id'].unique())
+    nItems = len(df[unit_id].unique())
+    nRaters = len(df[worker_id].unique())
     counts = np.zeros([nItems, nRaters, nClasses])
 
     # convert responses to counts
@@ -528,17 +533,16 @@ def main(FLAGS):
     # run EM
     start = time.time()
     class_marginals, error_rates, item_classes = run(
-        items_unique, raters_unique, classes_unique, counts, label=label,
-        tol=FLAGS.tolerance, max_iter=FLAGS.max_iter, pseudo_count=FLAGS.pseudo_count)
+        items_unique, raters_unique, classes_unique, counts, label,
+        FLAGS.pseudo_count,tol=FLAGS.tolerance, max_iter=FLAGS.max_iter)
     end = time.time()
     logging.info("training time: {0:.4f} seconds".format(end - start))
 
     # join comment_text, old labels and new labels
-    df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map,
-                                        index_to_y_map)
+    df_predictions = parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y_map, unit_id, worker_id)
 
     # join rater error_rates
-    df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map)
+    df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map, index_to_y_map, unit_id, worker_id)
 
     # write predictions and error_rates out as CSV
     n = len(df)
@@ -559,6 +563,10 @@ if __name__ == '__main__':
                         help='The path to data to run on, local or in Cloud Storage.')
     parser.add_argument('--comment-text-path',
                         help='The path to comment text, local or in  Cloud Storage.')
+    parser.add_argument('--worker-id-col',
+                        help='Column name of worker id.', default='_worker_id')
+    parser.add_argument('--unit-id-col',
+                        help='Column name of unit id.', default='_comment_id')
     parser.add_argument('--n_examples',
                         help='The number of annotations to use.', default=10000000,
                         type=int)
@@ -570,7 +578,7 @@ if __name__ == '__main__':
                         help='The max number of iteration to run.', type=int,
                         default=25)
     parser.add_argument('--pseudo-count', help='The pseudo count to smooth error rates.',
-                        type=float, default=0.1)
+                        type=float, default=1.0)
     parser.add_argument('--tolerance',
                         help='Stop training when variables change less than this value.',
                         type=int, default=1)
