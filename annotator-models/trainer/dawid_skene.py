@@ -94,6 +94,8 @@ def load_data(path, unit_id, worker_id, label):
     with tf.gfile.Open(path, 'rb') as fileobj:
       df =  pd.read_csv(fileobj, encoding='utf-8')
 
+    # only keep necessary columns
+    df = df[[unit_id, worker_id, label]]
     return df
 
 def initialize(counts):
@@ -426,7 +428,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map, index_to_y
                    .rename(index=int, columns={label: LABEL_MEAN})
     df_predictions = pd.merge(mean_labels, df_predictions, on=unit_id)
 
-    # add the comment text
+    # join with data that contains the item-level comment text
     comment_text_path = FLAGS.comment_text_path
     with tf.gfile.Open(comment_text_path, 'r') as fileobj:
         logging.info('Loading comment text data from {}'.format(comment_text_path))
