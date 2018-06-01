@@ -94,11 +94,6 @@ def load_data(path, unit_id, worker_id, label):
     with tf.gfile.Open(path, 'rb') as fileobj:
       df =  pd.read_csv(fileobj, encoding='utf-8')
 
-    # Remove all rows with nan values
-    df = df[[unit_id, worker_id, 'comment_text', label]]
-    unit_id_blacklist = [1312207014, 1359629197, 1359629322, 1359629377, 1359629602, 1359629662, 1359629908, 1359630400, 1359630748, 1359630974, 1359631123, 1359631145, 1359631203, 1359631236, 1359632342]
-    df = df[~df[unit_id].isin(unit_id_blacklist)]
-    df = df.dropna()
     return df
 
 def initialize(counts):
