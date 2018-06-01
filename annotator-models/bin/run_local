@@ -1,40 +1,27 @@
 #!/bin/bash
 
-#
-# A script to train the Dawid Skene model locally.
-#
-# The DATA_PATH is the path to the CSV with the annotation-level data. The data
-# must be a CSV with the fields:
-#   * _unit_id: a unique ID for each item
-#   * _worker_id: a unique ID corresponding to each rater
-#   * {LABEL}: a categorical rating for the given label
-#
-#    _unit_id,_worker_id,obscene
-#    1519346288,129,0
-#    1519346288,114,0
-#    1519346289,129,1
-#    1519346289,130,1
-#    ....
-#
-# The COMMENT_TEXT_PATH is the path to a CSV with item-level data. The data
-# must be a CSV with the fields:
-#   * _unit_id: a unique ID for each item
-#   * comment_text: the text associated with each item
-#
-#    _unit_id,comment_text
-#    1519346288,"This is the first comment."
-#    1519346289,"This is the second f*ing comment."
+# A script to train the kaggle model locally.
+
+DATE=`date '+%Y%m%d_%H%M%S'`
+BUCKET_NAME=annotator_models
+
+declare -a arr=("obscene" "threat" "insult" "identity_hate" "toxic" "severe_toxic")
 
 
-DATA_PATH=local_data/sample_training_data.csv
-COMMENT_TEXT_PATH=local_data/sample_comment_text.csv
+## now loop through the above array
+for label in "${arr[@]}"
+do
+  data_path=gs://${BUCKET_NAME}/kaggle_annotation_data/dawid_skene_annotations_on_kaggle_test_${label}.csv \
 
-gcloud ml-engine local train \
+  gcloud ml-engine local train \
      --module-name=trainer.dawid_skene \
      --package-path=trainer -- \
-     --data-path=$DATA_PATH \
-     --comment-text-path=$COMMENT_TEXT_PATH \
-     --label='obscene' \
+     --data-path=${data_path} \
+     --comment-text-path=${data_path} \
+     --label=${label} \
      --job-dir='results' \
-     --max-iter=10 \
-     --pseudo-count=.05
+     --worker-id-col='annotator_id' \
+     --unit-id-col='comment_id' \
+     --tolerance=50 \
+     --n_examples=1000
+done
