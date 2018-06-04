@@ -21,6 +21,12 @@ class TextPreprocessor():
 
   Takes an embedding and uses it to produce a word to index mapping and an
   embedding matrix.
+
+  NOTE: You might be wondering why we don't go straight from the word to the
+  embedding. The (maybe incorrect) thought process is that
+  the embedding portion can be made a part of the tensorflow graph whereas the
+  word to index portion can not (since words have variable length). Future work
+  may include fixing a max word length.
   """
 
   def __init__(self, embeddings_path: types.Path) -> None:
