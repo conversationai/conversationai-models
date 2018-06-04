@@ -118,6 +118,16 @@ class ModelRunner():
     return self.model.predict(data)
 
   def score_metric(self, data, metric_name, metric_fn):
+    """Prints metric scores.
+
+    Args:
+      data: Dataset containing 'comment_text' column, that will be used to get
+        predictions, as well as label columns to compare the predictions
+        against.
+      metric_name (str): String to use when printing.
+      metric_fn: function that takes labels and predictions and outputs a score
+    """
+
     predictions = self.predict(data['comment_text'])
     # Get an array where each element is a list of all the labels for the
     # specific instance.
