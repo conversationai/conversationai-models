@@ -25,17 +25,19 @@ flags.DEFINE_string("validate_path", "local_data/validation.tfrecord",
                     "Path to the validation data TFRecord file.")
 flags.DEFINE_string("embeddings_path", "local_data/glove.6B/glove.6B.100d.txt",
                     "Path to the embeddings file.")
-flags.DEFINE_string("--text_feature_name", "comment_text",
+flags.DEFINE_string("text_feature_name", "comment_text",
                     "Feature name of the text feature.")
 
 # TODO: Missing fields are not handled properly yet.
 LABELS = {
     "frac_neg": tf.float32,
-    "frac_very_neg": tf.float32,
+    #"frac_very_neg": tf.float32
 }  # type: Dict[str, tf.DType]
 
 
-def main():
+def main(argv):
+  del argv  # unused
+
   train_path = types.Path(FLAGS.train_path)
   validate_path = types.Path(FLAGS.validate_path)
   embeddings_path = types.Path(FLAGS.embeddings_path)
