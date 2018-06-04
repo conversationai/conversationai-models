@@ -26,7 +26,7 @@ class BaseKerasModel(abc.ABC):
     """
     pass
 
-  def get_estimator(self):
+  def get_estimator(self, model_dir, tmp_model_dir='/tmp/keras_model'):
     """Estimator created based on this instances Keras model.
 
     The generated estimator expected a tokenized text input (i.e. a sequence of
@@ -35,14 +35,22 @@ class BaseKerasModel(abc.ABC):
     """
 
     keras_model = self._get_keras_model()
+
     # IMPORTANT: model_to_estimator creates a checkpoint, however this checkpoint
     # does not contain the embedding variable (or other variables that we might
     # want to add outside of the Keras model). The workaround is to specify a
     # model_dir that is *not* the actual model_dir of the final model.
     estimator = tf.keras.estimator.model_to_estimator(
-        keras_model=keras_model, model_dir="/tmp/keras_model")
+        keras_model=keras_model, model_dir=tmp_model_dir)
 
-    return estimator
+    new_config = estimator.config.replace(model_dir=model_dir)
+
+    # Why does estimator.model_fn not include params...
+    def new_model_fn(features, labels, mode, params, config):
+      return estimator.model_fn(features, labels, mode, config)
+
+    return tf.estimator.Estimator(
+        new_model_fn, config=new_config, params=estimator.params)
 
   @staticmethod
   def roc_auc(y_true: types.Tensor, y_pred: types.Tensor,
