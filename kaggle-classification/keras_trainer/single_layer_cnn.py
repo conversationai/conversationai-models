@@ -13,6 +13,7 @@ from keras.layers import Input
 from keras.layers import MaxPooling1D
 from keras.layers import Activation
 from keras.layers import Concatenate
+from keras.optimizers import Adam
 from keras.models import Model
 from keras_trainer import base_model
 from keras_trainer.custom_metrics import auc_roc
@@ -59,7 +60,7 @@ class SingleLayerCnn(base_model.BaseModel):
 
     model = Model(inputs=I, outputs=Output)
     model.compile(
-        optimizer='rmsprop',
+        optimizer=Adam(lr=self.hparams.learning_rate),
         loss='binary_crossentropy',
         metrics=['accuracy', auc_roc])
     print(model.summary())
