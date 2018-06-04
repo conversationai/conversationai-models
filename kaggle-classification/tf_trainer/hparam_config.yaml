@@ -1,0 +1,5 @@
+trainingInput:
+  ## BASIC_GPU uses single NVIDIA Tesla K80 GPU.
+  pythonVersion: '3.5'
+  scaleTier: BASIC_GPU
+
