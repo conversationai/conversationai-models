@@ -13,7 +13,7 @@
 # Edit these!
 BUCKET_NAME=kaggle-model-experiments
 JOB_NAME=${USER}_kaggle_training
-REGION=us-central1
+REGION=us-east1
 
 INPUT_PATH=gs://${BUCKET_NAME}/resources
 DATE=`date '+%Y%m%d_%H%M%S'`
@@ -29,7 +29,7 @@ echo "Writing to $OUTPUT_PATH"
 # Remote
 gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     --job-dir=$OUTPUT_PATH \
-    --runtime-version=1.4 \
+    --runtime-version=1.8 \
     --module-name=keras_trainer.model \
     --package-path=keras_trainer \
     --region=$REGION \
@@ -38,11 +38,11 @@ gcloud ml-engine jobs submit training ${JOB_NAME}_${DATE} \
     -- \
     --train_path=${INPUT_PATH}/train.csv \
     --test_path=${INPUT_PATH}/validation.csv \
-    --embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.100d.txt \
+    --embeddings_path=${INPUT_PATH}/glove.6B/glove.6B.300d.txt \
     --log_path=${LOG_PATH} \
     --comet_key=${COMET_KEY} \
     --comet_project_name=${COMET_PROJECT_NAME} \
-    --model_type=rnn
+    --model_type=single_layer_cnn
 
 echo "You can view the tensorboard for this job with the command:"
 echo ""

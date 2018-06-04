@@ -48,7 +48,7 @@ DEFAULT_HPARAMS = tf.contrib.training.HParams(
     batch_size=128,
     epochs=1,
     sequence_length=250,
-    embedding_dim=100,
+    embedding_dim=300,
     train_embedding=False,
     model_type='single_layer_cnn',
     filter_sizes=[3, 4, 5],
@@ -117,22 +117,33 @@ class ModelRunner():
     data = self._prep_texts(texts)
     return self.model.predict(data)
 
-  def score_auc(self, data):
+  def score_metric(self, data, metric_name, metric_fn):
     predictions = self.predict(data['comment_text'])
     # Get an array where each element is a list of all the labels for the
     # specific instance.
-    labels = np.array(list(zip(*[data[label] for label in self.labels])))
-    if len(self.labels) > 1:
-      individual_auc_scores = metrics.roc_auc_score(
-          labels, predictions, average=None)
-      print('Individual AUCs: {}'.format(
-          list(zip(self.labels, individual_auc_scores))))
-      mean_auc_score = metrics.roc_auc_score(
-          labels, predictions, average='macro')
-      print('Mean AUC: {}'.format(mean_auc_score))
-    else:
-      auc_score = metrics.roc_auc_score(labels, predictions)
-      print('AUC: {}'.format(auc_score))
+    agg = {}
+    for label_idx, label in enumerate(self.labels):
+      labels = list((data[label] > 0.5).astype(int))
+      preds = predictions[:, label_idx]  # label and pred indicies better match
+      score = metric_fn(labels, preds)
+      agg[label] = score
+    print('{}: {}'.format(metric_name, agg))
+    if len(agg) > 1:
+      print('Mean {}: {}'.format(metric_name, np.mean(list(agg.values()))))
+
+  def score_auc(self, data):
+    self.score_metric(data, 'ROC AUC',
+                      lambda l, p: metrics.roc_auc_score(l, p, average=None))
+
+  def score_precision(self, data):
+    self.score_metric(
+        data, 'Precision',
+        lambda l, p: metrics.precision_score(l, (p > 0.5).astype(int)))
+
+  def score_recall(self, data):
+    self.score_metric(
+        data, 'Recall',
+        lambda l, p: metrics.recall_score(l, (p > 0.5).astype(int)))
 
   def _prep_texts(self, texts):
     return pad_sequences(
