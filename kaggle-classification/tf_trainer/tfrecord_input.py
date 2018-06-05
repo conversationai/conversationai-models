@@ -84,7 +84,8 @@ class TFRecordInput(dataset_input.DatasetInput):
             },
             {label: [] for label in self._labels}))
 
-    return batched_dataset
+    itr = batched_dataset.make_one_shot_iterator().get_next()
+    return itr
 
   def _tokenize(self, text: bytes) -> np.ndarray:
     # IMPORTANT: After tokenization we need to re-encode the text or there will
