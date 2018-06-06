@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
-import tensorflow as tf
+from tf_trainer import types
 
 
 class DatasetInput(abc.ABC):
@@ -16,9 +16,9 @@ class DatasetInput(abc.ABC):
   """
 
   @abc.abstractmethod
-  def train_input_fn(self) -> tf.data.TFRecordDataset:
+  def train_input_fn(self) -> types.FeatureAndLabelTensors:
     pass
 
   @abc.abstractmethod
-  def validate_input_fn(self) -> tf.data.TFRecordDataset:
+  def validate_input_fn(self) -> types.FeatureAndLabelTensors:
     pass

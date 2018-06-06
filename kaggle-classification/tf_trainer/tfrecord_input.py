@@ -11,6 +11,7 @@ import numpy as np
 from tf_trainer import dataset_input
 from tf_trainer import types
 from typing import Dict, Tuple
+from tf_trainer import types
 
 
 class TFRecordInput(dataset_input.DatasetInput):
@@ -40,11 +41,11 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._word_to_idx = word_to_idx  # type: Dict[str, int]
     self._unknown_token = unknown_token  # type: int
 
-  def train_input_fn(self) -> tf.data.TFRecordDataset:
+  def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set."""
     return self._input_fn_from_file(self._train_path)
 
-  def validate_input_fn(self) -> tf.data.TFRecordDataset:
+  def validate_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for validation set."""
     return self._input_fn_from_file(self._validate_path)
 
