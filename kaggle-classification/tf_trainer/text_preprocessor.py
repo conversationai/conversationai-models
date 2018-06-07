@@ -68,7 +68,6 @@ class TextPreprocessor():
       return old_model_fn(
           new_features, labels['frac_neg'], mode=mode, config=config)
 
-    old_config = old_config.replace(model_dir=model_dir)
     return tf.estimator.Estimator(
         new_model_fn, config=old_config, params=old_params)
 
