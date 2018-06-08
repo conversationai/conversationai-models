@@ -52,41 +52,40 @@ class TFRecordInput(dataset_input.DatasetInput):
   def _input_fn_from_file(self,
                           filepath: types.Path) -> tf.data.TFRecordDataset:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
-    text_feature = self._text_feature
 
-    def readTFExample(record: tf.Tensor) -> types.FeatureAndLabelTensors:
-      """Parses TF Example protobuf into a text feature and labels.
-
-      The input TF Example has a text feature as a singleton list with the full
-      comment as the single element.
-      """
-
-      keys_to_features = {}
-      keys_to_features[text_feature] = tf.FixedLenFeature([], tf.string)
-      for label, dtype in self._labels.items():
-        keys_to_features[label] = tf.FixedLenFeature([], dtype)
-      parsed = tf.parse_single_example(
-          record, keys_to_features)  # type: Dict[str, types.Tensor]
-
-      text = parsed[text_feature]
-      tokenized_text = tf.py_func(self._tokenize, [text], tf.int64)
-      features = {text_feature: tokenized_text}
-      labels = {label: parsed[label] for label in self._labels}
-
-      return features, labels
-
-    parsed_dataset = dataset.map(readTFExample)
+    parsed_dataset = dataset.map(self._read_tf_example)
     batched_dataset = parsed_dataset.padded_batch(
         self._batch_size,
         padded_shapes=(
             {
                 # TODO: truncate to max_seq_length
-                text_feature: [None]
+                self._text_feature: [None]
             },
             {label: [] for label in self._labels}))
 
     itr = batched_dataset.make_one_shot_iterator().get_next()
     return itr
+
+  def _read_tf_example(self, record: tf.Tensor) -> types.FeatureAndLabelTensors:
+    """Parses TF Example protobuf into a text feature and labels.
+
+    The input TF Example has a text feature as a singleton list with the full
+    comment as the single element.
+    """
+
+    keys_to_features = {}
+    keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
+    for label, dtype in self._labels.items():
+      keys_to_features[label] = tf.FixedLenFeature([], dtype)
+    parsed = tf.parse_single_example(
+        record, keys_to_features)  # type: Dict[str, types.Tensor]
+
+    text = parsed[self._text_feature]
+    tokenized_text = tf.py_func(self._tokenize, [text], tf.int64)
+    features = {self._text_feature: tokenized_text}
+    labels = {label: parsed[label] for label in self._labels}
+
+    return features, labels
 
   def _tokenize(self, text: bytes) -> np.ndarray:
     # IMPORTANT: After tokenization we need to re-encode the text or there will
