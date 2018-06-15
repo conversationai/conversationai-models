@@ -38,6 +38,9 @@ class TFRNNModel():
         inputs,
         sequence_length=tf.fill(dims=[batch_size], value=params.max_seq_length),
         dtype=tf.float32)
+
+    # TF needs help understanding sequence length (I think because we're using
+    # dynamic_rnn)
     outputs = tf.reshape(outputs, [batch_size, params.max_seq_length, 128])
 
     unstacked_outputs = tf.unstack(outputs, num=params.max_seq_length, axis=1)
