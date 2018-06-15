@@ -1,4 +1,4 @@
-"""Keras RNN Model"""
+"""Keras RNN Model with Attention"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -27,7 +27,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
   def _get_keras_model(self) -> models.Model:
     I = layers.Input(
-        shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 100),
+        shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 300),
         dtype='float32',
         name='comment_text')
     H = layers.Bidirectional(layers.GRU(128, return_sequences=True))(I)

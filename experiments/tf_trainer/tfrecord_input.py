@@ -29,7 +29,7 @@ class TFRecordInput(dataset_input.DatasetInput):
                labels: Dict[str, tf.DType],
                word_to_idx: Dict[str, int],
                unknown_token: int,
-               batch_size: int = 32,
+               batch_size: int = 64,
                max_seq_length: int = 300) -> None:
     nltk.download('punkt')
     self._train_path = train_path  # type: types.Path
