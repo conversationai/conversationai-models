@@ -6,7 +6,7 @@ from __future__ import print_function
 
 from tf_trainer import tfrecord_input
 from tf_trainer import text_preprocessor
-from tf_trainer import keras_rnn_model
+from tf_trainer import tf_rnn_model
 from tf_trainer import types
 
 import argparse
@@ -53,14 +53,17 @@ def main(argv):
       word_to_idx=preprocessor.word_to_idx(),
       unknown_token=preprocessor.unknown_token())
 
-  estimator_no_embedding = keras_rnn_model.KerasRNNModel(set(
-      LABELS.keys())).get_estimator(model_dir)
+  #estimator_no_embedding = keras_rnn_model.KerasRNNModel(set(
+  #    LABELS.keys())).get_estimator(model_dir)
+  estimator_no_embedding = tf_rnn_model.TFRNNModel(
+      text_feature_name, LABELS).estimator(
+          tf.estimator.RunConfig(model_dir=model_dir))
 
   # TODO: Move embedding into Keras model.
   estimator = preprocessor.create_estimator_with_embedding(
       estimator_no_embedding, text_feature_name)
 
-  for _ in range(100):
+  for _ in range(20):
     estimator.train(input_fn=dataset.train_input_fn, steps=1000)
     metrics = estimator.evaluate(input_fn=dataset.validate_input_fn, steps=100)
     tf.logging.info(metrics)
