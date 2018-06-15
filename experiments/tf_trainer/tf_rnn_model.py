@@ -107,7 +107,7 @@ class TFRNNModel():
 
       eval_metric_ops = {
           'accuracy': tf.metrics.accuracy(labels, guesses),
-          'auroc': tf.metrics.auc(labels, probabilities)
+          'auc_roc': tf.metrics.auc(labels, probabilities)
       }
 
       # Provide an estimator spec for `ModeKeys.EVAL` modes.
