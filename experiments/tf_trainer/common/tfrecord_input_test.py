@@ -4,9 +4,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tf_trainer import tfrecord_input
-from tf_trainer import text_preprocessor
-from tf_trainer import types
+from tf_trainer.common import tfrecord_input
+from tf_trainer.common import text_preprocessor
+from tf_trainer.common import types
 
 import numpy as np
 import tensorflow as tf

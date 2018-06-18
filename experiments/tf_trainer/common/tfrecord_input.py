@@ -5,21 +5,17 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
-import nltk
 import functools
 import numpy as np
-from tf_trainer import dataset_input
-from tf_trainer import types
-from typing import Dict, Tuple
-from tf_trainer import types
+from tf_trainer.common import dataset_input
+from tf_trainer.common import types
+from typing import Dict, Tuple, Callable
 
 
 class TFRecordInput(dataset_input.DatasetInput):
   """TFRecord based DatasetInput.
 
-  Handles parsing of TF Examples and tokenizing text (with nltk). Note that
-  tokenization is currently implemented with tf.py_func and not with tensorflow
-  ops.
+  Handles parsing of TF Examples.
   """
 
   def __init__(self,
@@ -27,19 +23,16 @@ class TFRecordInput(dataset_input.DatasetInput):
                validate_path: types.Path,
                text_feature: str,
                labels: Dict[str, tf.DType],
-               word_to_idx: Dict[str, int],
-               unknown_token: int,
+               feature_preprocessor: Callable[[types.Tensor], types.Tensor],
                batch_size: int = 64,
                max_seq_length: int = 300) -> None:
-    nltk.download('punkt')
-    self._train_path = train_path  # type: types.Path
-    self._validate_path = validate_path  # type: types.Path
-    self._text_feature = text_feature  # type: str
-    self._labels = labels  # type: Dict[str, tf.Dtype]
-    self._batch_size = batch_size  # type: int
-    self._max_seq_length = max_seq_length  # type: int
-    self._word_to_idx = word_to_idx  # type: Dict[str, int]
-    self._unknown_token = unknown_token  # type: int
+    self._train_path = train_path
+    self._validate_path = validate_path
+    self._text_feature = text_feature
+    self._labels = labels
+    self._batch_size = batch_size
+    self._max_seq_length = max_seq_length
+    self._feature_preprocessor = feature_preprocessor
 
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set."""
@@ -81,16 +74,9 @@ class TFRecordInput(dataset_input.DatasetInput):
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
     text = parsed[self._text_feature]
-    tokenized_text = tf.py_func(self._tokenize, [text], tf.int64)
-    features = {self._text_feature: tokenized_text}
+    # I think this could be a feature column, but feature columns seem so beta.
+    preprocessed_text = self._feature_preprocessor(text)
+    features = {self._text_feature: preprocessed_text}
     labels = {label: parsed[label] for label in self._labels}
 
     return features, labels
-
-  def _tokenize(self, text: bytes) -> np.ndarray:
-    # IMPORTANT: After tokenization we need to re-encode the text or there will
-    # be errors relating to unicode characters.
-    return np.asarray([
-        self._word_to_idx.get(w, self._unknown_token)
-        for w in nltk.word_tokenize(text.decode('utf-8'))
-    ])

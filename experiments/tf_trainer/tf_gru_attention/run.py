@@ -4,12 +4,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from tf_trainer import tfrecord_input
-from tf_trainer import text_preprocessor
-from tf_trainer import tf_rnn_model
-from tf_trainer import types
+from tf_trainer.common import tfrecord_input
+from tf_trainer.common import text_preprocessor
+from tf_trainer.common import types
+from tf_trainer.tf_gru_attention import model
 
-import argparse
+import nltk
 import tensorflow as tf
 
 from typing import Dict
@@ -38,6 +38,8 @@ LABELS = {
 def main(argv):
   del argv  # unused
 
+  nltk.download("punkt")
+
   train_path = types.Path(FLAGS.train_path)
   validate_path = types.Path(FLAGS.validate_path)
   embeddings_path = types.Path(FLAGS.embeddings_path)
@@ -50,16 +52,12 @@ def main(argv):
       validate_path=validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      word_to_idx=preprocessor.word_to_idx(),
-      unknown_token=preprocessor.unknown_token())
+      feature_preprocessor=preprocessor.tokenize_tensor_op(nltk.word_tokenize))
 
-  #estimator_no_embedding = keras_rnn_model.KerasRNNModel(set(
-  #    LABELS.keys())).get_estimator(model_dir)
-  estimator_no_embedding = tf_rnn_model.TFRNNModel(
+  estimator_no_embedding = model.TFRNNModel(
       text_feature_name, LABELS).estimator(
           tf.estimator.RunConfig(model_dir=model_dir))
 
-  # TODO: Move embedding into Keras model.
   estimator = preprocessor.create_estimator_with_embedding(
       estimator_no_embedding, text_feature_name)
 

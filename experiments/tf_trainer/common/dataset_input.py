@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import abc
-from tf_trainer import types
+from tf_trainer.common import types
 
 
 class DatasetInput(abc.ABC):

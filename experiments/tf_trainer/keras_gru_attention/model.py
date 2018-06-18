@@ -7,7 +7,7 @@ from __future__ import print_function
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import optimizers
-from tf_trainer import base_keras_model
+from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
 from typing import Set
