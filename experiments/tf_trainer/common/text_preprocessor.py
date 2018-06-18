@@ -30,7 +30,7 @@ class TextPreprocessor():
   may include fixing a max word length.
   """
 
-  def __init__(self, embeddings_path: types.Path) -> None:
+  def __init__(self, embeddings_path: str) -> None:
     self._word_to_idx, self._embeddings_matrix, self._unknown_token = TextPreprocessor._get_word_idx_and_embeddings(
         embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
@@ -119,7 +119,7 @@ class TextPreprocessor():
     return embeddings
 
   @staticmethod
-  def _get_word_idx_and_embeddings(embeddings_path: types.Path,
+  def _get_word_idx_and_embeddings(embeddings_path: str,
                                    max_words: Optional[int] = None
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
