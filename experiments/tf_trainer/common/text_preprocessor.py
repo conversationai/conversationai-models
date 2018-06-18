@@ -34,20 +34,20 @@ class TextPreprocessor():
     self._word_to_idx, self._embeddings_matrix, self._unknown_token = TextPreprocessor._get_word_idx_and_embeddings(
         embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def tokenize_tensor_op(self,
-                         tokenizer) -> Callable[[types.Tensor], types.Tensor]:
-    return functools.partial(self._tokenize_tensor_op, tokenizer)
+  def tokenize_tensor_op(self, tokenizer: Callable[[str], List[str]]
+                        ) -> Callable[[types.Tensor], types.Tensor]:
 
-  def _tokenize_tensor_op(self, tokenizer: Callable[[str], List[str]],
-                          text: types.Tensor) -> types.Tensor:
+    def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
 
-    def tokenize(b: bytes) -> np.ndarray:
-      return np.asarray([
-          self._word_to_idx.get(w, self._unknown_token)
-          for w in tokenizer(b.decode('utf-8'))
-      ])
+      def _tokenize(b: bytes) -> np.ndarray:
+        return np.asarray([
+            self._word_to_idx.get(w, self._unknown_token)
+            for w in tokenizer(b.decode('utf-8'))
+        ])
 
-    return tf.py_func(tokenize, [text], tf.int64)
+      return tf.py_func(_tokenize, [text], tf.int64)
+
+    return _tokenize_tensor_op
 
   def create_estimator_with_embedding(
       self,
