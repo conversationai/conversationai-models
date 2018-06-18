@@ -8,8 +8,8 @@ import abc
 import tensorflow as tf
 
 from keras import models
-from tf_trainer import text_preprocessor
-from tf_trainer import types
+from tf_trainer.common import text_preprocessor
+from tf_trainer.common import types
 
 
 class BaseKerasModel(abc.ABC):

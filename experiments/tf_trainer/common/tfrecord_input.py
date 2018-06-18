@@ -8,10 +8,9 @@ import tensorflow as tf
 import nltk
 import functools
 import numpy as np
-from tf_trainer import dataset_input
-from tf_trainer import types
+from tf_trainer.common import dataset_input
+from tf_trainer.common import types
 from typing import Dict, Tuple
-from tf_trainer import types
 
 
 class TFRecordInput(dataset_input.DatasetInput):

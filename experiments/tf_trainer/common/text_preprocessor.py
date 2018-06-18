@@ -10,7 +10,7 @@ from absl import flags
 import nltk
 import numpy as np
 import tensorflow as tf
-from tf_trainer import types
+from tf_trainer.common import types
 from typing import Tuple, Dict, Optional, List
 
 FLAGS = flags.FLAGS
