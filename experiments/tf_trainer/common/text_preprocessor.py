@@ -36,6 +36,9 @@ class TextPreprocessor():
 
   def tokenize_tensor_op(self, tokenizer: Callable[[str], List[str]]
                         ) -> Callable[[types.Tensor], types.Tensor]:
+    """Tensor op that converts some text into an array of ints that correspond
+    with this preprocessor's embedding.
+    """
 
     def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
 
