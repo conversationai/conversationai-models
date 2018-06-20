@@ -22,6 +22,8 @@ tf.app.flags.DEFINE_string("embeddings_path",
                            "Path to the embeddings file.")
 tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
+tf.app.flags.DEFINE_integer("batch_size", 64,
+                            "The batch size to use during training.")
 
 # TODO: Missing fields are not handled properly yet.
 LABELS = {
@@ -48,7 +50,8 @@ class KerasGRUAttentionModelRunner(model_runner.ModelRunner):
         text_feature=self._text_feature,
         labels=self._labels,
         feature_preprocessor=self._text_preprocessor.tokenize_tensor_op(
-            nltk.word_tokenize))
+            nltk.word_tokenize),
+        batch_size=FLAGS.batch_size)
 
   def estimator(self, model_dir):
     estimator_no_embedding = model.KerasRNNModel(set(
