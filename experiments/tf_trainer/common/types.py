@@ -13,7 +13,3 @@ Tensor = Union[tf.Tensor, tf.SparseTensor]
 TensorDict = Dict[str, Tensor]
 TensorOrTensorDict = Union[tf.Tensor, TensorDict]
 FeatureAndLabelTensors = Tuple[Tensor, TensorOrTensorDict]
-
-# New Types.
-
-Path = NewType("Path", str)

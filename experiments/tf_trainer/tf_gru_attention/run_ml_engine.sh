@@ -4,6 +4,7 @@ GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
 MODEL_NAME="tf_gru_attention"
 JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/${DATETIME}
+COMET_KEY=$(cat comet_api_key.txt)
 
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
@@ -17,4 +18,7 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIM
     --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
     --validate_path="${GCS_RESOURCES}/toxicity_q42017_validate.tfrecord" \
     --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.300d.txt" \
-    --model_dir="${JOB_DIR}/model_dir"
+    --model_dir="${JOB_DIR}/model_dir" \
+    --comet_key=${COMET_KEY} \
+    --comet_team_name="jigsaw" \
+    --comet_project_name="compare-models"

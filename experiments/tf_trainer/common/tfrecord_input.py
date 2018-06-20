@@ -19,8 +19,8 @@ class TFRecordInput(dataset_input.DatasetInput):
   """
 
   def __init__(self,
-               train_path: types.Path,
-               validate_path: types.Path,
+               train_path: str,
+               validate_path: str,
                text_feature: str,
                labels: Dict[str, tf.DType],
                feature_preprocessor: Callable[[types.Tensor], types.Tensor],
@@ -42,8 +42,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     """input_fn for TF Estimators for validation set."""
     return self._input_fn_from_file(self._validate_path)
 
-  def _input_fn_from_file(self,
-                          filepath: types.Path) -> tf.data.TFRecordDataset:
+  def _input_fn_from_file(self, filepath: str) -> tf.data.TFRecordDataset:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(self._read_tf_example)
