@@ -7,6 +7,9 @@ from __future__ import print_function
 import tensorflow as tf
 import comet_ml
 import abc
+import os
+import os.path
+import json
 from typing import Dict, Any
 
 from tf_trainer.common import dataset_input as ds
@@ -60,13 +63,14 @@ class ModelRunner(abc.ABC):
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)
     dataset = self.dataset_input(FLAGS.train_path, FLAGS.validate_path)
-    estimator = self.estimator(FLAGS.model_dir)
+    estimator = self.estimator(self._model_dir())
 
     for _ in range(num_itr):
       estimator.train(input_fn=dataset.train_input_fn, steps=eval_period)
       metrics = estimator.evaluate(
           input_fn=dataset.validate_input_fn, steps=eval_steps)
       if experiment is not None:
+        tf.logging.info('Logging metrics to comet.ml: {}'.format(metrics))
         experiment.log_multiple_metrics(metrics)
       tf.logging.info(metrics)
 
@@ -79,6 +83,18 @@ class ModelRunner(abc.ABC):
         parse_args=False)
     experiment.log_parameter('train_path', FLAGS.train_path)
     experiment.log_parameter('validate_path', FLAGS.validate_path)
-    experiment.log_parameter('model_dir', FLAGS.model_dir)
+    experiment.log_parameter('model_dir', self._model_dir())
     experiment.log_multiple_params(self.log_params())
     return experiment
+
+  def _model_dir(self):
+    """Get Model Directory.
+
+    Used to scope logs to a given trial (when hyper param tuning) so that they
+    don't run over each other. When running locally it will just use the passed
+    in model_dir.
+    """
+    return os.path.join(
+        FLAGS.model_dir,
+        json.loads(os.environ.get('TF_CONFIG', '{}')).get('task', {}).get(
+            'trial', ''))
