@@ -56,7 +56,7 @@ class ModelRunner(abc.ABC):
     return {}
 
   def train_with_eval(self, steps, eval_period, eval_steps):
-    if FLAGS.comet_key:
+    if FLAGS.comet_key is not None:
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)
     dataset = self.dataset_input(FLAGS.train_path, FLAGS.validate_path)
@@ -66,7 +66,7 @@ class ModelRunner(abc.ABC):
       estimator.train(input_fn=dataset.train_input_fn, steps=eval_period)
       metrics = estimator.evaluate(
           input_fn=dataset.validate_input_fn, steps=eval_steps)
-      if experiment:
+      if experiment is not None:
         experiment.log_multiple_metrics(metrics)
       tf.logging.info(metrics)
 
