@@ -6,6 +6,27 @@ from __future__ import print_function
 
 import tensorflow as tf
 
+FLAGS = tf.app.flags.FLAGS
+
+# Hyperparameters
+# TODO: Add validation
+tf.app.flags.DEFINE_float('learning_rate', 0.00003,
+                          'The learning rate to use during training.')
+tf.app.flags.DEFINE_float('dropout_rate', 0.3,
+                          'The dropout rate to use during training.')
+# This would normally just be a multi_integer, but we use string due to
+# constraints with ML Engine hyperparameter tuning.
+tf.app.flags.DEFINE_string(
+    'gru_units', '128',
+    'Comma delimited string for the number of hidden units in the gru layer.')
+tf.app.flags.DEFINE_integer('attention_units', 64,
+                            'The number of hidden units in the gru layer.')
+# This would normally just be a multi_integer, but we use string due to
+# constraints with ML Engine hyperparameter tuning.
+tf.app.flags.DEFINE_string(
+    'dense_units', '128',
+    'Comma delimited string for the number of hidden units in the dense layer.')
+
 
 class TFRNNModel():
   DEFAULT_HPARAMS = tf.contrib.training.HParams(max_seq_length=300)
@@ -25,14 +46,16 @@ class TFRNNModel():
     inputs = features[self._text_feature_name]
     batch_size = tf.shape(inputs)[0]
 
+    gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
     rnn_layers = [
         tf.nn.rnn_cell.GRUCell(num_units=size, activation=tf.nn.tanh)
-        for size in [128]
+        for size in gru_units
     ]
 
     # create a RNN cell composed sequentially of a number of RNNCells
     multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers)
 
+    # TODO: make bidirectional
     outputs, states = tf.nn.dynamic_rnn(
         multi_rnn_cell,
         inputs,
@@ -41,7 +64,8 @@ class TFRNNModel():
 
     # TF needs help understanding sequence length (I think because we're using
     # dynamic_rnn)
-    outputs = tf.reshape(outputs, [batch_size, params.max_seq_length, 128])
+    outputs = tf.reshape(outputs,
+                         [batch_size, params.max_seq_length, gru_units[-1]])
 
     unstacked_outputs = tf.unstack(outputs, num=params.max_seq_length, axis=1)
 
@@ -51,7 +75,9 @@ class TFRNNModel():
                 [
                     tf.layers.dense(
                         inputs=tf.layers.dense(
-                            inputs=output, units=64, activation=tf.nn.relu),
+                            inputs=output,
+                            units=FLAGS.attention_units,
+                            activation=tf.nn.relu),
                         units=1,
                         activation=None) for output in unstacked_outputs
                 ],
@@ -61,9 +87,12 @@ class TFRNNModel():
     weighted_output = tf.multiply(attention, outputs)
     weighted_output = tf.reduce_sum(weighted_output, -2)
 
-    logits = tf.layers.dense(
-        inputs=weighted_output, units=128, activation=tf.nn.relu)
-    logits = tf.layers.dropout(logits, rate=0.3)
+    dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
+    logits = weighted_output
+    for num_units in dense_units:
+      logits = tf.layers.dense(
+          inputs=weighted_output, units=num_units, activation=tf.nn.relu)
+      logits = tf.layers.dropout(logits, rate=FLAGS.dropout_rate)
     logits = tf.layers.dense(
         inputs=logits, units=len(self._target_labels), activation=None)
 
@@ -92,7 +121,7 @@ class TFRNNModel():
 
     if mode == tf.estimator.ModeKeys.TRAIN:
       # Create Optimiser
-      optimizer = tf.train.AdamOptimizer(learning_rate=0.00005)
+      optimizer = tf.train.AdamOptimizer(learning_rate=FLAGS.learning_rate)
 
       # Create training operation
       train_op = optimizer.minimize(
@@ -107,7 +136,7 @@ class TFRNNModel():
 
       eval_metric_ops = {
           'accuracy': tf.metrics.accuracy(labels, guesses),
-          'auc_roc': tf.metrics.auc(labels, probabilities)
+          'roc_auc': tf.metrics.auc(labels, probabilities)
       }
 
       # Provide an estimator spec for `ModeKeys.EVAL` modes.
