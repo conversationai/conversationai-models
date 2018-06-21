@@ -69,6 +69,9 @@ class TFGRUAttentionModelRunner(model_runner.ModelRunner):
 
     return estimator
 
+  def log_params(self):
+    return model.TFRNNModel.hparams().values()
+
 
 def main(argv):
   del argv  # unused

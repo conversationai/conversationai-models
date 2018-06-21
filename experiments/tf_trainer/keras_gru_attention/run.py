@@ -69,6 +69,9 @@ class KerasGRUAttentionModelRunner(model_runner.ModelRunner):
 
     return estimator
 
+  def log_params(self):
+    return model.KerasRNNModel.hparams().values()
+
 
 def main(argv):
   del argv  # unused
