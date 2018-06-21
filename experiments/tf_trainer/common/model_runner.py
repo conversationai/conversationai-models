@@ -76,8 +76,8 @@ class ModelRunner(abc.ABC):
       tf.logging.info(metrics)
 
   def _setup_comet(self):
-    with tf.gfile.FastGFile(FLAGS.comet_key_file) as key_file:
-      key = key_file.read()
+    with tf.gfile.GFile(FLAGS.comet_key_file) as key_file:
+      key = key_file.read().rstrip()
     experiment = comet_ml.Experiment(
         api_key=key,
         project_name=FLAGS.comet_project_name,
