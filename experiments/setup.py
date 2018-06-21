@@ -1,7 +1,7 @@
 from setuptools import find_packages
 from setuptools import setup
 
-REQUIRED_PACKAGES = ['Keras==2.1.5', 'comet-ml==1.0.8', 'nltk>=3.3']
+REQUIRED_PACKAGES = ['Keras==2.2.0', 'comet-ml==1.0.16', 'nltk>=3.3']
 
 setup(
     name='tf_trainer',

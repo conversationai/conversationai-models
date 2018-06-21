@@ -24,6 +24,12 @@ tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
+tf.app.flags.DEFINE_integer("train_steps", 10000,
+                            "The number of steps to train for.")
+tf.app.flags.DEFINE_integer("eval_period", 500,
+                            "The number of steps per eval period.")
+tf.app.flags.DEFINE_integer("eval_steps", 100,
+                            "The number of steps to eval for.")
 
 # TODO: Missing fields are not handled properly yet.
 LABELS = {
@@ -78,7 +84,7 @@ def main(argv):
       labels=LABELS,
       text_preprocessor=preprocessor)
 
-  runner.train_with_eval(20000, 1000, 100)
+  runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 
 if __name__ == "__main__":
