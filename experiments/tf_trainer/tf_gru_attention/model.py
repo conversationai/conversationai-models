@@ -44,7 +44,6 @@ class TFRNNModel():
         attention_units=FLAGS.attention_units,
         dense_units=dense_units)
 
-  @property
   def hparams(self):
     return self._hparams
 

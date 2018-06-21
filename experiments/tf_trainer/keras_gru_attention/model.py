@@ -55,7 +55,6 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
         attention_units=FLAGS.attention_units,
         dense_units=dense_units)
 
-  @property
   def hparams(self):
     return self._hparams
 
