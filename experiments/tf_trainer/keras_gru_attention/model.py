@@ -66,13 +66,13 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
     # Bidirectional GRU
     H = I
-    for num_units in self.hparams.gru_units:
+    for num_units in self.hparams().gru_units:
       H = layers.Bidirectional(layers.GRU(num_units, return_sequences=True))(I)
 
     # Attention
-    last_gru_units = self.hparams.gru_units[-1] * 2  # Multiply by 2 because bidirectional
+    last_gru_units = self.hparams().gru_units[-1] * 2  # x2 because bidirectional
     A = layers.TimeDistributed(
-        layers.Dense(self.hparams.attention_units, activation='relu'),
+        layers.Dense(self.hparams().attention_units, activation='relu'),
         input_shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, last_gru_units))(
             H)
     A = layers.TimeDistributed(layers.Dense(1))(A)
@@ -82,9 +82,9 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
     # Dense
     X = layers.Dot((1, 1))([H, A])
     X = layers.Flatten()(X)
-    for num_units in self.hparams.dense_units:
+    for num_units in self.hparams().dense_units:
       X = layers.Dense(num_units, activation='relu')(X)
-      X = layers.Dropout(self.hparams.dropout_rate)(X)
+      X = layers.Dropout(self.hparams().dropout_rate)(X)
 
     # Outputs
     outputs = []
@@ -93,7 +93,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
     model = models.Model(inputs=I, outputs=outputs)
     model.compile(
-        optimizer=optimizers.Adam(lr=self.hparams.learning_rate),
+        optimizer=optimizers.Adam(lr=self.hparams().learning_rate),
         loss='binary_crossentropy',
         metrics=['accuracy', super().roc_auc])
 
