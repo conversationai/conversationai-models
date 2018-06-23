@@ -46,17 +46,16 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   def __init__(self, labels: Set[str], optimizer='adam') -> None:
     self._labels = labels
 
+  @staticmethod
+  def hparams():
     gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
     dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
-    self._hparams = tf.contrib.training.HParams(
+    return tf.contrib.training.HParams(
         learning_rate=FLAGS.learning_rate,
         dropout_rate=FLAGS.dropout_rate,
         gru_units=gru_units,
         attention_units=FLAGS.attention_units,
         dense_units=dense_units)
-
-  def hparams(self):
-    return self._hparams
 
   def _get_keras_model(self) -> models.Model:
     I = layers.Input(
