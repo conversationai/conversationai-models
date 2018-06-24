@@ -4,28 +4,7 @@ This directory contains a framework and a range of models for the classification
 
 ## Environment Setup
 
-1.  Setup a (virtualenv)[https://virtualenvwrapper.readthedocs.io/en/latest/] for
-    the project (recommended, but technically optional).
-
-    Python 2:
-
-    ```
-    python -m virtualenv env
-    ```
-
-    Python 3:
-
-    ```
-    python3 -m venv env
-    ```
-
-    From either to enter your virtual env:
-
-    ```shell
-    source env/bin/activate
-    ```
-
-2.  Install library dependencies:
+Install library dependencies (it is optional, but recommended to install these in a [virtual environment](https://docs.python.org/3/tutorial/venv.html):
 
     ```shell
     pip install -r requirements.txt
@@ -33,7 +12,7 @@ This directory contains a framework and a range of models for the classification
 
 ## Training an Existing Model
 
-To train an existing model,  simply execute the command `./tf_traner/MODEL_NAME/run.sh` (to run locally) or the command `./tf_trainer/MODEL_NAME/run_ml_engine.sh` to run training on [Google ML Engine](https://cloud.google.com/ml-engine/).
+To train an existing model,  simply execute the command `./tf_trainer/MODEL_NAME/run.sh` (to run locally) or the command `./tf_trainer/MODEL_NAME/run_ml_engine.sh` to run training on [Google ML Engine](https://cloud.google.com/ml-engine/).
 
 These scripts assume that you have access to the resources on our cloud projects. If you don't, you can still run the models locally, but will have to modify the data paths in `run.sh`. At the moment, we only support reading data in tf.record format.
 
