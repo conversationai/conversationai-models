@@ -15,6 +15,7 @@ from tf_trainer.common import dataset_input as ds
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
+from tf_trainer.common import base_model
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -44,12 +45,11 @@ class ModelRunner():
   IMPORTANT: This class is very likely to change.
   """
 
-  def __init__(self, dataset: ds.DatasetInput,
-               estimator: tf.estimator.Estimator,
+  def __init__(self, dataset: ds.DatasetInput, model: base_model.BaseModel,
                log_params: Dict[str, Any]) -> None:
     self._dataset = dataset
-    self._estimator = estimator
     self._log_params = log_params
+    self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self, steps, eval_period, eval_steps):
     if FLAGS.comet_key_file is not None:

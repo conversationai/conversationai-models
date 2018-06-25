@@ -10,7 +10,7 @@ from tf_trainer.common import model_runner
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
-from tf_trainer.tf_gru_attention import model
+from tf_trainer.tf_gru_attention import model as tf_gru_attention
 
 import nltk
 import tensorflow as tf
@@ -40,47 +40,11 @@ LABELS = {
 }  # type: Dict[str, tf.DType]
 
 
-class TFGRUAttentionModelRunner(model_runner.ModelRunner):
-
-  def __init__(self, embeddings_path: str, text_feature: str,
-               labels: Dict[str, tf.DType],
-               text_preprocessor: text_preprocessor.TextPreprocessor) -> None:
-    self._embeddings_path = embeddings_path
-    self._text_feature = text_feature
-    self._labels = labels
-    self._text_preprocessor = text_preprocessor
-    nltk.download("punkt")
-
-  def dataset_input(self, train_path, validate_path):
-    return tfrecord_input.TFRecordInput(
-        train_path=train_path,
-        validate_path=validate_path,
-        text_feature=self._text_feature,
-        labels=self._labels,
-        feature_preprocessor=self._text_preprocessor.tokenize_tensor_op(
-            nltk.word_tokenize),
-        batch_size=FLAGS.batch_size)
-
-  def estimator(self, model_dir):
-    estimator_no_embedding = model.TFRNNModel(
-        self._text_feature, self._labels).estimator(
-            tf.estimator.RunConfig(model_dir=model_dir))
-
-    estimator = self._text_preprocessor.create_estimator_with_embedding(
-        estimator_no_embedding, self._text_feature)
-
-    return estimator
-
-  def log_params(self):
-    return model.TFRNNModel.hparams().values()
-
-
 def main(argv):
   del argv  # unused
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
-  model_dir = FLAGS.model_dir
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
   nltk.download("punkt")
@@ -94,13 +58,12 @@ def main(argv):
       feature_preprocessor=tokenize_op,
       batch_size=FLAGS.batch_size)
 
-  estimator_no_embedding = model.TFRNNModel(text_feature_name,
-                                            LABELS).estimator(model_dir)
-  estimator = preprocessor.create_estimator_with_embedding(
-      estimator_no_embedding, text_feature_name)
+  model = preprocessor.add_embedding_to_model(
+      tf_gru_attention.TFRNNModel(text_feature_name, LABELS), text_feature_name)
 
-  runner = model_runner.ModelRunner(dataset, estimator,
-                                    model.TFRNNModel.hparams().values())
+  runner = model_runner.ModelRunner(
+      dataset, model,
+      tf_gru_attention.TFRNNModel.hparams().values())
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 

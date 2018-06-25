@@ -10,6 +10,7 @@ import tensorflow as tf
 from keras import models
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
+from typing import Callable
 
 
 class BaseModel(abc.ABC):
@@ -19,6 +20,17 @@ class BaseModel(abc.ABC):
   should subclass this one.
   """
 
+  @staticmethod
+  def create(
+      estimator_fn: Callable[[str], tf.estimator.Estimator]) -> 'BaseModel':
+
+    class Model(BaseModel):
+
+      def estimator(model_dir):
+        return estimator_fn(model_dir)
+
+    return Model()
+
   @abc.abstractmethod
-  def estimator(self, model_dir) -> tf.estimator.Estimator:
+  def estimator(self, model_dir: str) -> tf.estimator.Estimator:
     pass

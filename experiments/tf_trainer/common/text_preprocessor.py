@@ -12,6 +12,7 @@ import numpy as np
 import functools
 import tensorflow as tf
 from tf_trainer.common import types
+from tf_trainer.common import base_model
 from typing import Tuple, Dict, Optional, List, Callable
 
 FLAGS = flags.FLAGS
@@ -51,6 +52,15 @@ class TextPreprocessor():
       return tf.py_func(_tokenize, [text], tf.int64)
 
     return _tokenize_tensor_op
+
+  def add_embedding_to_model(self, model: base_model.BaseModel,
+                             text_feature_name: str) -> base_model.BaseModel:
+
+    def estimator(model_dir):
+      return self.create_estimator_with_embedding(
+          model.estimator(model_dir), text_feature_name)
+
+    return base_model.BaseModel.create(estimator)
 
   def create_estimator_with_embedding(
       self, estimator: tf.estimator.Estimator,

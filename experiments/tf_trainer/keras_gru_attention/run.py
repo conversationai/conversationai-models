@@ -10,7 +10,7 @@ from tf_trainer.common import model_runner
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
-from tf_trainer.keras_gru_attention import model
+from tf_trainer.keras_gru_attention import model as keras_gru_attention
 
 import nltk
 import tensorflow as tf
@@ -45,7 +45,6 @@ def main(argv):
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
-  model_dir = FLAGS.model_dir
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
   nltk.download("punkt")
@@ -59,14 +58,13 @@ def main(argv):
       feature_preprocessor=tokenize_op,
       batch_size=FLAGS.batch_size)
 
-  estimator_no_embedding = model.KerasRNNModel(set(
-      LABELS.keys())).estimator(model_dir)
-  # TODO: Move embedding into Keras model.
-  estimator = preprocessor.create_estimator_with_embedding(
-      estimator_no_embedding, text_feature_name)
+  # TODO: Move embedding *into* Keras model.
+  model = preprocessor.add_embedding_to_model(
+      keras_gru_attention.KerasRNNModel(set(LABELS.keys())), text_feature_name)
 
-  runner = model_runner.ModelRunner(dataset, estimator,
-                                    model.KerasRNNModel.hparams().values())
+  runner = model_runner.ModelRunner(
+      dataset, model,
+      keras_gru_attention.KerasRNNModel.hparams().values())
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 
