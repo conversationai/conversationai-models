@@ -26,7 +26,7 @@ class BaseModel(abc.ABC):
 
     class Model(BaseModel):
 
-      def estimator(model_dir):
+      def estimator(self, model_dir):
         return estimator_fn(model_dir)
 
     return Model()
