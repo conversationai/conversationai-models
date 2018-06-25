@@ -53,16 +53,13 @@ class TextPreprocessor():
     return _tokenize_tensor_op
 
   def create_estimator_with_embedding(
-      self,
-      estimator: tf.estimator.Estimator,
-      text_feature_name: str,
-      model_dir: str = '/tmp/new_model') -> tf.estimator.Estimator:
+      self, estimator: tf.estimator.Estimator,
+      text_feature_name: str) -> tf.estimator.Estimator:
     """Takes an existing estimator and prepends the embedding layers to it.
 
     Args:
       estimator: A predefined Estimator that expects embeddings.
       text_feature_name: The name of the feature containing the text.
-      model_dir: Place to output estimator model files.
 
     Returns:
       TF Estimator with embedding ops added.

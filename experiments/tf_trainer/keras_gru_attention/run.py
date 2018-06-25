@@ -4,10 +4,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+# Import common flags and run code. Must be imported first.
+from tf_trainer.common import model_runner
+
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
-from tf_trainer.common import model_runner
 from tf_trainer.keras_gru_attention import model
 
 import nltk
@@ -24,9 +26,9 @@ tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 10000,
+tf.app.flags.DEFINE_integer("train_steps", 5000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 500,
+tf.app.flags.DEFINE_integer("eval_period", 200,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", 100,
                             "The number of steps to eval for.")
@@ -38,55 +40,33 @@ LABELS = {
 }  # type: Dict[str, tf.DType]
 
 
-class KerasGRUAttentionModelRunner(model_runner.ModelRunner):
-
-  def __init__(self, embeddings_path: str, text_feature: str,
-               labels: Dict[str, tf.DType],
-               text_preprocessor: text_preprocessor.TextPreprocessor) -> None:
-    self._embeddings_path = embeddings_path
-    self._text_feature = text_feature
-    self._labels = labels
-    self._text_preprocessor = text_preprocessor
-    nltk.download("punkt")
-
-  def dataset_input(self, train_path, validate_path):
-    return tfrecord_input.TFRecordInput(
-        train_path=train_path,
-        validate_path=validate_path,
-        text_feature=self._text_feature,
-        labels=self._labels,
-        feature_preprocessor=self._text_preprocessor.tokenize_tensor_op(
-            nltk.word_tokenize),
-        batch_size=FLAGS.batch_size)
-
-  def estimator(self, model_dir):
-    estimator_no_embedding = model.KerasRNNModel(set(
-        self._labels.keys())).get_estimator(model_dir)
-
-    # TODO: Move embedding into Keras model.
-    estimator = self._text_preprocessor.create_estimator_with_embedding(
-        estimator_no_embedding, self._text_feature)
-
-    return estimator
-
-  def log_params(self):
-    return model.KerasRNNModel.hparams().values()
-
-
 def main(argv):
   del argv  # unused
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
+  model_dir = FLAGS.model_dir
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
+  nltk.download("punkt")
+  tokenize_op = preprocessor.tokenize_tensor_op(nltk.word_tokenize)
 
-  runner = KerasGRUAttentionModelRunner(
-      embeddings_path=embeddings_path,
+  dataset = tfrecord_input.TFRecordInput(
+      train_path=FLAGS.train_path,
+      validate_path=FLAGS.validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      text_preprocessor=preprocessor)
+      feature_preprocessor=tokenize_op,
+      batch_size=FLAGS.batch_size)
 
+  estimator_no_embedding = model.KerasRNNModel(set(
+      LABELS.keys())).estimator(model_dir)
+  # TODO: Move embedding into Keras model.
+  estimator = preprocessor.create_estimator_with_embedding(
+      estimator_no_embedding, text_feature_name)
+
+  runner = model_runner.ModelRunner(dataset, estimator,
+                                    model.KerasRNNModel.hparams().values())
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 
