@@ -25,7 +25,8 @@ tf.app.flags.DEFINE_string('validate_path', None,
                            'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
-tf.app.flags.DEFINE_string('comet_key', None, 'Your comet.ml api key.')
+tf.app.flags.DEFINE_string('comet_key_file', None,
+                           'Path to file containing comet.ml api key.')
 tf.app.flags.DEFINE_string('comet_team_name', None,
                            'Name of comet team that tracks results.')
 tf.app.flags.DEFINE_string('comet_project_name', None,
@@ -59,7 +60,7 @@ class ModelRunner(abc.ABC):
     return {}
 
   def train_with_eval(self, steps, eval_period, eval_steps):
-    if FLAGS.comet_key is not None:
+    if FLAGS.comet_key_file is not None:
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)
     dataset = self.dataset_input(FLAGS.train_path, FLAGS.validate_path)
@@ -75,8 +76,10 @@ class ModelRunner(abc.ABC):
       tf.logging.info(metrics)
 
   def _setup_comet(self):
+    with tf.gfile.GFile(FLAGS.comet_key_file) as key_file:
+      key = key_file.read().rstrip()
     experiment = comet_ml.Experiment(
-        api_key=FLAGS.comet_key,
+        api_key=key,
         project_name=FLAGS.comet_project_name,
         team_name=FLAGS.comet_team_name,
         auto_param_logging=False,
