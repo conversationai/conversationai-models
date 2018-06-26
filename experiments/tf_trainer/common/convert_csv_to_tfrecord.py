@@ -23,9 +23,9 @@ def convert_csv_to_tfrecord(input_csv_path, output_tfrecord_path):
     csv = df[COLS].values
     with tf.python_io.TFRecordWriter(output_tfrecord_path) as writer:
         for row in csv:
-            features, label = row[0], row[1]
+            text, label = row[0], row[1]
             example = tf.train.Example()
-            example.features.feature[COLS[0]].bytes_list.value.append(features.encode('utf-8'))
+            example.features.feature[COLS[0]].bytes_list.value.append(text.encode('utf-8', errors='replace'))
             example.features.feature[COLS[1]].float_list.value.append(label)
             writer.write(example.SerializeToString())
 
