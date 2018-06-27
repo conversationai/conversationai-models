@@ -59,7 +59,8 @@ def main(argv):
       batch_size=FLAGS.batch_size)
 
   model = preprocessor.add_embedding_to_model(
-      tf_gru_attention.TFRNNModel(text_feature_name, LABELS), text_feature_name)
+      tf_gru_attention.TFRNNModel(text_feature_name, set(LABELS.keys())),
+      text_feature_name)
 
   runner = model_runner.ModelRunner(dataset, model)
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
