@@ -52,6 +52,7 @@ class ModelRunner():
     self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self, steps, eval_period, eval_steps):
+    experiment = None
     if FLAGS.comet_key_file is not None:
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)

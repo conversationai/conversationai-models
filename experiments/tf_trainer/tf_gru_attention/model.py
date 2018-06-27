@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from tf_trainer.common import base_model
+from typing import Set
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -31,7 +32,7 @@ tf.app.flags.DEFINE_string(
 
 class TFRNNModel(base_model.BaseModel):
 
-  def __init__(self, text_feature_name, target_labels):
+  def __init__(self, text_feature_name: str, target_labels: Set[str]) -> None:
     self._text_feature_name = text_feature_name
     self._target_labels = target_labels
 
@@ -107,49 +108,16 @@ class TFRNNModel(base_model.BaseModel):
     logits = tf.layers.dense(
         inputs=logits, units=len(self._target_labels), activation=None)
 
-    # Provide an estimator spec for `ModeKeys.PREDICT`.
-    if mode == tf.estimator.ModeKeys.PREDICT:
-      probabilities = tf.nn.sigmoid(logits)
-      guesses = tf.to_int32(probabilities > 0.5)
+    output_heads = [
+        tf.contrib.estimator.binary_classification_head(name=name)
+        for name in self._target_labels
+    ]
+    multihead = tf.contrib.estimator.multi_head(output_heads)
 
-      # Convert predicted_indices back into strings
-      predictions = {
-          'class': tf.gather(self._target_labels, guesses),
-          'probabilities': probabilities
-      }
-      export_outputs = {
-          'prediction': tf.estimator.export.PredictOutput(predictions)
-      }
-
-      # Provide an estimator spec for `ModeKeys.PREDICT` modes.
-      return tf.estimator.EstimatorSpec(
-          mode, predictions=predictions, export_outputs=export_outputs)
-
-    loss = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels=labels))
-
-    tf.summary.scalar('loss', loss)
-
-    if mode == tf.estimator.ModeKeys.TRAIN:
-      # Create Optimiser
-      optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
-
-      # Create training operation
-      train_op = optimizer.minimize(
-          loss=loss, global_step=tf.train.get_global_step())
-
-      # Provide an estimator spec for `ModeKeys.TRAIN` modes.
-      return tf.estimator.EstimatorSpec(mode=mode, loss=loss, train_op=train_op)
-
-    if mode == tf.estimator.ModeKeys.EVAL:
-      probabilities = tf.sigmoid(logits)
-      guesses = tf.to_int32(probabilities > 0.5)
-
-      eval_metric_ops = {
-          'accuracy': tf.metrics.accuracy(labels, guesses),
-          'roc_auc': tf.metrics.auc(labels, probabilities)
-      }
-
-      # Provide an estimator spec for `ModeKeys.EVAL` modes.
-      return tf.estimator.EstimatorSpec(
-          mode, loss=loss, eval_metric_ops=eval_metric_ops)
+    optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
+    return multihead.create_estimator_spec(
+        features=features,
+        labels=labels,
+        mode=mode,
+        logits=logits,
+        optimizer=optimizer)
