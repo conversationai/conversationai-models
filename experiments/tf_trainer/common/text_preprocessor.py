@@ -56,15 +56,13 @@ class TextPreprocessor():
   def add_embedding_to_model(self, model: base_model.BaseModel,
                              text_feature_name: str) -> base_model.BaseModel:
 
-    def estimator(model_dir):
-      return self.create_estimator_with_embedding(
-          model.estimator(model_dir), text_feature_name)
-
-    return base_model.BaseModel.create(estimator)
+    return model.map(
+        functools.partial(self.create_estimator_with_embedding,
+                          text_feature_name))
 
   def create_estimator_with_embedding(
-      self, estimator: tf.estimator.Estimator,
-      text_feature_name: str) -> tf.estimator.Estimator:
+      self, text_feature_name: str,
+      estimator: tf.estimator.Estimator) -> tf.estimator.Estimator:
     """Takes an existing estimator and prepends the embedding layers to it.
 
     Args:

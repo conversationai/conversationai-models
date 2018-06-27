@@ -20,14 +20,18 @@ class BaseModel(abc.ABC):
   should subclass this one.
   """
 
-  @staticmethod
-  def create(
-      estimator_fn: Callable[[str], tf.estimator.Estimator]) -> 'BaseModel':
+  def map(self, f: Callable[[tf.estimator.Estimator], tf.estimator.Estimator]
+         ) -> 'BaseModel':
 
     class Model(BaseModel):
 
-      def estimator(self, model_dir):
-        return estimator_fn(model_dir)
+      def estimator(unused, model_dir):
+        del unused
+        return f(self.estimator(model_dir))
+
+      def hparams(unused):
+        del unused
+        return self.hparams()
 
     return Model()
 
