@@ -46,8 +46,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   def __init__(self, labels: Set[str], optimizer='adam') -> None:
     self._labels = labels
 
-  @staticmethod
-  def hparams():
+  def hparams(self):
     gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
     dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
     return tf.contrib.training.HParams(

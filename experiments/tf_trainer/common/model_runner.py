@@ -45,10 +45,10 @@ class ModelRunner():
   IMPORTANT: This class is very likely to change.
   """
 
-  def __init__(self, dataset: ds.DatasetInput, model: base_model.BaseModel,
-               log_params: Dict[str, Any]) -> None:
+  def __init__(self, dataset: ds.DatasetInput,
+               model: base_model.BaseModel) -> None:
     self._dataset = dataset
-    self._log_params = log_params
+    self._model = model
     self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self, steps, eval_period, eval_steps):
@@ -78,7 +78,7 @@ class ModelRunner():
     experiment.log_parameter('train_path', FLAGS.train_path)
     experiment.log_parameter('validate_path', FLAGS.validate_path)
     experiment.log_parameter('model_dir', self._model_dir())
-    experiment.log_multiple_params(self._log_params)
+    experiment.log_multiple_params(self._model.hparams().values())
     return experiment
 
   def _model_dir(self):

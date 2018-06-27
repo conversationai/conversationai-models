@@ -62,9 +62,7 @@ def main(argv):
   model = preprocessor.add_embedding_to_model(
       keras_gru_attention.KerasRNNModel(set(LABELS.keys())), text_feature_name)
 
-  runner = model_runner.ModelRunner(
-      dataset, model,
-      keras_gru_attention.KerasRNNModel.hparams().values())
+  runner = model_runner.ModelRunner(dataset, model)
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 
