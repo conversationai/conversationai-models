@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 from tf_trainer.common import base_model
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -31,7 +32,7 @@ tf.app.flags.DEFINE_string(
 
 class TFRNNModel(base_model.BaseModel):
 
-  def __init__(self, text_feature_name, target_labels):
+  def __init__(self, text_feature_name: str, target_labels: List[str]) -> None:
     self._text_feature_name = text_feature_name
     self._target_labels = target_labels
 
