@@ -25,10 +25,12 @@ class BaseModel(abc.ABC):
 
     class Model(BaseModel):
 
-      def estimator(s, model_dir):
+      def estimator(unused, model_dir):
+        del unused
         return f(self.estimator(model_dir))
 
-      def hparams(s):
+      def hparams(unused):
+        del unused
         return self.hparams()
 
     return Model()
