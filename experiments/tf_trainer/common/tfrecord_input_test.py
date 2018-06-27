@@ -24,20 +24,24 @@ class TFRecordInputTest(tf.test.TestCase):
                 "comment":
                     tf.train.Feature(
                         bytes_list=tf.train.BytesList(
-                            value=["Hi there.".encode("utf-8")]))
+                            value=["Hi there Bob".encode("utf-8")]))
             }))
     ex_tensor = tf.convert_to_tensor(ex.SerializeToString(), dtype=tf.string)
+
+    word_to_idx = {"Hi": 12, "there": 13}
+    unknown_token = 999
+
+    def preprocessor(text):
+      return tf.py_func(
+          lambda t: np.asarray([word_to_idx.get(x, unknown_token) for x in t.decode().split(" ")]),
+          [text], tf.int64)
 
     dataset_input = tfrecord_input.TFRecordInput(
         train_path=None,
         validate_path=None,
         text_feature="comment",
         labels={"label": tf.float32},
-        word_to_idx={
-            "Hi": 12,
-            "there": 13
-        },
-        unknown_token=999)
+        feature_preprocessor=preprocessor)
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(ex_tensor)

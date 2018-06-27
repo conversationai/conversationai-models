@@ -4,9 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import tensorflow as tf
 import comet_ml
-import abc
+import tensorflow as tf
 import os
 import os.path
 import json
@@ -16,6 +15,7 @@ from tf_trainer.common import dataset_input as ds
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
+from tf_trainer.common import base_model
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -37,39 +37,30 @@ tf.app.flags.mark_flag_as_required('validate_path')
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
-class ModelRunner(abc.ABC):
+class ModelRunner():
   """Text Classification Model Runner.
 
   Convenient way to run a text classification estimator.
+
+  IMPORTANT: This class is very likely to change.
   """
 
-  def __init__(self) -> None:
-    pass
-
-  @abc.abstractmethod
-  def dataset_input(self, train_path: str,
-                    validate_path: str) -> ds.DatasetInput:
-    pass
-
-  @abc.abstractmethod
-  def estimator(self, model_dir: str) -> tf.estimator.Estimator:
-    pass
-
-  def log_params(self) -> Dict[str, Any]:
-    """Override to log more params"""
-    return {}
+  def __init__(self, dataset: ds.DatasetInput,
+               model: base_model.BaseModel) -> None:
+    self._dataset = dataset
+    self._model = model
+    self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self, steps, eval_period, eval_steps):
     if FLAGS.comet_key_file is not None:
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)
-    dataset = self.dataset_input(FLAGS.train_path, FLAGS.validate_path)
-    estimator = self.estimator(self._model_dir())
 
     for _ in range(num_itr):
-      estimator.train(input_fn=dataset.train_input_fn, steps=eval_period)
-      metrics = estimator.evaluate(
-          input_fn=dataset.validate_input_fn, steps=eval_steps)
+      self._estimator.train(
+          input_fn=self._dataset.train_input_fn, steps=eval_period)
+      metrics = self._estimator.evaluate(
+          input_fn=self._dataset.validate_input_fn, steps=eval_steps)
       if experiment is not None:
         tf.logging.info('Logging metrics to comet.ml: {}'.format(metrics))
         experiment.log_multiple_metrics(metrics)
@@ -87,7 +78,7 @@ class ModelRunner(abc.ABC):
     experiment.log_parameter('train_path', FLAGS.train_path)
     experiment.log_parameter('validate_path', FLAGS.validate_path)
     experiment.log_parameter('model_dir', self._model_dir())
-    experiment.log_multiple_params(self.log_params())
+    experiment.log_multiple_params(self._model.hparams().values())
     return experiment
 
   def _model_dir(self):

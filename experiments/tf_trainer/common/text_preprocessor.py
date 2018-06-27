@@ -12,6 +12,7 @@ import numpy as np
 import functools
 import tensorflow as tf
 from tf_trainer.common import types
+from tf_trainer.common import base_model
 from typing import Tuple, Dict, Optional, List, Callable
 
 FLAGS = flags.FLAGS
@@ -52,17 +53,23 @@ class TextPreprocessor():
 
     return _tokenize_tensor_op
 
+  def add_embedding_to_model(self, model: base_model.BaseModel,
+                             text_feature_name: str) -> base_model.BaseModel:
+
+    def estimator(model_dir):
+      return self.create_estimator_with_embedding(
+          model.estimator(model_dir), text_feature_name)
+
+    return base_model.BaseModel.create(estimator)
+
   def create_estimator_with_embedding(
-      self,
-      estimator: tf.estimator.Estimator,
-      text_feature_name: str,
-      model_dir: str = '/tmp/new_model') -> tf.estimator.Estimator:
+      self, estimator: tf.estimator.Estimator,
+      text_feature_name: str) -> tf.estimator.Estimator:
     """Takes an existing estimator and prepends the embedding layers to it.
 
     Args:
       estimator: A predefined Estimator that expects embeddings.
       text_feature_name: The name of the feature containing the text.
-      model_dir: Place to output estimator model files.
 
     Returns:
       TF Estimator with embedding ops added.

@@ -1,4 +1,4 @@
-"""Abstract Base Class for DatasetInput."""
+"""Abstract Base Class for Keras Models."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -10,13 +10,15 @@ import tensorflow as tf
 from keras import models
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
+from tf_trainer.common import base_model
 
 
-class BaseKerasModel(abc.ABC):
+class BaseKerasModel(base_model.BaseModel):
   """Abstract Base Class for Keras Models.
 
   Interface for Keras models.
   """
+  TMP_MODEL_DIR = '/tmp/keras_model'
 
   @abc.abstractmethod
   def _get_keras_model(self) -> models.Model:
@@ -26,7 +28,7 @@ class BaseKerasModel(abc.ABC):
     """
     pass
 
-  def get_estimator(self, model_dir, tmp_model_dir='/tmp/keras_model'):
+  def estimator(self, model_dir):
     """Estimator created based on this instances Keras model.
 
     The generated estimator expected a tokenized text input (i.e. a sequence of
@@ -41,7 +43,7 @@ class BaseKerasModel(abc.ABC):
     # want to add outside of the Keras model). The workaround is to specify a
     # model_dir that is *not* the actual model_dir of the final model.
     estimator = tf.keras.estimator.model_to_estimator(
-        keras_model=keras_model, model_dir=tmp_model_dir)
+        keras_model=keras_model, model_dir=BaseKerasModel.TMP_MODEL_DIR)
 
     new_config = estimator.config.replace(model_dir=model_dir)
 

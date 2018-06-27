@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+from tf_trainer.common import base_model
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -28,7 +29,7 @@ tf.app.flags.DEFINE_string(
     'Comma delimited string for the number of hidden units in the dense layer.')
 
 
-class TFRNNModel():
+class TFRNNModel(base_model.BaseModel):
 
   def __init__(self, text_feature_name, target_labels):
     self._text_feature_name = text_feature_name
@@ -47,9 +48,11 @@ class TFRNNModel():
         dense_units=dense_units)
     return hparams
 
-  def estimator(self, run_config):
+  def estimator(self, model_dir):
     estimator = tf.estimator.Estimator(
-        model_fn=self._model_fn, params=self.hparams(), config=run_config)
+        model_fn=self._model_fn,
+        params=self.hparams(),
+        config=tf.estimator.RunConfig(model_dir=model_dir))
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
