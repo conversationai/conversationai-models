@@ -67,10 +67,7 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
     X = I
     for filter_size in self.hparams().filter_sizes:
         X = layers.Conv1D(self.hparams().num_filters, filter_size, activation='relu', padding='same')(X)
-
-
     X = layers.GlobalAveragePooling1D()(X)
-    #X = layers.Flatten()(X)
 
     # Dense
     for num_units in self.hparams().dense_units:
