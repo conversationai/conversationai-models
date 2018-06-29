@@ -14,9 +14,6 @@ Install library dependencies (it is optional, but recommended to install these i
     pip install -r requirements.txt
     ```
 
-TOCONSIDER:
- * Rename model_runner to model_trainer (it trains models)
-
 ## Training an Existing Model
 
 To train an existing model,  simply execute the command `./tf_trainer/MODEL_NAME/run.sh` (to run locally) or the command `./tf_trainer/MODEL_NAME/run_ml_engine.sh` to run training on [Google ML Engine](https://cloud.google.com/ml-engine/).

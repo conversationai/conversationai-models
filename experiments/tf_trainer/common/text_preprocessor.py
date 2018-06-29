@@ -88,6 +88,8 @@ class TextPreprocessor():
       embeddings = self.word_embeddings()
 
       text_feature = features[text_feature_name]
+      # Make sure all examples are length 300
+      # TODO: Parameterize 300
       text_feature = tf.pad(text_feature, [[0, 0], [0, 300]])
       text_feature = text_feature[:, 0:300]
       word_embeddings = tf.nn.embedding_lookup(embeddings, text_feature)
