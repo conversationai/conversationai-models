@@ -22,6 +22,7 @@ tf.app.flags.DEFINE_float('dropout_rate', 0.3,
                           'The dropout rate to use during training.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
+# TODO: add link to relevant public issue/bug/documentation?
 tf.app.flags.DEFINE_string(
     'filter_sizes', '5',
     'Comma delimited string for the sizes of convolution filters.')
@@ -30,6 +31,7 @@ tf.app.flags.DEFINE_integer(
     'Number of convolutional filters for every convolutional layer.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
+# TODO: add link to relevant public issue/bug/documentation?
 tf.app.flags.DEFINE_string(
     'dense_units', '128',
     'Comma delimited string for the number of hidden units in the dense layer.')
@@ -57,6 +59,7 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
         num_filters=FLAGS.num_filters,
         dense_units=dense_units)
 
+  # Local function you are expected to overwrite.
   def _get_keras_model(self) -> models.Model:
     I = layers.Input(
         shape=(KerasCNNModel.MAX_SEQUENCE_LENGTH, 300),
