@@ -41,7 +41,8 @@ class TFRecordInputTest(tf.test.TestCase):
         validate_path=None,
         text_feature="comment",
         labels={"label": tf.float32},
-        feature_preprocessor=preprocessor)
+        feature_preprocessor=preprocessor,
+        round_labels=False)
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(ex_tensor)
