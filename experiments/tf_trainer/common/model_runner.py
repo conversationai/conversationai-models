@@ -51,7 +51,7 @@ class ModelRunner():
     self._model = model
     self._estimator = model.estimator(self._model_dir())
 
-  # TODO(ldixon): consider early stopping. Currently steps is  hard coded.
+  # TODO(ldixon): consider early stopping. Currently steps is hard coded.
   def train_with_eval(self, steps, eval_period, eval_steps):
     """
     Args:
