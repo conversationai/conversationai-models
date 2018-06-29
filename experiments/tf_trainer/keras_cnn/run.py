@@ -10,7 +10,7 @@ from tf_trainer.common import model_runner
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
-from tf_trainer.keras_gru_attention import model as keras_gru_attention
+from tf_trainer.keras_cnn import model as keras_cnn
 
 import nltk
 import tensorflow as tf
@@ -60,7 +60,7 @@ def main(argv):
 
   # TODO: Move embedding *into* Keras model.
   model = preprocessor.add_embedding_to_model(
-      keras_gru_attention.KerasRNNModel(set(LABELS.keys())), text_feature_name)
+      keras_cnn.KerasCNNModel(set(LABELS.keys())), text_feature_name)
 
   runner = model_runner.ModelRunner(dataset, model)
   runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)

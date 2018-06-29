@@ -1,13 +1,15 @@
 # Toxic Classification Framework
 
-This directory contains a framework and a range of models for the classification of toxic comments and other attributes of online conversation. We have structured the framework as a series of common files and templates to quickly construct models on top of the Keras and tf.estimator APIs. The templates also demonstrate how these models can be trained using [Google ML Engine](https://cloud.google.com/ml-engine/) and evaluated using comet.ml. 
+This directory contains a framework and a range of models for the classification of toxic comments and other attributes of online conversation. We have structured the framework as a series of common files and templates to quickly construct models on top of the Keras and tf.estimator APIs. The templates also demonstrate how these models can be trained using [Google ML Engine](https://cloud.google.com/ml-engine/) and evaluated using comet.ml.
 
 ## Environment Setup
 
 Install library dependencies (it is optional, but recommended to install these in a [virtual environment](https://docs.python.org/3/tutorial/venv.html):
 
     ```shell
-    pip install -r requirements.txt
+    python3 -m venv .virtualenv
+    source .virtualenv/bin/activate
+    pip install --upgrade -r requirements.txt
     ```
 
 ## Training an Existing Model
