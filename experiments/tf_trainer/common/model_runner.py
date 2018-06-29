@@ -51,7 +51,14 @@ class ModelRunner():
     self._model = model
     self._estimator = model.estimator(self._model_dir())
 
+  # TODO(ldixon): consider early stopping. Currently steps is  hard coded.
   def train_with_eval(self, steps, eval_period, eval_steps):
+    """
+    Args:
+      steps: total number of batches to train for.
+      eval_period: the number of steps between evaluations.
+      eval_steps: the number of batches that are evaluated per evaulation.
+    """
     experiment = None
     if FLAGS.comet_key_file is not None:
       experiment = self._setup_comet()
