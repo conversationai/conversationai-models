@@ -88,6 +88,8 @@ class TextPreprocessor():
       embeddings = self.word_embeddings()
 
       text_feature = features[text_feature_name]
+      # Make sure all examples are length 300
+      # TODO: Parameterize 300
       text_feature = tf.pad(text_feature, [[0, 0], [0, 300]])
       text_feature = text_feature[:, 0:300]
       word_embeddings = tf.nn.embedding_lookup(embeddings, text_feature)
@@ -95,7 +97,8 @@ class TextPreprocessor():
 
       # Fix dimensions to make Keras model output match label dims.
       labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
-      return old_model_fn(new_features, labels, mode=mode, config=config)
+      return old_model_fn(
+          new_features, labels['frac_neg'], mode=mode, config=config)
 
     return tf.estimator.Estimator(
         new_model_fn, config=old_config, params=old_params)
