@@ -57,7 +57,8 @@ class BaseKerasModel(base_model.BaseModel):
   @staticmethod
   def roc_auc(y_true: types.Tensor, y_pred: types.Tensor,
               threshold=0.5) -> types.Tensor:
-    """ROC AUC based on TF's metrics package.
+    """ROC AUC based on TF's metrics package. This provide AUC in a Keras
+    metrics compatible way (Keras doesn't have AUC otherwise).
 
     We assume true labels are 'soft' and pick 0 or 1 based on a threshold.
     """
