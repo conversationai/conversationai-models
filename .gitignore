@@ -1,3 +1,4 @@
 # Editor config.
 .vscode/
 *.pyc
+.virtualenv
