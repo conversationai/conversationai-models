@@ -97,8 +97,7 @@ class TextPreprocessor():
 
       # Fix dimensions to make Keras model output match label dims.
       labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
-      return old_model_fn(
-          new_features, labels['frac_neg'], mode=mode, config=config)
+      return old_model_fn(new_features, labels, mode=mode, config=config)
 
     return tf.estimator.Estimator(
         new_model_fn, config=old_config, params=old_params)
