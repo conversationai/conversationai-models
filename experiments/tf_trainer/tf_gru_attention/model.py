@@ -60,25 +60,31 @@ class TFRNNModel(base_model.BaseModel):
     inputs = features[self._text_feature_name]
     batch_size = tf.shape(inputs)[0]
 
-    rnn_layers = [
+    # create a RNN cell composed sequentially of a number of RNNCells
+    fw_multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell([
         tf.nn.rnn_cell.GRUCell(num_units=size, activation=tf.nn.tanh)
         for size in params.gru_units
-    ]
-
-    # create a RNN cell composed sequentially of a number of RNNCells
-    multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers)
+    ])
+    bw_multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell([
+        tf.nn.rnn_cell.GRUCell(num_units=size, activation=tf.nn.tanh)
+        for size in params.gru_units
+    ])
 
     # TODO: make bidirectional
-    outputs, states = tf.nn.dynamic_rnn(
-        multi_rnn_cell,
+    outputs, states = tf.nn.bidirectional_dynamic_rnn(
+        fw_multi_rnn_cell,
+        bw_multi_rnn_cell,
         inputs,
         sequence_length=tf.fill(dims=[batch_size], value=params.max_seq_length),
         dtype=tf.float32)
 
     # TF needs help understanding sequence length (I think because we're using
     # dynamic_rnn)
-    outputs = tf.reshape(
-        outputs, [batch_size, params.max_seq_length, params.gru_units[-1]])
+    # TODO: We're using outputs and not states... is this okay?
+    # TODO: Convert to using static_state_saving_rnn and use states
+    last_gru_units = params.gru_units[-1] * 2  # x2 because bidirectional
+    outputs = tf.reshape(outputs,
+                         [batch_size, params.max_seq_length, last_gru_units])
 
     unstacked_outputs = tf.unstack(outputs, num=params.max_seq_length, axis=1)
 
