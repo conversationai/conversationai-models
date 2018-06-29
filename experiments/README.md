@@ -7,9 +7,11 @@ This directory contains a framework and a range of models for the classification
 Install library dependencies (it is optional, but recommended to install these in a [virtual environment](https://docs.python.org/3/tutorial/venv.html):
 
     ```shell
+    # The recommended python3 way (virtual environment, technically optional):
     python3 -m venv .virtualenv
     source .virtualenv/bin/activate
-    pip install --upgrade -r requirements.txt
+    # Install dependencies
+    pip install -r requirements.txt
     ```
 
 TOCONSIDER:
