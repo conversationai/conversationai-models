@@ -42,7 +42,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     """input_fn for TF Estimators for validation set."""
     return self._input_fn_from_file(self._validate_path)
 
-  def _input_fn_from_file(self, filepath: str) -> tf.data.TFRecordDataset:
+  def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(self._read_tf_example)
@@ -55,8 +55,11 @@ class TFRecordInput(dataset_input.DatasetInput):
             },
             {label: [] for label in self._labels}))
 
-    itr = batched_dataset.make_one_shot_iterator().get_next()
-    return itr
+    # TODO: think about what happens when we run out of examples; should we be
+    # using something that repeats over the dataset many time to allow
+    # multi-epoch learning, or does estimator do this for us?
+    itrOp = batched_dataset.make_one_shot_iterator().get_next()
+    return itrOp
 
   def _read_tf_example(self, record: tf.Tensor) -> types.FeatureAndLabelTensors:
     """Parses TF Example protobuf into a text feature and labels.
