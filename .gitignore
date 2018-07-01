@@ -1,5 +1,12 @@
 # Editor config.
 .vscode/
+
+# Python Compiles files.
 *.pyc
+
+# Virtual Environment files.
+.pyenv
 .virtualenv
+
+# mypy cache files for type-checking.
 .mypy_cache
