@@ -1,4 +1,9 @@
-"""Model Runner class for text classification"""
+"""The Model Trainer class.
+
+This provides an abstraction of Keras and TF.Estimator, and is intended for use
+in text classification models (although it may generalize to other kinds of
+problems).
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -37,12 +42,11 @@ tf.app.flags.mark_flag_as_required('validate_path')
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
-class ModelRunner():
-  """Text Classification Model Runner.
+class ModelTrainer():
+  """Model Trainer.
 
-  Convenient way to run a text classification estimator.
-
-  IMPORTANT: This class is very likely to change.
+  Convenient way to run a text classification estimator, supporting comet.ml
+  outputs.
   """
 
   def __init__(self, dataset: ds.DatasetInput,

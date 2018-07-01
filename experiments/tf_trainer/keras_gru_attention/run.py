@@ -5,7 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 # Import common flags and run code. Must be imported first.
-from tf_trainer.common import model_runner
+from tf_trainer.common import model_trainer
 
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
@@ -62,8 +62,8 @@ def main(argv):
   model = preprocessor.add_embedding_to_model(
       keras_gru_attention.KerasRNNModel(set(LABELS.keys())), text_feature_name)
 
-  runner = model_runner.ModelRunner(dataset, model)
-  runner.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
+  trainer = model_trainer.ModelTrainer(dataset, model)
+  trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
 
 if __name__ == "__main__":
