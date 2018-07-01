@@ -1,6 +1,6 @@
 # Text Classification Framework
 
-This directory contains amn ML framework for text classification. We illustrate
+This directory contains an ML framework for text classification. We illustrate
 it with toxic (and other attributes) comment classification.
 
 The framework is structured as a series of common files and templates to quickly
@@ -8,7 +8,7 @@ construct models on top of the [Keras](https://keras.io/) or the [TensorFlow
 Estimator API](https://www.tensorflow.org/programmers_guide/estimators).
 
 The templates also demonstrate how these models can be trained using [Google ML
-Engine](https://cloud.google.com/ml-engine/) and experiments managed with
+Engine](https://cloud.google.com/ml-engine/) and track experiments with
 [Comet.ML](https://www.comet.ml/).
 
 
@@ -27,7 +27,7 @@ in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
     pip install -r requirements.txt
     ```
 
-### ML Engine configuration
+### Cloud and ML Engine configuration
 
 TODO(nthain)
 
