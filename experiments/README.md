@@ -46,7 +46,9 @@ Engine](https://cloud.google.com/ml-engine/).
 These scripts assume that you have access to the resources on our cloud
 projects. If you don't, you can still run the models locally, but will have to
 modify the data paths in `run.local.sh`. At the moment, we only support reading
-data in `tf.record` format.
+data in `tf.record` format. See
+[`experiments/tf_trainer/common/convert_csv_to_tfrecord.py`](https://github.com/conversationai/conversationai-models/blob/master/experiments/tf_trainer/common/convert_csv_to_tfrecord.py)
+for a simple CSV to `tf.record` converter.
 
 If you have a [Comet ML](https://www.comet.ml/) key, you can use that platform
 to monitor your model training progress and quality. Simply add your api key to
