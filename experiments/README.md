@@ -14,6 +14,11 @@ Engine](https://cloud.google.com/ml-engine/) and track experiments with
 
 ## Environment Setup
 
+### Build Tools/Bazel Dependencies
+
+Install [Bazel](https://docs.bazel.build/versions/master/install-os-x.html);
+this is the build tool we use to run tests, etc.
+
 ### Python Dependencies
 
 Install library dependencies (it is optional, but recommended to install these
@@ -68,21 +73,30 @@ TODO(nthain)
 
 ## Development
 
+### Type Checking
+
 Check the typings:
 
 ```shell
 mypy --ignore-missing-imports -p tf_trainer
 ```
 
-Run the tests:
+It's recommended you use mypy as an additional linter in your editor.
+
+### Testing
+
+Run all the tests and see the output streamed:
+
+```shell
+bazel test --test_output=streamed ...
+```
+
+You can also run tests individually, directly with python like so:
 
 ```shell
 python -m tf_trainer.common.tfrecord_input_test
 python -m tf_trainer.common.base_keras_model_test
 ```
-
-TODO(ldixon): maybe use Bazel for building/testing, so that we get
-type-checking, testing, etc all done with one command.
 
 ### Building a New Model
 
