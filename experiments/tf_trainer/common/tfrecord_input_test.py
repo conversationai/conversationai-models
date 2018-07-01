@@ -5,7 +5,6 @@ from __future__ import division
 from __future__ import print_function
 
 from tf_trainer.common import tfrecord_input
-from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
 
 import numpy as np
