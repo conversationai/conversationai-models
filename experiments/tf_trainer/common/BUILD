@@ -1,22 +1,53 @@
 py_library(
-  name = "tf_trainer",
-  srcs = [
-    "model_trainer.py",
-    "text_preprocessor.py",
-  ],
-  deps = [
-    ":data_input",
-    ":base_model",
-    ":types",
-  ],
-)
-
-py_library(
   name = "types",
   srcs = [
     "types.py",
   ],
 )
+
+py_library(
+  name = "model_trainer",
+  srcs = [
+    "model_trainer.py",
+  ],
+  deps = [
+    ":data_input",
+    ":base_model",
+    ":types",
+    ":text_preprocessor",
+  ],
+)
+
+py_library(
+  name = "token_embedding_index",
+  srcs = [
+    "token_embedding_index.py",
+  ],
+  deps = [":types",":base_model"],
+)
+
+py_test(
+  name = "token_embedding_index_test",
+  srcs = ["token_embedding_index_test.py",],
+  deps = [":token_embedding_index", ":types",],
+  data = ["//testdata:cats_and_dogs_onehot.vocab.txt",],
+)
+
+py_library(
+  name = "text_preprocessor",
+  srcs = [
+    "text_preprocessor.py",
+  ],
+  deps = [":types",":base_model"],
+)
+
+# TODO: add a test for the text preprocessor.
+# py_test(
+#   name = "text_preprocessor_test",
+#   srcs = ["text_preprocessor_test.py",],
+#   deps = [":text_preprocessor", ":types",],
+#   data = ["testdata/cats_and_dogs_onehot.vocab.txt",],
+# )
 
 py_library(
   name = "base_model",
