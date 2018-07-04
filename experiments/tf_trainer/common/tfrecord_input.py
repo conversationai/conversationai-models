@@ -25,7 +25,8 @@ class TFRecordInput(dataset_input.DatasetInput):
                labels: Dict[str, tf.DType],
                feature_preprocessor: Callable[[types.Tensor], types.Tensor],
                batch_size: int = 64,
-               max_seq_length: int = 300) -> None:
+               max_seq_length: int = 300,
+               round_labels: bool = True) -> None:
     self._train_path = train_path
     self._validate_path = validate_path
     self._text_feature = text_feature
@@ -33,6 +34,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._batch_size = batch_size
     self._max_seq_length = max_seq_length
     self._feature_preprocessor = feature_preprocessor
+    self._round_labels = round_labels
 
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set."""
@@ -79,6 +81,9 @@ class TFRecordInput(dataset_input.DatasetInput):
     # I think this could be a feature column, but feature columns seem so beta.
     preprocessed_text = self._feature_preprocessor(text)
     features = {self._text_feature: preprocessed_text}
-    labels = {label: parsed[label] for label in self._labels}
+    if self._round_labels:
+      labels = {label: tf.round(parsed[label]) for label in self._labels}
+    else:
+      labels = {label: parsed[label] for label in self._labels}
 
     return features, labels
