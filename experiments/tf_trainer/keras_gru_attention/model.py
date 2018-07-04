@@ -93,7 +93,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
     model.compile(
         optimizer=optimizers.Adam(lr=self.hparams().learning_rate),
         loss='binary_crossentropy',
-        metrics=['accuracy', super().roc_auc])
+        metrics=['binary_accuracy', super().roc_auc])
 
     tf.logging.info(model.summary())
     return model
