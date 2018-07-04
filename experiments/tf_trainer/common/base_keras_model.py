@@ -8,7 +8,6 @@ import abc
 import tensorflow as tf
 
 from keras import models
-from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
 from tf_trainer.common import base_model
 

@@ -20,11 +20,17 @@ Install library dependencies (it is optional, but recommended to install these
 in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
     ```shell
-    # The recommended python3 way (virtual environment, technically optional):
-    python3 -m venv .virtualenv
-    source .virtualenv/bin/activate
+    # The python3 way to create and use virtual environment
+    # (optional, but recommended):
+    python3 -m venv .pyenv
+    source .pyenv/bin/activate
     # Install dependencies
     pip install -r requirements.txt
+
+    # ... do stuff ...
+
+    # Exit your virtual environment.
+    deactivate
     ```
 
 ### Cloud and ML Engine configuration
@@ -47,7 +53,7 @@ These scripts assume that you have access to the resources on our cloud
 projects. If you don't, you can still run the models locally, but will have to
 modify the data paths in `run.local.sh`. At the moment, we only support reading
 data in `tf.record` format. See
-[`experiments/tf_trainer/common/convert_csv_to_tfrecord.py`](https://github.com/conversationai/conversationai-models/blob/master/experiments/tf_trainer/common/convert_csv_to_tfrecord.py)
+[`tools/convert_csv_to_tfrecord.py`](https://github.com/conversationai/conversationai-models/blob/master/experiments/tools/convert_csv_to_tfrecord.py)
 for a simple CSV to `tf.record` converter.
 
 If you have a [Comet ML](https://www.comet.ml/) key, you can use that platform
