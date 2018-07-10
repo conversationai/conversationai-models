@@ -4,21 +4,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from absl import app
-from absl import flags
-
-import nltk
-import numpy as np
 import functools
+
+from absl import flags
+import numpy as np
 import tensorflow as tf
-from tf_trainer.common import types
 from tf_trainer.common import base_model
-from typing import Tuple, Dict, Optional, List, Callable
+from tf_trainer.common import types
+from typing import Callable, Dict, List, Optional, Tuple
 
 FLAGS = flags.FLAGS
 
 
-class TextPreprocessor():
+class TextPreprocessor(object):
   """Text Preprocessor.
 
   Takes an embedding and uses it to produce a word to index mapping and an
@@ -32,13 +30,57 @@ class TextPreprocessor():
   """
 
   def __init__(self, embeddings_path: str) -> None:
-    self._word_to_idx, self._embeddings_matrix, self._unknown_token = TextPreprocessor._get_word_idx_and_embeddings(
-        embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
+    self._word_to_idx, self._embeddings_matrix, self._unknown_token = \
+        TextPreprocessor._get_word_idx_and_embeddings(
+            embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def tokenize_tensor_op(self, tokenizer: Callable[[str], List[str]]
-                        ) -> Callable[[types.Tensor], types.Tensor]:
+  def tokenize_tensor_op_tf_func(self) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
     with this preprocessor's embedding.
+
+    This function is implemented only with TensorFlow operations and is
+    therefore compatible with TF-Serving (vs. tokenize_tensor_op_py_func).
+    """
+
+    vocabulary_table = tf.contrib.lookup.HashTable(
+        tf.contrib.lookup.KeyValueTensorInitializer(
+            keys=list(self._word_to_idx.keys()),
+            values=list(self._word_to_idx.values()),
+            key_dtype=tf.string,
+            value_dtype=tf.int64),
+        default_value=self._unknown_token)
+
+    def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
+      '''Converts a string Tensor to an array of integers.
+
+      Args:
+        text: must be a scalar string tensor (rank 0).
+
+      Returns:
+        A 1-D Tensor of word integers.
+      '''
+
+      # TODO: Improve tokenizer.
+      # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
+      words = tf.string_split([text])
+      words_int_sparse = vocabulary_table.lookup(words)
+      words_int_dense = tf.sparse_to_dense(
+          words_int_sparse.indices,
+          words_int_sparse.dense_shape,
+          words_int_sparse.values,
+          default_value=0)
+
+      return tf.squeeze(words_int_dense)
+
+    return _tokenize_tensor_op
+
+  def tokenize_tensor_op_py_func(self, tokenizer: Callable[[str], List[str]]
+                                ) -> Callable[[types.Tensor], types.Tensor]:
+    """Tensor op that converts some text into an array of ints that correspond
+    with this preprocessor's embedding.
+
+    This function is implemented with python operations and is therefore
+    incompatible with TF-Serving (vs. tokenize_tensor_op_tf_func_).
     """
 
     def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
@@ -96,7 +138,9 @@ class TextPreprocessor():
       new_features = {text_feature_name: word_embeddings}
 
       # Fix dimensions to make Keras model output match label dims.
-      labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
+      if mode != tf.estimator.ModeKeys.PREDICT:
+        labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
+
       return old_model_fn(new_features, labels, mode=mode, config=config)
 
     return tf.estimator.Estimator(
