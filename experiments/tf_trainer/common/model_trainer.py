@@ -14,6 +14,7 @@ import os.path
 
 import comet_ml
 import tensorflow as tf
+from tensorflow.python.platform import tf_logging as logging
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
 
@@ -141,3 +142,4 @@ class ModelTrainer(object):
     estimator_with_key.export_savedmodel(
         export_dir_base=self._model_dir(),
         serving_input_receiver_fn=serving_input_fn)
+    logging.info('Model exported at {}'.format(self._model_dir()))

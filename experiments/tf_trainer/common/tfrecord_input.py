@@ -7,7 +7,7 @@ from __future__ import print_function
 import tensorflow as tf
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
-from typing import Dict, Callable
+from typing import Callable, Dict, List
 
 
 class TFRecordInput(dataset_input.DatasetInput):
@@ -64,6 +64,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     # using something that repeats over the dataset many time to allow
     # multi-epoch learning, or does estimator do this for us?
     itr_op = batched_dataset.make_initializable_iterator()
+    # Adding the initializer operation to the graph.
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, itr_op.initializer)
     return itr_op.get_next()
 

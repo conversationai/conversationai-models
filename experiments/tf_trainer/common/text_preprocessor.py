@@ -61,7 +61,7 @@ class TextPreprocessor(object):
       '''
 
       # TODO: Improve tokenizer.
-      # TODO: Add utf-8 encoding.
+      # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
       words = tf.string_split([text])
       words_int_sparse = vocabulary_table.lookup(words)
       words_int_dense = tf.sparse_to_dense(

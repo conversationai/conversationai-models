@@ -27,16 +27,16 @@ tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
-tf.app.flags.DEFINE_string("preprocess_in_tf", True,
+tf.app.flags.DEFINE_boolean("preprocess_in_tf", True,
                            "Run preprocessing with TensorFlow operations,"
                            "required for serving.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 50000,
+tf.app.flags.DEFINE_integer("train_steps", 100,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 200,
+tf.app.flags.DEFINE_integer("eval_period", 50,
                             "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", 100,
+tf.app.flags.DEFINE_integer("eval_steps", 20,
                             "The number of steps to eval for.")
 
 # TODO: Missing fields are not handled properly yet.
@@ -78,7 +78,7 @@ def main(argv):
   if FLAGS.preprocess_in_tf:
     serving_input_fn = serving_input.create_serving_input_fn(
         feature_preprocessor_init=tokenize_op_init,
-        sentence_name=text_feature_name,
+        text_feature_name=text_feature_name,
         key_name=key_name)
     trainer.export(serving_input_fn)
 
