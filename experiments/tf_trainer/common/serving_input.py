@@ -16,10 +16,11 @@ def create_serving_input_fn(feature_preprocessor_init, text_feature_name, key_na
     features_placeholders[key_name] = array_ops.placeholder(
         dtype=tf.string, name=key_name)
 
-    features = features_placeholders
+    features = {}
+    features[key_name] = features_placeholders[key_name]
     feature_preprocessor = feature_preprocessor_init()
     features[text_feature_name] = feature_preprocessor(
-      features_placeholders[text_feature_name]) 
+      features_placeholders[text_feature_name])
 
     return tf.estimator.export.ServingInputReceiver(
         features,
