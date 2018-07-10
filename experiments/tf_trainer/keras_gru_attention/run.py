@@ -13,6 +13,7 @@ from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
 from tf_trainer.keras_gru_attention import model as keras_gru_attention
 
+import nltk
 import tensorflow as tf
 
 from typing import Dict
@@ -31,11 +32,11 @@ tf.app.flags.DEFINE_string("preprocess_in_tf", True,
                            "required for serving.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 50,
+tf.app.flags.DEFINE_integer("train_steps", 50000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 40,
+tf.app.flags.DEFINE_integer("eval_period", 200,
                             "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", 20,
+tf.app.flags.DEFINE_integer("eval_steps", 100,
                             "The number of steps to eval for.")
 
 # TODO: Missing fields are not handled properly yet.
@@ -56,7 +57,8 @@ def main(argv):
   if FLAGS.preprocess_in_tf:
     tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_tf_func()
   else:
-    tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_py_func()
+    nltk.download("punkt")
+    tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_py_func(nltk.word_tokenize)
 
   dataset = tfrecord_input.TFRecordInput(
       train_path=FLAGS.train_path,
