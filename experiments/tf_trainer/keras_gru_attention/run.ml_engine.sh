@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script runs one training job on Cloud MLE.
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
