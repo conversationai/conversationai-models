@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script runs a hyper parameter tuning job on Cloud MLE.
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
