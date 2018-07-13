@@ -1,4 +1,5 @@
 #!/bin/bash
+# Deploys a saved model on Cloud MLE.
 
 # Edit these!
 MODEL_NAME=keras_gru_attention
