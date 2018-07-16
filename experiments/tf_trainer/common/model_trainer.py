@@ -33,7 +33,7 @@ tf.app.flags.DEFINE_string('comet_team_name', None,
                            'Name of comet team that tracks results.')
 tf.app.flags.DEFINE_string('comet_project_name', None,
                            'Name of comet project that tracks results.')
-tf.app.flags.DEFINE_bool('enable_profiling', True,
+tf.app.flags.DEFINE_bool('enable_profiling', False,
                            'Enable profiler hook in estimator.')
 
 tf.app.flags.mark_flag_as_required('train_path')
