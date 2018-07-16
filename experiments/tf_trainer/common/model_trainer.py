@@ -94,8 +94,12 @@ class ModelTrainer(object):
     num_itr = int(steps / eval_period)
 
     for _ in range(num_itr):
+      profiler_hook = tf.train.ProfilerHook(save_steps=10,
+        output_dir=os.path.join(self._model_dir(), 'profiler'))
       self._estimator.train(
-          input_fn=self._dataset.train_input_fn, steps=eval_period)
+          input_fn=self._dataset.train_input_fn,
+          steps=eval_period,
+          hooks=[profiler_hook])
       metrics = self._estimator.evaluate(
           input_fn=self._dataset.validate_input_fn, steps=eval_steps)
       if experiment is not None:
