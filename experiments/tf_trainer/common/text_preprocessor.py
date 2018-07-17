@@ -34,7 +34,7 @@ class TextPreprocessor(object):
         TextPreprocessor._get_word_idx_and_embeddings(
             embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def tokenize_tensor_op_tf_func(self, single_record_level=False) -> Callable[[types.Tensor], types.Tensor]:
+  def tokenize_tensor_op_tf_func(self, single_record_level=True) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
     with this preprocessor's embedding.
 
