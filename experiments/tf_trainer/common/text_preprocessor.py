@@ -34,7 +34,7 @@ class TextPreprocessor(object):
         TextPreprocessor._get_word_idx_and_embeddings(
             embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def tokenize_tensor_op_tf_func(self) -> Callable[[types.Tensor], types.Tensor]:
+  def tokenize_tensor_op_tf_func(self, single_record_level=False) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
     with this preprocessor's embedding.
 
@@ -62,7 +62,10 @@ class TextPreprocessor(object):
 
       # TODO: Improve tokenizer.
       # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
-      words = tf.string_split([text])
+      if single_record_level:
+        words = tf.string_split([text])
+      else:
+        words = tf.string_split(text)
       words_int_sparse = vocabulary_table.lookup(words)
       words_int_dense = tf.sparse_to_dense(
           words_int_sparse.indices,
@@ -70,7 +73,10 @@ class TextPreprocessor(object):
           words_int_sparse.values,
           default_value=0)
 
-      return tf.squeeze(words_int_dense)
+      if single_record_level:
+        return tf.squeeze(words_int_dense)
+      else:
+        return words_int_dense
 
     return _tokenize_tensor_op
 
