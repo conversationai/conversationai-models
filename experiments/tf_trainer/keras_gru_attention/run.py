@@ -32,7 +32,7 @@ tf.app.flags.DEFINE_boolean("preprocess_in_tf", True,
                            "required for serving.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 100,
+tf.app.flags.DEFINE_integer("train_steps", 0,
                             "The number of steps to train for.")
 tf.app.flags.DEFINE_integer("eval_period", 50,
                             "The number of steps per eval period.")
@@ -76,6 +76,7 @@ def main(argv):
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
   if FLAGS.preprocess_in_tf:
+    tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_tf_func(single_record_level=False)
     serving_input_fn = serving_input.create_serving_input_fn(
         feature_preprocessor_init=tokenize_op_init,
         text_feature_name=text_feature_name,
