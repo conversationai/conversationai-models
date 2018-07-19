@@ -48,14 +48,14 @@ def main(argv):
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
   nltk.download("punkt")
-  tokenize_op = preprocessor.tokenize_tensor_op(nltk.word_tokenize)
+  tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_py_func(nltk.word_tokenize)
 
   dataset = tfrecord_input.TFRecordInput(
       train_path=FLAGS.train_path,
       validate_path=FLAGS.validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      feature_preprocessor=tokenize_op,
+      feature_preprocessor_init=tokenize_op_init,
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.

@@ -54,23 +54,20 @@ class TextPreprocessor(object):
       '''Converts a string Tensor to an array of integers.
 
       Args:
-        text: must be a scalar string tensor (rank 0).
+        text: must be a 1-D Tensor string tensor.
 
       Returns:
-        A 1-D Tensor of word integers.
+        A 2-D Tensor of word integers.
       '''
 
       # TODO: Improve tokenizer.
       # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
-      words = tf.string_split([text])
+      words = tf.string_split(text)
       words_int_sparse = vocabulary_table.lookup(words)
-      words_int_dense = tf.sparse_to_dense(
-          words_int_sparse.indices,
-          words_int_sparse.dense_shape,
-          words_int_sparse.values,
+      words_int_dense = tf.sparse_tensor_to_dense(
+          words_int_sparse,
           default_value=0)
-
-      return tf.squeeze(words_int_dense)
+      return words_int_dense
 
     return _tokenize_tensor_op
 

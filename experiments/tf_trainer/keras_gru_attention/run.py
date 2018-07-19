@@ -32,7 +32,7 @@ tf.app.flags.DEFINE_boolean("preprocess_in_tf", True,
                            "required for serving.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 100,
+tf.app.flags.DEFINE_integer("train_steps", 1000,
                             "The number of steps to train for.")
 tf.app.flags.DEFINE_integer("eval_period", 50,
                             "The number of steps per eval period.")

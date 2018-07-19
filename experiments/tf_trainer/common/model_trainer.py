@@ -33,6 +33,8 @@ tf.app.flags.DEFINE_string('comet_team_name', None,
                            'Name of comet team that tracks results.')
 tf.app.flags.DEFINE_string('comet_project_name', None,
                            'Name of comet project that tracks results.')
+tf.app.flags.DEFINE_bool('enable_profiling', False,
+                           'Enable profiler hook in estimator.')
 
 tf.app.flags.mark_flag_as_required('train_path')
 tf.app.flags.mark_flag_as_required('validate_path')
@@ -94,8 +96,14 @@ class ModelTrainer(object):
     num_itr = int(steps / eval_period)
 
     for _ in range(num_itr):
+      hooks = None
+      if FLAGS.enable_profiling:
+        hooks = [tf.train.ProfilerHook(save_steps=10,
+                                       output_dir=os.path.join(self._model_dir(), 'profiler'))]
       self._estimator.train(
-          input_fn=self._dataset.train_input_fn, steps=eval_period)
+          input_fn=self._dataset.train_input_fn,
+          steps=eval_period,
+          hooks=hooks)
       metrics = self._estimator.evaluate(
           input_fn=self._dataset.validate_input_fn, steps=eval_steps)
       if experiment is not None:
