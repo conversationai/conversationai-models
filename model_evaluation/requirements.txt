@@ -1,0 +1,12 @@
+google-api-python-client==1.7.3
+Markdown==2.6.11
+nltk==3.3
+numpy==1.14.4
+pandas==0.22.0
+requests==2.19.1
+seaborn==0.8.1
+scikit-learn==0.19.1
+scipy==1.1.0
+sklearn==0.0
+six==1.11.0
+tensorflow==1.8.0
