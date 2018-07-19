@@ -87,7 +87,9 @@ class TFRecordInput(dataset_input.DatasetInput):
 
     text = parsed[self._text_feature]
     # I think this could be a feature column, but feature columns seem so beta.
-    preprocessed_text = feature_preprocessor(text)
+    expanded_text = tf.expand_dims(text, 0)
+    preprocessed_text = tf.squeeze(
+        feature_preprocessor(expanded_text))
     features = {self._text_feature: preprocessed_text}
     if self._round_labels:
       labels = {label: tf.round(parsed[label]) for label in self._labels}

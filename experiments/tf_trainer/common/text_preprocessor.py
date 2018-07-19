@@ -34,7 +34,7 @@ class TextPreprocessor(object):
         TextPreprocessor._get_word_idx_and_embeddings(
             embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
-  def tokenize_tensor_op_tf_func(self, single_record_level=True) -> Callable[[types.Tensor], types.Tensor]:
+  def tokenize_tensor_op_tf_func(self) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
     with this preprocessor's embedding.
 
@@ -54,29 +54,20 @@ class TextPreprocessor(object):
       '''Converts a string Tensor to an array of integers.
 
       Args:
-        text: must be a scalar string tensor (rank 0).
+        text: must be a 1-D Tensor string tensor.
 
       Returns:
-        A 1-D Tensor of word integers.
+        A 2-D Tensor of word integers.
       '''
 
       # TODO: Improve tokenizer.
       # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
-      if single_record_level:
-        words = tf.string_split([text])
-      else:
-        words = tf.string_split(text)
+      words = tf.string_split(text)
       words_int_sparse = vocabulary_table.lookup(words)
-      words_int_dense = tf.sparse_to_dense(
-          words_int_sparse.indices,
-          words_int_sparse.dense_shape,
-          words_int_sparse.values,
+      words_int_dense = tf.sparse_tensor_to_dense(
+          words_int_sparse,
           default_value=0)
-
-      if single_record_level:
-        return tf.squeeze(words_int_dense)
-      else:
-        return words_int_dense
+      return words_int_dense
 
     return _tokenize_tensor_op
 

@@ -9,8 +9,9 @@ from tensorflow.python.ops import array_ops
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_boolean("use_tfrecords_for_serving", True,
-                            "Use tfrecords as format for serving.")
+tf.app.flags.DEFINE_string("serving_format", "TFRECORDS",
+                           "Format of inputs in inference."
+                           "Can be either JSON or TFRECORDS.")
 
 
 def create_serving_input_fn(feature_preprocessor_init, text_feature_name, key_name):
@@ -53,7 +54,11 @@ def create_serving_input_fn(feature_preprocessor_init, text_feature_name, key_na
         features,
         serialized_example)
   
-  if FLAGS.use_tfrecords_for_serving:
+  if FLAGS.serving_format == 'TFRECORDS':
     return serving_input_fn_tfrecords
-  else:
+  elif FLAGS.serving_format == 'JSON':
     return serving_input_fn_json
+  else:
+    raise ValueError('Serving format not implemented.'
+        ' Should be one of ["JSON", "TFRECORDS"].'
+        )
