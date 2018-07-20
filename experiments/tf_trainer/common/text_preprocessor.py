@@ -4,19 +4,19 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from absl import app
-from absl import flags
+import functools
 
-import nltk
+from absl import flags
 import numpy as np
 import tensorflow as tf
-from tf_trainer import types
-from typing import Tuple, Dict, Optional, List
+from tf_trainer.common import base_model
+from tf_trainer.common import types
+from typing import Callable, Dict, List, Optional, Tuple
 
 FLAGS = flags.FLAGS
 
 
-class TextPreprocessor():
+class TextPreprocessor(object):
   """Text Preprocessor.
 
   Takes an embedding and uses it to produce a word to index mapping and an
@@ -29,21 +29,90 @@ class TextPreprocessor():
   may include fixing a max word length.
   """
 
-  def __init__(self, embeddings_path: types.Path) -> None:
-    self._word_to_idx, self._embeddings_matrix, self._unknown_token = TextPreprocessor._get_word_idx_and_embeddings(
-        embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
+  def __init__(self, embeddings_path: str) -> None:
+    self._word_to_idx, self._embeddings_matrix, self._unknown_token = \
+        TextPreprocessor._get_word_idx_and_embeddings(
+            embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
+
+  def tokenize_tensor_op_tf_func(self) -> Callable[[types.Tensor], types.Tensor]:
+    """Tensor op that converts some text into an array of ints that correspond
+    with this preprocessor's embedding.
+
+    This function is implemented only with TensorFlow operations and is
+    therefore compatible with TF-Serving (vs. tokenize_tensor_op_py_func).
+    """
+
+    vocabulary_table = tf.contrib.lookup.HashTable(
+        tf.contrib.lookup.KeyValueTensorInitializer(
+            keys=list(self._word_to_idx.keys()),
+            values=list(self._word_to_idx.values()),
+            key_dtype=tf.string,
+            value_dtype=tf.int64),
+        default_value=self._unknown_token)
+
+    def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
+      '''Converts a string Tensor to an array of integers.
+
+      Args:
+        text: must be a 1-D Tensor string tensor.
+
+      Returns:
+        A 2-D Tensor of word integers.
+      '''
+
+      # TODO: Improve tokenizer.
+      # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
+      words = tf.string_split(text)
+      words_int_sparse = vocabulary_table.lookup(words)
+      words_int_dense = tf.sparse_tensor_to_dense(
+          words_int_sparse,
+          default_value=0)
+      return words_int_dense
+
+    return _tokenize_tensor_op
+
+  def tokenize_tensor_op_py_func(self, tokenizer: Callable[[str], List[str]]
+                                ) -> Callable[[types.Tensor], types.Tensor]:
+    """Tensor op that converts some text into an array of ints that correspond
+    with this preprocessor's embedding.
+
+    This function is implemented with python operations and is therefore
+    incompatible with TF-Serving (vs. tokenize_tensor_op_tf_func_).
+    """
+
+    def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
+
+      def _tokenize(b: bytes) -> np.ndarray:
+        return np.asarray([
+            self._word_to_idx.get(w, self._unknown_token)
+            for w in tokenizer(b.decode('utf-8'))
+        ])
+
+      return tf.py_func(_tokenize, [text], tf.int64)
+
+    return _tokenize_tensor_op
+
+  def add_embedding_to_model(self, model: base_model.BaseModel,
+                             text_feature_name: str) -> base_model.BaseModel:
+    """Returns a new BaseModel with an embedding layer prepended.
+
+    Args:
+      model: An existing BaseModel instance.
+      text_feature_name: The name of the feature containing text.
+    """
+
+    return model.map(
+        functools.partial(self.create_estimator_with_embedding,
+                          text_feature_name))
 
   def create_estimator_with_embedding(
-      self,
-      estimator: tf.estimator.Estimator,
-      text_feature_name: str,
-      model_dir: str = '/tmp/new_model') -> tf.estimator.Estimator:
+      self, text_feature_name: str,
+      estimator: tf.estimator.Estimator) -> tf.estimator.Estimator:
     """Takes an existing estimator and prepends the embedding layers to it.
 
     Args:
       estimator: A predefined Estimator that expects embeddings.
       text_feature_name: The name of the feature containing the text.
-      model_dir: Place to output estimator model files.
 
     Returns:
       TF Estimator with embedding ops added.
@@ -58,15 +127,18 @@ class TextPreprocessor():
       embeddings = self.word_embeddings()
 
       text_feature = features[text_feature_name]
+      # Make sure all examples are length 300
+      # TODO: Parameterize 300
       text_feature = tf.pad(text_feature, [[0, 0], [0, 300]])
       text_feature = text_feature[:, 0:300]
       word_embeddings = tf.nn.embedding_lookup(embeddings, text_feature)
       new_features = {text_feature_name: word_embeddings}
 
       # Fix dimensions to make Keras model output match label dims.
-      labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
-      return old_model_fn(
-          new_features, labels['frac_neg'], mode=mode, config=config)
+      if mode != tf.estimator.ModeKeys.PREDICT:
+        labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
+
+      return old_model_fn(new_features, labels, mode=mode, config=config)
 
     return tf.estimator.Estimator(
         new_model_fn, config=old_config, params=old_params)
@@ -100,7 +172,7 @@ class TextPreprocessor():
     return embeddings
 
   @staticmethod
-  def _get_word_idx_and_embeddings(embeddings_path: types.Path,
+  def _get_word_idx_and_embeddings(embeddings_path: str,
                                    max_words: Optional[int] = None
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.

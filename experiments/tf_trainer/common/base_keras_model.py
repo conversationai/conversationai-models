@@ -1,4 +1,4 @@
-"""Abstract Base Class for DatasetInput."""
+"""Abstract Base Class for Keras Models."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -8,15 +8,16 @@ import abc
 import tensorflow as tf
 
 from keras import models
-from tf_trainer import text_preprocessor
-from tf_trainer import types
+from tf_trainer.common import types
+from tf_trainer.common import base_model
 
 
-class BaseKerasModel(abc.ABC):
+class BaseKerasModel(base_model.BaseModel):
   """Abstract Base Class for Keras Models.
 
   Interface for Keras models.
   """
+  TMP_MODEL_DIR = '/tmp/keras_model'
 
   @abc.abstractmethod
   def _get_keras_model(self) -> models.Model:
@@ -26,7 +27,7 @@ class BaseKerasModel(abc.ABC):
     """
     pass
 
-  def get_estimator(self, model_dir, tmp_model_dir='/tmp/keras_model'):
+  def estimator(self, model_dir):
     """Estimator created based on this instances Keras model.
 
     The generated estimator expected a tokenized text input (i.e. a sequence of
@@ -41,7 +42,7 @@ class BaseKerasModel(abc.ABC):
     # want to add outside of the Keras model). The workaround is to specify a
     # model_dir that is *not* the actual model_dir of the final model.
     estimator = tf.keras.estimator.model_to_estimator(
-        keras_model=keras_model, model_dir=tmp_model_dir)
+        keras_model=keras_model, model_dir=BaseKerasModel.TMP_MODEL_DIR)
 
     new_config = estimator.config.replace(model_dir=model_dir)
 
@@ -55,10 +56,11 @@ class BaseKerasModel(abc.ABC):
   @staticmethod
   def roc_auc(y_true: types.Tensor, y_pred: types.Tensor,
               threshold=0.5) -> types.Tensor:
-    """ ROC AUC based on TF's metrics package.
-  
+    """ROC AUC based on TF's metrics package. This provides AUC in a Keras
+    metrics compatible way (Keras doesn't have AUC otherwise).
+
     We assume true labels are 'soft' and pick 0 or 1 based on a threshold.
     """
-    y_true = tf.to_int32(tf.greater(y_true, threshold))
-    value, update_op = tf.metrics.auc(y_true, y_pred)
+    y_bool_true = tf.greater(y_true, threshold)
+    value, update_op = tf.metrics.auc(y_bool_true, y_pred)
     return update_op

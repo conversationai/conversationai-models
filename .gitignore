@@ -1,4 +1,20 @@
 # Editor config.
 .vscode/
+
+# Python Compiles files.
 *.pyc
-attention-tutorial/env/*
+
+# Virtual Environment files.
+.pyenv
+.virtualenv
+env
+
+# mypy cache files for type-checking.
+.mypy_cache
+
+# Bazel
+bazel-bin
+bazel-experiments
+bazel-genfiles
+bazel-out
+bazel-testlogs
