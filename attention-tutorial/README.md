@@ -5,13 +5,13 @@
 **Contributors: nthain, martin-gorner**
 
 
-This tutorial provides an introduction to building text classification models in tensorflow that use attention to provide insight into how classification decisions are being made. We will build our tensorflow graph following the Embed - Encode - Attend - Predict paradigm introduced by Matthew Honnibal. For more information about this approach, you can refer to:
+This tutorial provides an introduction to building text classification models in Tensorflow that use attention to provide insight into how classification decisions are being made. We will build our Tensorflow graph following the Embed - Encode - Attend - Predict paradigm introduced by Matthew Honnibal. For more information about this approach, you can refer to:
 
 Slides: https://goo.gl/BYT7au
 
 Video: https://youtu.be/pzOzmxCR37I
 
-Figure 1 below provides a representation of the full tensorflow graph we will build in this tutorial.
+Figure 1 below provides a representation of the full Tensorflow graph we will build in this tutorial.
 
 ![Figure 1](img/entire_model.png "Figure 1")
 
@@ -32,7 +32,7 @@ https://github.com/GoogleCloudPlatform/tensorflow-without-a-phd
     python3 -m venv env
     ```
 
-    From either to enter your virtual env:
+    To enter your virtual env:
 
     ```shell
     source env/bin/activate
