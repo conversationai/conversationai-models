@@ -14,7 +14,7 @@ import tensorflow as tf
 class TFRecordInputTest(tf.test.TestCase):
 
 
-  def setUp(self): 
+  def setUp(self):
     ex = tf.train.Example(
       features=tf.train.Features(
           feature={
@@ -33,7 +33,7 @@ class TFRecordInputTest(tf.test.TestCase):
 
   def preprocessor(self, text):
     return tf.py_func(
-        lambda t: np.asarray([self.word_to_idx.get(x, self.unknown_token) for x in t.decode().split(" ")]),
+        lambda t: np.asarray([self.word_to_idx.get(x, self.unknown_token) for x in t[0].decode().split(" ")]),
         [text], tf.int64)
 
   def test_TFRecordInput_unrounded(self):
@@ -42,13 +42,28 @@ class TFRecordInputTest(tf.test.TestCase):
         validate_path=None,
         text_feature="comment",
         labels={"label": tf.float32},
-        feature_preprocessor=self.preprocessor,
+        feature_preprocessor_init=None,
         round_labels=False)
 
     with self.test_session():
-      features, labels = dataset_input._read_tf_example(self.ex_tensor)
+      features, labels = dataset_input._read_tf_example(self.ex_tensor, self.preprocessor)
       self.assertEqual(list(features["comment"].eval()), [12, 13, 999])
       self.assertAlmostEqual(labels["label"].eval(), 0.8)
+
+  def test_TFRecordInput_default_values(self):
+    dataset_input = tfrecord_input.TFRecordInput(
+        train_path=None,
+        validate_path=None,
+        text_feature="comment",
+        labels={"label": tf.float32, "fake_label": tf.float32},
+        feature_preprocessor_init=None,
+        round_labels=False)
+
+    with self.test_session():
+      features, labels = dataset_input._read_tf_example(self.ex_tensor, self.preprocessor)
+      self.assertEqual(list(features["comment"].eval()), [12, 13, 999])
+      self.assertAlmostEqual(labels["label"].eval(), 0.8)
+      self.assertAlmostEqual(labels["fake_label"].eval(), -1.0)
 
   def test_TFRecordInput_rounded(self):
     dataset_input = tfrecord_input.TFRecordInput(
@@ -56,11 +71,11 @@ class TFRecordInputTest(tf.test.TestCase):
         validate_path=None,
         text_feature="comment",
         labels={"label": tf.float32},
-        feature_preprocessor=self.preprocessor,
+        feature_preprocessor_init=None,
         round_labels=True)
 
     with self.test_session():
-      features, labels = dataset_input._read_tf_example(self.ex_tensor)
+      features, labels = dataset_input._read_tf_example(self.ex_tensor, self.preprocessor)
       self.assertEqual(list(features["comment"].eval()), [12, 13, 999])
       self.assertEqual(labels["label"].eval(), 1.0)
 
