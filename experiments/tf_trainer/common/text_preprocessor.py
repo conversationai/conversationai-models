@@ -29,10 +29,14 @@ class TextPreprocessor(object):
   may include fixing a max word length.
   """
 
-  def __init__(self, embeddings_path: str) -> None:
+  def __init__(self, 
+               embeddings_path: str, 
+               is_binary_embedding: Optional[bool] = False
+               ) -> None:
     self._word_to_idx, self._embeddings_matrix, self._unknown_token = \
         TextPreprocessor._get_word_idx_and_embeddings(
-            embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int]
+            embeddings_path,
+            is_binary_embedding)  # type: Tuple[Dict[str, int], np.ndarray, int]
 
   def tokenize_tensor_op_tf_func(self) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
@@ -116,15 +120,46 @@ class TextPreprocessor(object):
 
     Returns:
       TF Estimator with embedding ops added.
+
+    Note: We need to consider the case of large embeddings (see: 
+      https://stackoverflow.com/questions/48217599/
+      how-to-initialize-embeddings-layer-within-estimator-api/48243086#48243086).
+
     """
     old_model_fn = estimator.model_fn
     old_config = estimator.config
     old_params = estimator.params
 
+    def add_init_fn_to_estimatorSpec(estimator_spec, init_fn):
+      '''Add a new init_fn to the scaffold part of estimator spec.'''
+
+      def new_init_fn(scaffold, sess):
+        init_fn(scaffold, sess)
+        if estimator_spec.scaffold.init_fn:
+          estimator_spec.scaffold.init_fn(scaffold, sess)
+      
+      scaffold = tf.train.Scaffold(
+        init_fn=new_init_fn,
+        copy_from_scaffold=estimator_spec.scaffold)
+      estimator_spec_with_scaffold = tf.estimator.EstimatorSpec(
+          mode=estimator_spec.mode,
+          predictions=estimator_spec.predictions,
+          loss=estimator_spec.loss,
+          train_op=estimator_spec.train_op,
+          eval_metric_ops=estimator_spec.eval_metric_ops,
+          export_outputs=estimator_spec.export_outputs,
+          training_chief_hooks=estimator_spec.training_chief_hooks,
+          training_hooks=estimator_spec.training_hooks,
+          scaffold=scaffold,
+          evaluation_hooks=estimator_spec.evaluation_hooks,
+          prediction_hooks=estimator_spec.prediction_hooks
+          )
+      return estimator_spec_with_scaffold
+
     def new_model_fn(features, labels, mode, params, config):
       """model_fn used in defining the new TF Estimator"""
 
-      embeddings = self.word_embeddings()
+      embeddings, embedding_init_fn = self.word_embeddings()
 
       text_feature = features[text_feature_name]
       # Make sure all examples are length 300
@@ -138,7 +173,13 @@ class TextPreprocessor(object):
       if mode != tf.estimator.ModeKeys.PREDICT:
         labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
 
-      return old_model_fn(new_features, labels, mode=mode, config=config)
+      # TODO: Modify when embeddings are part of the model.
+      estimator_spec = old_model_fn(new_features, labels, mode=mode, config=config)
+      estimator_spec_with_scaffold = add_init_fn_to_estimatorSpec(
+          estimator_spec,
+          embedding_init_fn)
+
+      return estimator_spec_with_scaffold
 
     return tf.estimator.Estimator(
         new_model_fn, config=old_config, params=old_params)
@@ -162,17 +203,19 @@ class TextPreprocessor(object):
   def word_embeddings(self, trainable=True) -> tf.Variable:
     """Get word embedding TF Variable."""
 
-    embeddings_shape = self._embeddings_matrix.shape
-    initial_embeddings_matrix = tf.constant_initializer(self._embeddings_matrix)
     embeddings = tf.get_variable(
-        name='word_embeddings',
-        shape=embeddings_shape,
-        initializer=initial_embeddings_matrix,
+        "embeddings",
+        self._embeddings_matrix.shape,
         trainable=trainable)
-    return embeddings
+    
+    def init_fn(scaffold, sess):
+        sess.run(embeddings.initializer, {embeddings.initial_value: self._embeddings_matrix})
+    
+    return embeddings, init_fn
 
   @staticmethod
   def _get_word_idx_and_embeddings(embeddings_path: str,
+                                   is_binary_embedding: bool,
                                    max_words: Optional[int] = None
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
@@ -193,12 +236,19 @@ class TextPreprocessor(object):
     """
     word_to_idx = {}
     word_embeddings = []
-    with tf.gfile.Open(embeddings_path) as f:
+    if is_binary_embedding:
+      read_mode = 'rb'
+    else:
+      read_mode = 'r'
+    with tf.gfile.Open(embeddings_path, read_mode) as f:
       for idx, line in enumerate(f):
         if max_words and idx >= max_words:
           break
 
         values = line.split()
+        # Remove header when necessary.
+        if len(values) == 2 and idx == 0:
+          continue
         word = values[0]
         word_embedding = np.asarray(values[1:], dtype='float32')
         word_to_idx[word] = idx + 1  # Reserve first row for padding
@@ -210,7 +260,11 @@ class TextPreprocessor(object):
     # Convert embedding to numpy array and append the unknown word embedding,
     # which is the mean of all other embeddings.
     unknown_token = len(word_embeddings)
-    embeddings_matrix = np.asarray(word_embeddings, dtype=np.float32)
+    try:
+      embeddings_matrix = np.asarray(word_embeddings, dtype=np.float32)
+    except:
+      raise Exception('Embeddings can not be initialized.'
+                      ' Is embedding binary = {}?'.format(is_binary_embedding))
     embeddings_matrix = np.append(
         embeddings_matrix, [embeddings_matrix.mean(axis=0)], axis=0)
     return word_to_idx, embeddings_matrix, unknown_token
