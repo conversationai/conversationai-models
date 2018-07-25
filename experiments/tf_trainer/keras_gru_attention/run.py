@@ -23,6 +23,8 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string("embeddings_path",
                            "local_data/glove.6B/glove.6B.100d.txt",
                            "Path to the embeddings file.")
+tf.app.flags.DEFINE_boolean("is_binary_embedding", True,
+                           "Whether embeddings are binaries.")
 tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_string("key_name", "comment_key",
@@ -50,10 +52,11 @@ def main(argv):
   del argv  # unused
 
   embeddings_path = FLAGS.embeddings_path
+  is_binary_embedding = FLAGS.is_binary_embedding
   text_feature_name = FLAGS.text_feature_name
   key_name = FLAGS.key_name
 
-  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
+  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path, is_binary_embedding)
   if FLAGS.preprocess_in_tf:
     tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_tf_func()
   else:
@@ -84,4 +87,5 @@ def main(argv):
 
 
 if __name__ == "__main__":
+  tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run(main)
