@@ -64,8 +64,11 @@ class TextPreprocessor(object):
         A 2-D Tensor of word integers.
       '''
 
-      # TODO: Improve tokenizer.
-      # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear). 
+      # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear).
+      text = tf.regex_replace(
+          text,
+          '[!"#$%&()*+,-./:;<=>?@[\]^_`{|}~]',
+          ' ')
       words = tf.string_split(text)
       words_int_sparse = vocabulary_table.lookup(words)
       words_int_dense = tf.sparse_tensor_to_dense(
@@ -216,7 +219,7 @@ class TextPreprocessor(object):
   @staticmethod
   def _get_word_idx_and_embeddings(embeddings_path: str,
                                    is_binary_embedding: bool,
-                                   max_words: Optional[int] = None
+                                   max_words: Optional[int] = 100
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
 
