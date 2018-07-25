@@ -219,7 +219,7 @@ class TextPreprocessor(object):
   @staticmethod
   def _get_word_idx_and_embeddings(embeddings_path: str,
                                    is_binary_embedding: bool,
-                                   max_words: Optional[int] = 100
+                                   max_words: Optional[int] = None
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
 

@@ -9,7 +9,7 @@
 # As there is currently no tf operation that perform lowercasing, we have the following 
 # requirements:
 # - For google news: Run preprocess_in_tf=True (no lowercasing).
-# - For glove.6B, Run preprocess_in_tf=Fase (will force lowercasing).
+# - For glove.6B, Run preprocess_in_tf=Falses (will force lowercasing).
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
