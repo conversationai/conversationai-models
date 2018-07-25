@@ -26,7 +26,7 @@ class TFRecordInput(dataset_input.DatasetInput):
       labels: Dict[str, tf.DType],
       feature_preprocessor_init: Callable[[], Callable[[str], List[str]]],
       batch_size: int = 64,
-      max_seq_length: int = 300,
+      #max_seq_length: int = 300,
       round_labels: bool = True,
       num_prefetch: int = 3) -> None:
     self._train_path = train_path
@@ -34,7 +34,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._text_feature = text_feature
     self._labels = labels
     self._batch_size = batch_size
-    self._max_seq_length = max_seq_length
+    #self._max_seq_length = max_seq_length
     self.feature_preprocessor_init = feature_preprocessor_init
     self._round_labels = round_labels
     self._num_prefetch = num_prefetch
