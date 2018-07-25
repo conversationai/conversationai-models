@@ -17,7 +17,7 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIM
     --module-name="tf_trainer.${MODEL_NAME}.run" \
     --package-path=tf_trainer \
     --python-version "3.5" \
-    --region=us-central1 \
+    --region=us-east1 \
     --verbosity=debug \
     -- \
     --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
