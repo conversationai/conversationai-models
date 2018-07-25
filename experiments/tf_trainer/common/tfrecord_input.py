@@ -56,15 +56,28 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         lambda x: self._read_tf_example(x, feature_preprocessor),
         num_parallel_calls=multiprocessing.cpu_count())
-    batched_dataset = parsed_dataset.padded_batch(
-        self._batch_size,
-        padded_shapes=(
-            {
-                # TODO: truncate to max_seq_length
-                self._text_feature: [None]
-            },
-            {label: [] for label in self._labels}))
-    batched_dataset = batched_dataset.prefetch(self._num_prefetch)
+
+    padded_shapes=(
+            {self._text_feature: [None],
+            'sequence_length': []},
+            {label: [] for label in self._labels})
+    # TODO: Remove long sentences.
+    parsed_dataset = parsed_dataset.apply(
+        tf.contrib.data.bucket_by_sequence_length(
+            element_length_func=lambda x,_: x['sequence_length'],
+            bucket_boundaries=[(i + 1) * 20 for i in range(10)],
+            bucket_batch_sizes=[self._batch_size] * 11,
+            padded_shapes=padded_shapes)
+        )
+    # batched_dataset = parsed_dataset.padded_batch(
+    #     self._batch_size,
+    #     padded_shapes=(
+    #         {
+    #             # TODO: truncate to max_seq_length
+    #             self._text_feature: [None]
+    #         },
+    #         {label: [] for label in self._labels}))
+    batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
 
     # TODO: think about what happens when we run out of examples; should we be
     # using something that repeats over the dataset many time to allow
@@ -104,6 +117,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     # Reshape to (sequence_length,).
     preprocessed_text = tf.reshape(x, shape=[tf.shape(x)[-1]])
     features = {self._text_feature: preprocessed_text}
+    features['sequence_length'] = tf.shape(features[self._text_feature])[0]
     if self._round_labels:
       labels = {label: tf.round(parsed[label]) for label in self._labels}
     else:
