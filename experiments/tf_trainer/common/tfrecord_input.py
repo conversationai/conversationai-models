@@ -83,11 +83,17 @@ class TFRecordInput(dataset_input.DatasetInput):
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
+    DEFAULT_VALUES = {
+      tf.string: '',
+      tf.float32: -1.0,
+      tf.int32: -1
+    }
 
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
     for label, dtype in self._labels.items():
-      keys_to_features[label] = tf.FixedLenFeature([], dtype)
+      keys_to_features[label] = tf.FixedLenFeature(
+        [], dtype, DEFAULT_VALUES[dtype])
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
