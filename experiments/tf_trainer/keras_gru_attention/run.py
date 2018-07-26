@@ -23,13 +23,13 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string("embeddings_path",
                            "local_data/glove.6B/glove.6B.100d.txt",
                            "Path to the embeddings file.")
-tf.app.flags.DEFINE_boolean("is_binary_embedding", True,
+tf.app.flags.DEFINE_boolean("is_binary_embedding", False,
                            "Whether embeddings are binaries.")
 tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
-tf.app.flags.DEFINE_boolean("preprocess_in_tf", True,
+tf.app.flags.DEFINE_boolean("preprocess_in_tf", False,
                            "Run preprocessing with TensorFlow operations,"
                            "required for serving.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
