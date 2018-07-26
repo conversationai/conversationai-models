@@ -1,4 +1,5 @@
 #!/bin/bash
+# This script runs one training job on Cloud MLE.
 
 # Note:
 # We currently use 2 different embeddings:
@@ -23,11 +24,12 @@ gsutil acl set private ${REMOTE_COMET_API_KEY_FILE} &&
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
     --runtime-version=1.8 \
+    --scale-tier 'BASIC_GPU' \
     --module-name="tf_trainer.${MODEL_NAME}.run" \
     --package-path=tf_trainer \
+    --python-version "3.5" \
     --region=us-east1 \
     --verbosity=debug \
-    --config="tf_trainer/${MODEL_NAME}/hparam_config.yaml" \
     -- \
     --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
     --validate_path="${GCS_RESOURCES}/toxicity_q42017_validate.tfrecord" \
