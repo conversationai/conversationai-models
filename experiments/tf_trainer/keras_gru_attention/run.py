@@ -73,8 +73,11 @@ def main(argv):
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
+  model_keras = keras_gru_attention.KerasRNNModel(
+    set(LABELS.keys()),
+    preprocessor._embedding_size)
   model = preprocessor.add_embedding_to_model(
-      keras_gru_attention.KerasRNNModel(set(LABELS.keys())), text_feature_name)
+      model_keras, text_feature_name)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
