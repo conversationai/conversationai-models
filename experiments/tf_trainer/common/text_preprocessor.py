@@ -78,7 +78,9 @@ class TextPreprocessor(object):
 
     return _tokenize_tensor_op
 
-  def tokenize_tensor_op_py_func(self, tokenizer: Callable[[str], List[str]]
+  def tokenize_tensor_op_py_func(self, 
+                                tokenizer: Callable[[str], List[str]],
+                                lowercase: Optional[bool] = True
                                 ) -> Callable[[types.Tensor], types.Tensor]:
     """Tensor op that converts some text into an array of ints that correspond
     with this preprocessor's embedding.
@@ -90,9 +92,12 @@ class TextPreprocessor(object):
     def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
 
       def _tokenize(b: bytes) -> np.ndarray:
+        words = tokenizer(b.decode('utf-8'))
+        if lowercase:
+          words = [w.lower() for w in words]
         return np.asarray([
             self._word_to_idx.get(w, self._unknown_token)
-            for w in tokenizer(b.decode('utf-8'))
+            for w in words
         ])
 
       return tf.py_func(_tokenize, [text], tf.int64)
