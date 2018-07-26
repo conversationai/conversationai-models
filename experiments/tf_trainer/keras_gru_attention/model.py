@@ -41,7 +41,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   sequences of word embeddings.
   """
 
-  MAX_SEQUENCE_LENGTH = 300
+  #MAX_SEQUENCE_LENGTH = 300
 
   def __init__(self, labels: Set[str], optimizer='adam') -> None:
     self._labels = labels
@@ -58,7 +58,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
   def _get_keras_model(self) -> models.Model:
     I = layers.Input(
-        shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, 300),
+        shape=(None, 300),
         dtype='float32',
         name='comment_text')
 
@@ -71,7 +71,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
     last_gru_units = self.hparams().gru_units[-1] * 2  # x2 because bidirectional
     A = layers.TimeDistributed(
         layers.Dense(self.hparams().attention_units, activation='relu'),
-        input_shape=(KerasRNNModel.MAX_SEQUENCE_LENGTH, last_gru_units))(
+        input_shape=(None, last_gru_units))(
             H)
     A = layers.TimeDistributed(layers.Dense(1))(A)
     A = layers.Flatten()(A)

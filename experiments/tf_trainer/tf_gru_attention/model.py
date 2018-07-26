@@ -59,7 +59,7 @@ class TFRNNModel(base_model.BaseModel):
     gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
     dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
     hparams = tf.contrib.training.HParams(
-        max_seq_length=300,
+        #max_seq_length=300,
         learning_rate=FLAGS.learning_rate,
         dropout_rate=FLAGS.dropout_rate,
         gru_units=gru_units,
