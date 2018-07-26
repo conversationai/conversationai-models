@@ -33,7 +33,7 @@ class TextPreprocessor(object):
                embeddings_path: str, 
                is_binary_embedding: Optional[bool] = False
                ) -> None:
-    self._word_to_idx, self._embeddings_matrix, self._unknown_token = \
+    self._word_to_idx, self._embeddings_matrix, self._unknown_token, self._embedding_size = \
         TextPreprocessor._get_word_idx_and_embeddings(
             embeddings_path,
             is_binary_embedding)  # type: Tuple[Dict[str, int], np.ndarray, int]
@@ -90,15 +90,29 @@ class TextPreprocessor(object):
     """
 
     def _tokenize_tensor_op(text: types.Tensor) -> types.Tensor:
+      '''Converts a string Tensor to an array of integers.
 
-      def _tokenize(b: bytes) -> np.ndarray:
-        words = tokenizer(b.decode('utf-8'))
+      Args:
+        text: must be a 1-D Tensor string tensor.
+
+      Returns:
+        A 2-D Tensor of word integers.
+      '''
+
+      def _tokenize(sentences: List[bytes]) -> np.ndarray:
+        
+        if len(sentences) > 1:
+          raise ValueError('py_tokenizer does not support padding for now'
+                           ' and can not be run on multiple sentences.')
+
+        sentence = sentences[0]
+        words = tokenizer(sentence.decode('utf-8'))
         if lowercase:
           words = [w.lower() for w in words]
-        return np.asarray([
+        return np.asarray([[
             self._word_to_idx.get(w, self._unknown_token)
             for w in words
-        ])
+        ]])
 
       return tf.py_func(_tokenize, [text], tf.int64)
 
@@ -275,4 +289,4 @@ class TextPreprocessor(object):
                       ' Is embedding binary = {}?'.format(is_binary_embedding))
     embeddings_matrix = np.append(
         embeddings_matrix, [embeddings_matrix.mean(axis=0)], axis=0)
-    return word_to_idx, embeddings_matrix, unknown_token
+    return word_to_idx, embeddings_matrix, unknown_token, len(word_embeddings[0])

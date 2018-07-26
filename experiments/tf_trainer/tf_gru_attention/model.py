@@ -50,7 +50,9 @@ def attend(inputs, attention_size, attention_depth=1):
 
 class TFRNNModel(base_model.BaseModel):
 
-  def __init__(self, text_feature_name: str, target_labels: Set[str]) -> None:
+  def __init__(self, 
+    text_feature_name: str, 
+    target_labels: Set[str]) -> None:
     self._text_feature_name = text_feature_name
     self._target_labels = target_labels
 
@@ -59,7 +61,6 @@ class TFRNNModel(base_model.BaseModel):
     gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
     dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
     hparams = tf.contrib.training.HParams(
-        #max_seq_length=300,
         learning_rate=FLAGS.learning_rate,
         dropout_rate=FLAGS.dropout_rate,
         gru_units=gru_units,

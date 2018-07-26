@@ -26,7 +26,6 @@ class TFRecordInput(dataset_input.DatasetInput):
       labels: Dict[str, tf.DType],
       feature_preprocessor_init: Callable[[], Callable[[str], List[str]]],
       batch_size: int = 64,
-      #max_seq_length: int = 300,
       round_labels: bool = True,
       num_prefetch: int = 3) -> None:
     self._train_path = train_path
@@ -34,7 +33,6 @@ class TFRecordInput(dataset_input.DatasetInput):
     self._text_feature = text_feature
     self._labels = labels
     self._batch_size = batch_size
-    #self._max_seq_length = max_seq_length
     self.feature_preprocessor_init = feature_preprocessor_init
     self._round_labels = round_labels
     self._num_prefetch = num_prefetch
@@ -69,22 +67,12 @@ class TFRecordInput(dataset_input.DatasetInput):
             bucket_batch_sizes=[self._batch_size] * 11,
             padded_shapes=padded_shapes)
         )
-    # batched_dataset = parsed_dataset.padded_batch(
-    #     self._batch_size,
-    #     padded_shapes=(
-    #         {
-    #             # TODO: truncate to max_seq_length
-    #             self._text_feature: [None]
-    #         },
-    #         {label: [] for label in self._labels}))
     batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
 
-    # TODO: think about what happens when we run out of examples; should we be
-    # using something that repeats over the dataset many time to allow
-    # multi-epoch learning, or does estimator do this for us?
     itr_op = batched_dataset.make_initializable_iterator()
     # Adding the initializer operation to the graph.
     tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, itr_op.initializer)
+    
     return itr_op.get_next()
 
   def _read_tf_example(self,

@@ -41,10 +41,12 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   sequences of word embeddings.
   """
 
-  #MAX_SEQUENCE_LENGTH = 300
-
-  def __init__(self, labels: Set[str], optimizer='adam') -> None:
+  def __init__(self,
+               labels: Set[str],
+               embedding_size: int,
+               optimizer='adam') -> None:
     self._labels = labels
+    self._embedding_size = embedding_size
 
   def hparams(self):
     gru_units = [int(units) for units in FLAGS.gru_units.split(',')]
@@ -58,7 +60,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
 
   def _get_keras_model(self) -> models.Model:
     I = layers.Input(
-        shape=(None, 300),
+        shape=(None, self._embedding_size),
         dtype='float32',
         name='comment_text')
 
