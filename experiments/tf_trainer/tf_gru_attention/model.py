@@ -30,6 +30,24 @@ tf.app.flags.DEFINE_string(
     'Comma delimited string for the number of hidden units in the dense layer.')
 
 
+def attend(inputs, attention_size, attention_depth=1):
+  '''Attention layer.'''
+  
+  sequence_length = tf.shape(inputs)[1] # dynamic
+  final_layer_size = inputs.shape[2] # static
+  
+  x = tf.reshape(inputs, [-1, final_layer_size])
+  for _ in range(attention_depth-1):
+    x = tf.layers.dense(x, attention_size, activation=tf.nn.relu)
+  x = tf.layers.dense(x, 1, activation=None)
+  logits = tf.reshape(x, [-1, sequence_length, 1])
+  alphas = tf.nn.softmax(logits, dim=1)
+  
+  output = tf.reduce_sum(inputs * alphas, 1)
+
+  return output, alphas
+
+
 class TFRNNModel(base_model.BaseModel):
 
   def __init__(self, text_feature_name: str, target_labels: Set[str]) -> None:
@@ -72,38 +90,17 @@ class TFRNNModel(base_model.BaseModel):
     outputs, states = tf.nn.dynamic_rnn(
         multi_rnn_cell,
         inputs,
-        sequence_length=tf.fill(dims=[batch_size], value=params.max_seq_length),
         dtype=tf.float32)
 
-    # TF needs help understanding sequence length (I think because we're using
-    # dynamic_rnn)
-    outputs = tf.reshape(
-        outputs, [batch_size, params.max_seq_length, params.gru_units[-1]])
+    # TODO: Handle sequence length in the attention layer (via a mask).
+    #       Padded elements should not be part of the average.
+    logits, _ = attend(
+        inputs=outputs,
+        attention_size=params.attention_units)
 
-    unstacked_outputs = tf.unstack(outputs, num=params.max_seq_length, axis=1)
-
-    attention = tf.expand_dims(
-        tf.nn.softmax(
-            tf.concat(
-                [
-                    tf.layers.dense(
-                        inputs=tf.layers.dense(
-                            inputs=output,
-                            units=params.attention_units,
-                            activation=tf.nn.relu),
-                        units=1,
-                        activation=None) for output in unstacked_outputs
-                ],
-                axis=1),
-            axis=-1), -1)
-
-    weighted_output = tf.multiply(attention, outputs)
-    weighted_output = tf.reduce_sum(weighted_output, -2)
-
-    logits = weighted_output
     for num_units in params.dense_units:
       logits = tf.layers.dense(
-          inputs=weighted_output, units=num_units, activation=tf.nn.relu)
+          inputs=logits, units=num_units, activation=tf.nn.relu)
       logits = tf.layers.dropout(logits, rate=params.dropout_rate)
     logits = tf.layers.dense(
         inputs=logits, units=len(self._target_labels), activation=None)
