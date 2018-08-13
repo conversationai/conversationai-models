@@ -152,7 +152,7 @@ class TextPreprocessor(object):
     old_config = estimator.config
     old_params = estimator.params
 
-    def add_init_fn_to_estimatorSpec(estimator_spec, init_fn):
+    def add_init_fn_and_hook_to_estimatorSpec(estimator_spec, init_fn, training_hook):
       '''Add a new init_fn to the scaffold part of estimator spec.'''
 
       def new_init_fn(scaffold, sess):
@@ -163,6 +163,7 @@ class TextPreprocessor(object):
       scaffold = tf.train.Scaffold(
         init_fn=new_init_fn,
         copy_from_scaffold=estimator_spec.scaffold)
+      new_hook = list(estimator_spec.training_hooks).append(training_hook)
       estimator_spec_with_scaffold = tf.estimator.EstimatorSpec(
           mode=estimator_spec.mode,
           predictions=estimator_spec.predictions,
@@ -171,7 +172,7 @@ class TextPreprocessor(object):
           eval_metric_ops=estimator_spec.eval_metric_ops,
           export_outputs=estimator_spec.export_outputs,
           training_chief_hooks=estimator_spec.training_chief_hooks,
-          training_hooks=estimator_spec.training_hooks,
+          training_hooks=new_hook, #estimator_spec.training_hooks,
           scaffold=scaffold,
           evaluation_hooks=estimator_spec.evaluation_hooks,
           prediction_hooks=estimator_spec.prediction_hooks
@@ -184,6 +185,12 @@ class TextPreprocessor(object):
       embeddings, embedding_init_fn = self.word_embeddings()
 
       text_feature = features[text_feature_name]
+      unknown_fraction = tf.reduce_mean(
+          tf.cast(
+              tf.equal(text_feature, self._unknown_token),
+              tf.float32)
+          )
+      tf.summary.scalar("fraction_of_unknown_words", unknown_fraction)  
       word_embeddings = tf.nn.embedding_lookup(embeddings, text_feature)
       new_features = {text_feature_name: word_embeddings}
 
@@ -191,11 +198,16 @@ class TextPreprocessor(object):
       if mode != tf.estimator.ModeKeys.PREDICT:
         labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
 
+      summary_hook = tf.train.SummarySaverHook(
+          save_steps=100,
+          summary_op=tf.summary.merge_all())
+
       # TODO: Modify when embeddings are part of the model.
       estimator_spec = old_model_fn(new_features, labels, mode=mode, config=config)
-      estimator_spec_with_scaffold = add_init_fn_to_estimatorSpec(
+      estimator_spec_with_scaffold = add_init_fn_and_hook_to_estimatorSpec(
           estimator_spec,
-          embedding_init_fn)
+          embedding_init_fn,
+          summary_hook)
 
       return estimator_spec_with_scaffold
 
