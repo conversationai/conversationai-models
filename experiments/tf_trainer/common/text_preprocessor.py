@@ -152,7 +152,7 @@ class TextPreprocessor(object):
     old_config = estimator.config
     old_params = estimator.params
 
-    def add_init_fn_and_hook_to_estimatorSpec(estimator_spec, init_fn, training_hook):
+    def add_init_fn_to_estimatorSpec(estimator_spec, init_fn, training_hook):
       '''Add a new init_fn to the scaffold part of estimator spec.'''
 
       def new_init_fn(scaffold, sess):
