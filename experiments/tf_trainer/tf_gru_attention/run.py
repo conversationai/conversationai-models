@@ -71,9 +71,12 @@ def main(argv):
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
+  model_tf = tf_gru_attention.TFRNNModel(
+      text_feature_name, 
+      set(LABELS.keys())
+      )
   model = preprocessor.add_embedding_to_model(
-      tf_gru_attention.TFRNNModel(text_feature_name, set(LABELS.keys())),
-      text_feature_name)
+      model_tf, text_feature_name)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
