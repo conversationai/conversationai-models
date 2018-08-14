@@ -57,7 +57,10 @@ class TFRecordInput(dataset_input.DatasetInput):
 
     padded_shapes=(
             {self._text_feature: [None],
-            'sequence_length': []},
+            'sequence_length': [],
+            'old_text': [],
+            'words': [None],
+            },
             {label: [] for label in self._labels})
     # TODO: Remove long sentences.
     parsed_dataset = parsed_dataset.apply(
@@ -105,6 +108,18 @@ class TFRecordInput(dataset_input.DatasetInput):
     # Reshape to (sequence_length,).
     preprocessed_text = tf.reshape(x, shape=[tf.shape(x)[-1]])
     features = {self._text_feature: preprocessed_text}
+    features['old_text'] = text
+    new_text = tf.regex_replace([text], '\n', ' ')
+    new_text = tf.regex_replace(new_text, '\.', ' ')
+    new_text = tf.regex_replace(
+        new_text,
+        '[!"#$%&()*+,-/:;<=>?@[\]^_`{|}~]',
+        ' ')
+    words = tf.string_split(new_text)
+    words_int_dense = tf.sparse_tensor_to_dense(
+        words,
+        default_value='')
+    features['words'] = tf.reshape(words_int_dense, shape=[tf.shape(words_int_dense)[-1]])
     features['sequence_length'] = tf.shape(features[self._text_feature])[0]
     if self._round_labels:
       labels = {label: tf.round(parsed[label]) for label in self._labels}

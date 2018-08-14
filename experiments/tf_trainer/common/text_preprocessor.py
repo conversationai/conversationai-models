@@ -65,9 +65,11 @@ class TextPreprocessor(object):
       '''
 
       # TODO: Ensure utf-8 encoding. Currently the string is parsed with default encoding (unclear).
+      text = tf.regex_replace(text, '\n', ' ')
+      text = tf.regex_replace(text, '\.', ' ')
       text = tf.regex_replace(
           text,
-          '[!"#$%&()*+,-./:;<=>?@[\]^_`{|}~]',
+          '[!"#$%&()*+,-/:;<=>?@[\]^_`{|}~]',
           ' ')
       words = tf.string_split(text)
       words_int_sparse = vocabulary_table.lookup(words)
@@ -152,7 +154,7 @@ class TextPreprocessor(object):
     old_config = estimator.config
     old_params = estimator.params
 
-    def add_init_fn_to_estimatorSpec(estimator_spec, init_fn, training_hook):
+    def add_init_fn_to_estimatorSpec(estimator_spec, init_fn):
       '''Add a new init_fn to the scaffold part of estimator spec.'''
 
       def new_init_fn(scaffold, sess):
