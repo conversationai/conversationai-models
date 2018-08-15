@@ -117,7 +117,7 @@ class ModelTrainer(object):
     experiment = comet_ml.Experiment(
         api_key=key,
         project_name=FLAGS.comet_project_name,
-        team_name=FLAGS.comet_team_name,
+        workspace=FLAGS.comet_team_name,
         auto_param_logging=False,
         parse_args=False)
     experiment.log_parameter('train_path', FLAGS.train_path)
