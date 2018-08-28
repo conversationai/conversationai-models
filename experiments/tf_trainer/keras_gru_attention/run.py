@@ -29,12 +29,9 @@ tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
-tf.app.flags.DEFINE_boolean("preprocess_in_tf", False,
-                           "Run preprocessing with TensorFlow operations,"
-                           "required for serving.")
-tf.app.flags.DEFINE_integer("batch_size", 64,
+tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 20000,
+tf.app.flags.DEFINE_integer("train_steps", 10000,
                             "The number of steps to train for.")
 tf.app.flags.DEFINE_integer("eval_period", 100,
                             "The number of steps per eval period.")
@@ -58,18 +55,15 @@ def main(argv):
   key_name = FLAGS.key_name
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path, is_binary_embedding)
-  if FLAGS.preprocess_in_tf:
-    tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_tf_func()
-  else:
-    nltk.download("punkt")
-    tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_py_func(nltk.word_tokenize)
 
+  nltk.download("punkt")
+  train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInput(
       train_path=FLAGS.train_path,
       validate_path=FLAGS.validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      feature_preprocessor_init=tokenize_op_init,
+      train_preprocess_fn=train_preprocess_fn,
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
@@ -82,12 +76,12 @@ def main(argv):
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
-  if FLAGS.preprocess_in_tf:
-    serving_input_fn = serving_input.create_serving_input_fn(
-        feature_preprocessor_init=tokenize_op_init,
-        text_feature_name=text_feature_name,
-        key_name=key_name)
-    trainer.export(serving_input_fn)
+  serving_input_fn = serving_input.create_serving_input_fn(
+      word_to_idx=preprocessor._word_to_idx,
+      unknown_token=preprocessor._unknown_token,
+      text_feature_name=text_feature_name,
+      key_name=key_name)
+  trainer.export(serving_input_fn)
 
 
 if __name__ == "__main__":
