@@ -193,8 +193,7 @@ class ModelTrainer(object):
       experiment = self._setup_comet()
     num_itr = int(steps / eval_period)
 
-    writer = tf.summary.FileWriter(self._model_dir())
-    for i in range(num_itr):
+    for _ in range(num_itr):
       hooks = None
       if FLAGS.enable_profiling:
         hooks = [tf.train.ProfilerHook(save_steps=10,

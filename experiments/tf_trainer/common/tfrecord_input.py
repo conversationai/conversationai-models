@@ -45,9 +45,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     """input_fn for TF Estimators for validation set."""
     return self._input_fn_from_file(self._validate_path)
 
-  def _input_fn_from_file(
-      self,
-      filepath: str) -> types.FeatureAndLabelTensors:
+  def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(
