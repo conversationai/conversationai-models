@@ -31,9 +31,9 @@ tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
 tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 100,
+tf.app.flags.DEFINE_integer("train_steps", 10000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 50,
+tf.app.flags.DEFINE_integer("eval_period", 100,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", 20,
                             "The number of steps to eval for.")
@@ -53,7 +53,6 @@ def main(argv):
   text_feature_name = FLAGS.text_feature_name
   key_name = FLAGS.key_name
 
-  
   embeddings_path = FLAGS.embeddings_path
   is_binary_embedding = FLAGS.is_binary_embedding
   text_feature_name = FLAGS.text_feature_name
@@ -82,7 +81,12 @@ def main(argv):
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
-  # TODO: Add serving function for TF model.
+  serving_input_fn = serving_input.create_serving_input_fn(
+      word_to_idx=preprocessor._word_to_idx,
+      unknown_token=preprocessor._unknown_token,
+      text_feature_name=text_feature_name,
+      key_name=key_name)
+  trainer.export(serving_input_fn)
 
 
 if __name__ == "__main__":

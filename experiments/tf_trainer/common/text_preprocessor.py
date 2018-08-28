@@ -15,6 +15,8 @@ from typing import Callable, Dict, List, Optional, Tuple
 
 FLAGS = flags.FLAGS
 
+tf.app.flags.DEFINE_bool('is_embedding_trainable', False,
+                         'Enable fine tuning of embeddings.')
 
 class TextPreprocessor(object):
   """Text Preprocessor.
@@ -136,7 +138,8 @@ class TextPreprocessor(object):
     def new_model_fn(features, labels, mode, params, config):
       """model_fn used in defining the new TF Estimator"""
 
-      embeddings, embedding_init_fn = self.word_embeddings()
+      embeddings, embedding_init_fn = self.word_embeddings(
+          trainable=FLAGS.is_embedding_trainable)
 
       text_feature = features[text_feature_name]
       word_embeddings = tf.nn.embedding_lookup(embeddings, text_feature)
@@ -163,7 +166,7 @@ class TextPreprocessor(object):
   def unknown_token(self) -> int:
     return self._unknown_token
 
-  def word_embeddings(self, trainable=True) -> tf.Variable:
+  def word_embeddings(self, trainable) -> tf.Variable:
     """Get word embedding TF Variable."""
 
     embeddings = tf.get_variable(
@@ -179,7 +182,7 @@ class TextPreprocessor(object):
   @staticmethod
   def _get_word_idx_and_embeddings(embeddings_path: str,
                                    is_binary_embedding: bool,
-                                   max_words: Optional[int] = None
+                                   max_words: Optional[int] = 100
                                   ) -> Tuple[Dict[str, int], np.ndarray, int]:
     """Generate word to idx mapping and word embeddings numpy array.
 

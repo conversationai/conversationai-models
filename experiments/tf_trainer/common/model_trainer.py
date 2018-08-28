@@ -11,10 +11,20 @@ from __future__ import print_function
 import json
 import os
 import os.path
+import six
 
 import comet_ml
 import tensorflow as tf
 from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.estimator import estimator as estimator_lib
+from tensorflow.python.estimator import model_fn as model_fn_lib
+from tensorflow.python.estimator.export.export_output import PredictOutput
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
+from tensorflow.python.ops import clip_ops
+from tensorflow.python.ops import sparse_ops
+from tensorflow.python.training import optimizer as optimizer_lib
+
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
 
@@ -41,25 +51,10 @@ tf.app.flags.mark_flag_as_required('validate_path')
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
-
-
-
-
-import six
-
-from tensorflow.python.estimator import estimator as estimator_lib
-from tensorflow.python.estimator import model_fn as model_fn_lib
-from tensorflow.python.estimator.export.export_output import PredictOutput
-from tensorflow.python.framework import ops
-from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
-from tensorflow.python.ops import clip_ops
-from tensorflow.python.ops import sparse_ops
-from tensorflow.python.training import optimizer as optimizer_lib
-
-
-
-
-def forward_featuresFPROST(estimator, keys=None, sparse_default_values=None):
+# This function extends tf.contrib.estimator.forward_features.
+# As the binary_head has a ClassificationOutput for serving_default,
+# the check at the end of 'new_model_fn' fails in the initial fn.
+def forward_features(estimator, keys=None, sparse_default_values=None):
   """Forward features to predictions dictionary.
   In some cases, user wants to see some of the features in estimators prediction
   output. As an example, consider a batch prediction service: The service simply
@@ -159,66 +154,17 @@ def forward_featuresFPROST(estimator, keys=None, sparse_default_values=None):
             'Type of features[{}] is {}.'.format(key, key, type(feature)))
       predictions[key] = feature
     spec = spec._replace(predictions=predictions)
-    print ('EXPORT_OUTPUTS')
-    print (spec.export_outputs)
-    if spec.export_outputs:
-      for ekey in ['predict', 'serving_default']:
-        print('ekey: ' + ekey)
-        print('t1: ' + str(ekey in spec.export_outputs))
-        print('t2: ' + str(isinstance(spec.export_outputs[ekey], PredictOutput)))
-        print ('export_output: ')
-        print (spec.export_outputs[ekey])
-        # if (ekey in spec.export_outputs and
-        #     isinstance(spec.export_outputs[ekey],
-        #                PredictOutput)):
-        if (ekey in spec.export_outputs):
-          export_outputs = spec.export_outputs[ekey].outputs
-          for key in get_keys(features):
-            print ('key: '+ key)
-            export_outputs[key] = predictions[key]
-
+    if spec.export_outputs: # CHANGES HERE
+      outputs = spec.export_outputs['predict'].outputs
+      outputs['comment_key'] = spec.predictions['comment_key']
+      spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
+      spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
     return spec
 
   return estimator_lib.Estimator(
       model_fn=new_model_fn,
       model_dir=estimator.model_dir,
       config=estimator.config)
-
-
-
-def forward_key_to_export(estimator):
-  """Forwards record key to output during inference.
-
-  Temporary workaround. The key and its value will be extracted from input
-  tensors and returned in the prediction dictionary. This is useful to pass
-  record key identifiers. Code came from:
-  https://towardsdatascience.com/how-to-extend-a-canned-tensorflow-estimator-to-add-more-evaluation-metrics-and-to-pass-through-ddf66cd3047d
-  This shouldn't be necessary. (CL/187793590 was filed to update extenders.py
-  with this code).
-
-  Args:
-      estimator: `Estimator` being modified.
-
-  Returns:
-      A modified `Estimator`
-  """
-  config = estimator.config
-  def model_fn2(features, labels, mode):
-    estimator_spec = estimator._call_model_fn(
-        features, labels, mode, config=config)
-    import six
-    from tensorflow.python.estimator.canned import head as head_lib
-    from tensorflow.python.estimator.canned import metric_keys
-    from tensorflow.python.estimator.export import export_output as export_output_lib
-
-    if mode==tf.estimator.ModeKeys.PREDICT:
-      if estimator_spec.export_outputs:
-        outputs = estimator_spec.export_outputs['predict'].outputs
-        outputs['comment_key'] = estimator_spec.predictions['comment_key']
-        estimator_spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
-        estimator_spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
-    return estimator_spec
-  return tf.estimator.Estimator(model_fn=model_fn2, config=config)
 
 
 class ModelTrainer(object):
@@ -262,15 +208,6 @@ class ModelTrainer(object):
       if experiment is not None:
         tf.logging.info('Logging metrics to comet.ml: {}'.format(metrics))
         experiment.log_multiple_metrics(metrics)
-      predictions = self._estimator.predict(self._dataset.bias_input_fn)
-      proba_list = []
-      import numpy as np
-      for prediction in predictions:
-        proba_toxic = prediction[('frac_neg', 'probabilities')][1]
-        proba_list.append(proba_toxic)
-      summary = tf.Summary(value=[tf.Summary.Value(tag='unintended_bias',
-                                                   simple_value=np.mean(proba_list))])
-      writer.add_summary(summary, i * eval_period)
       tf.logging.info(metrics)
 
   def _setup_comet(self):
@@ -302,8 +239,7 @@ class ModelTrainer(object):
 
   def _add_estimator_key(self, estimator):
     '''Adds a forward key to the model_fn of an estimator.'''
-    estimator = forward_featuresFPROST(estimator, FLAGS.key_name) #tf.contrib.estimator.forward_features(estimator, FLAGS.key_name)
-    # estimator = forward_key_to_export(estimator)
+    estimator = forward_features(estimator, FLAGS.key_name)
     return estimator
 
   def export(self, serving_input_fn):

@@ -45,16 +45,9 @@ class TFRecordInput(dataset_input.DatasetInput):
     """input_fn for TF Estimators for validation set."""
     return self._input_fn_from_file(self._validate_path)
 
-  def bias_input_fn(self) -> types.FeatureAndLabelTensors:
-    """input_fn for TF Estimators for training set."""
-    return self._input_fn_from_file(
-        self._train_path,
-        max_n_examples=20)
-
   def _input_fn_from_file(
       self,
-      filepath: str,
-      max_n_examples: int = None) -> types.FeatureAndLabelTensors:
+      filepath: str) -> types.FeatureAndLabelTensors:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(
@@ -73,8 +66,6 @@ class TFRecordInput(dataset_input.DatasetInput):
             bucket_batch_sizes=[self._batch_size] * 11,
             padded_shapes=padded_shapes)
         )
-    if max_n_examples:
-      parsed_dataset = parsed_dataset.take(max_n_examples)
     batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
 
     itr_op = batched_dataset.make_initializable_iterator()
