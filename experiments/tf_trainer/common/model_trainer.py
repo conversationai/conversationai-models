@@ -54,7 +54,7 @@ tf.app.flags.mark_flag_as_required('model_dir')
 # This function extends tf.contrib.estimator.forward_features.
 # As the binary_head has a ClassificationOutput for serving_default,
 # the check at the end of 'new_model_fn' fails in the initial fn.
-def forward_features(estimator, keys=None, sparse_default_values=None):
+def forward_features(estimator, keys, sparse_default_values=None):
   """Forward features to predictions dictionary.
   In some cases, user wants to see some of the features in estimators prediction
   output. As an example, consider a batch prediction service: The service simply
@@ -75,10 +75,7 @@ def forward_features(estimator, keys=None, sparse_default_values=None):
   ```
   Args:
     estimator: A `tf.estimator.Estimator` object.
-    keys: A `string` or a `list` of `string`. If it is `None`, all of the
-      `features` in `dict` is forwarded to the `predictions`. If it is a
-      `string`, only given key is forwarded. If it is a `list` of strings, all
-      the given `keys` are forwarded.
+    keys: A `string`
     sparse_default_values: A dict of `str` keys mapping the name of the sparse
       features to be converted to dense, to the default value to use. Only
       sparse features indicated in the dictionary are converted to dense and the
@@ -156,7 +153,7 @@ def forward_features(estimator, keys=None, sparse_default_values=None):
     spec = spec._replace(predictions=predictions)
     if spec.export_outputs: # CHANGES HERE
       outputs = spec.export_outputs['predict'].outputs
-      outputs['comment_key'] = spec.predictions['comment_key']
+      outputs[key] = spec.predictions[key]
       spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
       spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
     return spec
