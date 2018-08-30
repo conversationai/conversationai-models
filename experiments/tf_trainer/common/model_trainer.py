@@ -11,10 +11,20 @@ from __future__ import print_function
 import json
 import os
 import os.path
+import six
 
 import comet_ml
 import tensorflow as tf
 from tensorflow.python.platform import tf_logging as logging
+from tensorflow.python.estimator import estimator as estimator_lib
+from tensorflow.python.estimator import model_fn as model_fn_lib
+from tensorflow.python.estimator.export.export_output import PredictOutput
+from tensorflow.python.framework import ops
+from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
+from tensorflow.python.ops import clip_ops
+from tensorflow.python.ops import sparse_ops
+from tensorflow.python.training import optimizer as optimizer_lib
+
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
 
@@ -41,32 +51,117 @@ tf.app.flags.mark_flag_as_required('validate_path')
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
-def forward_key_to_export(estimator):
-  """Forwards record key to output during inference.
-
-  Temporary workaround. The key and its value will be extracted from input
-  tensors and returned in the prediction dictionary. This is useful to pass
-  record key identifiers. Code came from:
-  https://towardsdatascience.com/how-to-extend-a-canned-tensorflow-estimator-to-add-more-evaluation-metrics-and-to-pass-through-ddf66cd3047d
-  This shouldn't be necessary. (CL/187793590 was filed to update extenders.py
-  with this code).
-
+# This function extends tf.contrib.estimator.forward_features.
+# As the binary_head has a ClassificationOutput for serving_default,
+# the check at the end of 'new_model_fn' fails in the initial fn.
+def forward_features(estimator, keys, sparse_default_values=None):
+  """Forward features to predictions dictionary.
+  In some cases, user wants to see some of the features in estimators prediction
+  output. As an example, consider a batch prediction service: The service simply
+  runs inference on the users graph and returns the results. Keys are essential
+  because there is no order guarantee on the outputs so they need to be rejoined
+  to the inputs via keys or transclusion of the inputs in the outputs.
+  Example:
+  ```python
+    def input_fn():
+      features, labels = ...
+      features['unique_example_id'] = ...
+      features, labels
+    estimator = tf.estimator.LinearClassifier(...)
+    estimator = tf.contrib.estimator.forward_features(
+        estimator, 'unique_example_id')
+    estimator.train(...)
+    assert 'unique_example_id' in estimator.predict(...)
+  ```
   Args:
-      estimator: `Estimator` being modified.
-
+    estimator: A `tf.estimator.Estimator` object.
+    keys: A `string`
+    sparse_default_values: A dict of `str` keys mapping the name of the sparse
+      features to be converted to dense, to the default value to use. Only
+      sparse features indicated in the dictionary are converted to dense and the
+      provided default value is used.
   Returns:
-      A modified `Estimator`
+      A new `tf.estimator.Estimator` which forwards features to predictions.
+  Raises:
+    ValueError:
+      * if `keys` is already part of `predictions`. We don't allow
+        override.
+      * if 'keys' does not exist in `features`.
+    TypeError: if `keys` type is not one of `string` or list/tuple of `string`.
   """
-  config = estimator.config
-  def model_fn2(features, labels, mode):
-    estimator_spec = estimator._call_model_fn(
-        features, labels, mode, config=config)
-    if estimator_spec.export_outputs:
-      for ekey in ['predict', 'serving_default']:
-        estimator_spec.export_outputs[ekey] = \
-            tf.estimator.export.PredictOutput(estimator_spec.predictions)
-    return estimator_spec
-  return tf.estimator.Estimator(model_fn=model_fn2, config=config)
+
+  def verify_key_types(keys):  # pylint: disable=missing-docstring
+    if keys is None:
+      return keys
+    if isinstance(keys, six.string_types):
+      return [keys]
+    if not isinstance(keys, (list, tuple)):
+      raise TypeError('keys should be either a string or a list of strings. '
+                      'Given: {}'.format(type(keys)))
+    for key in keys:
+      if not isinstance(key, six.string_types):
+        raise TypeError('All items in the given keys list should be a string. '
+                        'There exist an item with type: {}'.format(type(key)))
+    return keys
+
+  def get_keys(features):
+    if keys is None:
+      return features.keys()
+    return keys
+
+  def verify_keys_and_predictions(features, predictions):
+    if not isinstance(predictions, dict):
+      raise ValueError(
+          'Predictions should be a dict to be able to forward features. '
+          'Given: {}'.format(type(predictions)))
+    for key in get_keys(features):
+      if key not in features:
+        raise ValueError(
+            'keys should be exist in features. Key "{}" is not in features '
+            'dict. features dict has following keys: {}. Please check '
+            'arguments of forward_features.'.format(key, features.keys()))
+      if key in predictions:
+        raise ValueError(
+            'Cannot forward feature key ({}). Since it does exist in '
+            'predictions. Existing prediction keys: {}. Please check arguments '
+            'of forward_features.'.format(key, predictions.keys()))
+
+  keys = verify_key_types(keys)
+
+  def new_model_fn(features, labels, mode, config):  # pylint: disable=missing-docstring
+    spec = estimator.model_fn(features, labels, mode, config)
+    predictions = spec.predictions
+    if predictions is None:
+      return spec
+    verify_keys_and_predictions(features, predictions)
+    for key in get_keys(features):
+      feature = sparse_tensor_lib.convert_to_tensor_or_sparse_tensor(
+          features[key])
+      if sparse_default_values and (key in sparse_default_values):
+        if not isinstance(feature, sparse_tensor_lib.SparseTensor):
+          raise ValueError(
+              'Feature ({}) is expected to be a `SparseTensor`.'.format(key))
+        feature = sparse_ops.sparse_tensor_to_dense(
+            feature, default_value=sparse_default_values[key])
+      if not isinstance(feature, ops.Tensor):
+        raise ValueError(
+            'Feature ({}) should be a Tensor. Please use `keys` '
+            'argument of forward_features to filter unwanted features, or'
+            'add key to argument `sparse_default_values`.'
+            'Type of features[{}] is {}.'.format(key, key, type(feature)))
+      predictions[key] = feature
+    spec = spec._replace(predictions=predictions)
+    if spec.export_outputs: # CHANGES HERE
+      outputs = spec.export_outputs['predict'].outputs
+      outputs[key] = spec.predictions[key]
+      spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
+      spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
+    return spec
+
+  return estimator_lib.Estimator(
+      model_fn=new_model_fn,
+      model_dir=estimator.model_dir,
+      config=estimator.config)
 
 
 class ModelTrainer(object):
@@ -140,8 +235,7 @@ class ModelTrainer(object):
 
   def _add_estimator_key(self, estimator):
     '''Adds a forward key to the model_fn of an estimator.'''
-    estimator = tf.contrib.estimator.forward_features(estimator, FLAGS.key_name)
-    estimator = forward_key_to_export(estimator)
+    estimator = forward_features(estimator, FLAGS.key_name)
     return estimator
 
   def export(self, serving_input_fn):
