@@ -13,7 +13,6 @@ import os
 import os.path
 import six
 
-import comet_ml
 import tensorflow as tf
 from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.estimator import estimator as estimator_lib
@@ -37,12 +36,6 @@ tf.app.flags.DEFINE_string('validate_path', None,
                            'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
-tf.app.flags.DEFINE_string('comet_key_file', None,
-                           'Path to file containing comet.ml api key.')
-tf.app.flags.DEFINE_string('comet_team_name', None,
-                           'Name of comet team that tracks results.')
-tf.app.flags.DEFINE_string('comet_project_name', None,
-                           'Name of comet project that tracks results.')
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                            'Enable profiler hook in estimator.')
 
@@ -165,11 +158,7 @@ def forward_features(estimator, keys, sparse_default_values=None):
 
 
 class ModelTrainer(object):
-  """Model Trainer.
-
-  Convenient way to run a text classification estimator, supporting comet.ml
-  outputs.
-  """
+  """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
                model: base_model.BaseModel) -> None:
