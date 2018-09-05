@@ -13,7 +13,6 @@ import os
 import os.path
 import six
 
-import comet_ml
 import tensorflow as tf
 from tensorflow.python.platform import tf_logging as logging
 from tensorflow.python.estimator import estimator as estimator_lib
@@ -37,12 +36,6 @@ tf.app.flags.DEFINE_string('validate_path', None,
                            'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
-tf.app.flags.DEFINE_string('comet_key_file', None,
-                           'Path to file containing comet.ml api key.')
-tf.app.flags.DEFINE_string('comet_team_name', None,
-                           'Name of comet team that tracks results.')
-tf.app.flags.DEFINE_string('comet_project_name', None,
-                           'Name of comet project that tracks results.')
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                            'Enable profiler hook in estimator.')
 
@@ -165,11 +158,7 @@ def forward_features(estimator, keys, sparse_default_values=None):
 
 
 class ModelTrainer(object):
-  """Model Trainer.
-
-  Convenient way to run a text classification estimator, supporting comet.ml
-  outputs.
-  """
+  """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
                model: base_model.BaseModel) -> None:
@@ -185,41 +174,27 @@ class ModelTrainer(object):
       eval_period: the number of steps between evaluations.
       eval_steps: the number of batches that are evaluated per evaulation.
     """
-    experiment = None
-    if FLAGS.comet_key_file is not None:
-      experiment = self._setup_comet()
-    num_itr = int(steps / eval_period)
 
-    for _ in range(num_itr):
-      hooks = None
-      if FLAGS.enable_profiling:
-        hooks = [tf.train.ProfilerHook(save_steps=10,
-                                       output_dir=os.path.join(self._model_dir(), 'profiler'))]
-      self._estimator.train(
-          input_fn=self._dataset.train_input_fn,
-          steps=eval_period,
-          hooks=hooks)
-      metrics = self._estimator.evaluate(
-          input_fn=self._dataset.validate_input_fn, steps=eval_steps)
-      if experiment is not None:
-        tf.logging.info('Logging metrics to comet.ml: {}'.format(metrics))
-        experiment.log_multiple_metrics(metrics)
-      tf.logging.info(metrics)
+    training_hooks = None
+    if FLAGS.enable_profiling:
+      training_hooks = [tf.train.ProfilerHook(save_steps=10,
+          output_dir=os.path.join(self._model_dir(), 'profiler'))]
 
-  def _setup_comet(self):
-    with tf.gfile.GFile(FLAGS.comet_key_file) as key_file:
-      key = key_file.read().rstrip()
-    experiment = comet_ml.Experiment(
-        api_key=key,
-        project_name=FLAGS.comet_project_name,
-        workspace=FLAGS.comet_team_name,
-        auto_param_logging=False,
-        parse_args=False)
-    experiment.log_parameter('train_path', FLAGS.train_path)
-    experiment.log_parameter('validate_path', FLAGS.validate_path)
-    experiment.log_parameter('model_dir', self._model_dir())
-    experiment.log_multiple_params(self._model.hparams().values())
-    return experiment
+    train_spec = tf.estimator.TrainSpec(
+        input_fn=self._dataset.train_input_fn,
+        max_steps=steps,
+        hooks=training_hooks)
+    eval_spec = tf.estimator.EvalSpec(
+        input_fn=self._dataset.validate_input_fn,
+        steps=eval_steps,
+        start_delay_secs=1,
+        throttle_secs=1
+        )
+    self._estimator._config = self._estimator.config.replace(save_checkpoints_steps=eval_period)
+    tf.estimator.train_and_evaluate(
+        self._estimator,
+        train_spec,
+        eval_spec)
 
   def _model_dir(self):
     """Get Model Directory.
