@@ -57,7 +57,7 @@ class TFRecordInput(dataset_input.DatasetInput):
             {self._text_feature: [None],
             'sequence_length': []},
             {label: [] for label in self._labels})
-    # TODO(fprost_: Remove long sentences.
+    # TODO(fprost): Set a filter to remove long sentences (for training).
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x,_: x['sequence_length'],
