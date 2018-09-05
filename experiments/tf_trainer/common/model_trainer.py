@@ -25,7 +25,6 @@ from tensorflow.python.ops import sparse_ops
 from tensorflow.python.training import optimizer as optimizer_lib
 from tensorflow.python.lib.io import file_io
 
-
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
 
@@ -243,7 +242,7 @@ class ModelTrainer(object):
       return [checkpoints[-1]]
 
     # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2. 
-    # with a number of points of (n_export -1): because 1 is set at 0.
+    # with a number of points of (n_export -1): because 1 point is set at the end.
     step = float(len(checkpoints) - 1) / (n_export - 1)
     if step <= 1: # Fewer checkpoints available than the desired number.
       return checkpoints
@@ -264,4 +263,3 @@ class ModelTrainer(object):
           export_dir_base=os.path.join(self._model_dir(), version),
           serving_input_receiver_fn=serving_input_fn,
           checkpoint_path=checkpoint_path)
-    logging.info('Model exported at {}'.format(self._model_dir()))
