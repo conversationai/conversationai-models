@@ -27,7 +27,7 @@ class TFRecordInput(dataset_input.DatasetInput):
       train_preprocess_fn: Callable[[str], List[str]],
       batch_size: int = 64,
       round_labels: bool = True,
-      num_prefetch: int = 3) -> None:
+      num_prefetch: int = 5) -> None:
     self._train_path = train_path
     self._validate_path = validate_path
     self._text_feature = text_feature
@@ -46,6 +46,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     return self._input_fn_from_file(self._validate_path)
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
+
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(
@@ -56,21 +57,16 @@ class TFRecordInput(dataset_input.DatasetInput):
             {self._text_feature: [None],
             'sequence_length': []},
             {label: [] for label in self._labels})
-    # TODO: Remove long sentences.
+    # TODO(fprost_: Remove long sentences.
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x,_: x['sequence_length'],
             bucket_boundaries=[(i + 1) * 20 for i in range(10)],
             bucket_batch_sizes=[self._batch_size] * 11,
             padded_shapes=padded_shapes)
-        )
+        )        
     batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
-
-    itr_op = batched_dataset.make_initializable_iterator()
-    # Adding the initializer operation to the graph.
-    tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, itr_op.initializer)
-    
-    return itr_op.get_next()
+    return batched_dataset
 
   def _read_tf_example(self, record: tf.Tensor,
                       ) -> types.FeatureAndLabelTensors:

@@ -23,7 +23,7 @@ gsutil cp ${LOCAL_COMET_API_KEY_FILE} ${REMOTE_COMET_API_KEY_FILE} &&
 gsutil acl set private ${REMOTE_COMET_API_KEY_FILE} &&
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
-    --runtime-version=1.8 \
+    --runtime-version=1.10 \
     --scale-tier 'BASIC_GPU' \
     --module-name="tf_trainer.${MODEL_NAME}.run" \
     --package-path=tf_trainer \
