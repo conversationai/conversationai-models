@@ -30,5 +30,5 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIM
     --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
     --validate_path="${GCS_RESOURCES}/toxicity_q42017_validate.tfrecord" \
     --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.300d.txt" \
-    --preprocess_in_tf=False \
-    --model_dir="${JOB_DIR}/model_dir"
+    --model_dir="${JOB_DIR}/model_dir" \
+    --n_exports=11

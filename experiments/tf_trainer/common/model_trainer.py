@@ -23,6 +23,7 @@ from tensorflow.python.framework import sparse_tensor as sparse_tensor_lib
 from tensorflow.python.ops import clip_ops
 from tensorflow.python.ops import sparse_ops
 from tensorflow.python.training import optimizer as optimizer_lib
+from tensorflow.python.lib.io import file_io
 
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
@@ -37,7 +38,11 @@ tf.app.flags.DEFINE_string('validate_path', None,
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
 tf.app.flags.DEFINE_bool('enable_profiling', False,
-                           'Enable profiler hook in estimator.')
+                         'Enable profiler hook in estimator.')
+tf.app.flags.DEFINE_integer('n_export', 1,
+                            'Number of models to export.'
+                            'If =1, only the last one is saved.'
+                            'If >1, we split the take n_export checkpoints.')
 
 tf.app.flags.mark_flag_as_required('train_path')
 tf.app.flags.mark_flag_as_required('validate_path')
@@ -187,10 +192,10 @@ class ModelTrainer(object):
     eval_spec = tf.estimator.EvalSpec(
         input_fn=self._dataset.validate_input_fn,
         steps=eval_steps,
-        start_delay_secs=1,
-        throttle_secs=1
         )
     self._estimator._config = self._estimator.config.replace(save_checkpoints_steps=eval_period)
+    if FLAGS.n_export > 1:
+      self._estimator._config = self._estimator.config.replace(keep_checkpoint_max=None)
     tf.estimator.train_and_evaluate(
         self._estimator,
         train_spec,
@@ -213,10 +218,48 @@ class ModelTrainer(object):
     estimator = forward_features(estimator, FLAGS.key_name)
     return estimator
 
+  def _get_list_checkpoint(self, n_export, model_dir):
+    """Get the checkpoints that we want to export.
+
+    Args:
+      n_export: Number of models to export.
+      model_dir: Directory containing the checkpoints.
+
+    Returns:
+      List of checkpoint path.
+
+    If n_export==1, we take only the last checkpoint.
+    Otherwise, we consider the list of steps for each for which we have a checkpoint.
+    Then we choose n_export number of checkpoints such as their steps are as equidistant as possible.  
+    """
+
+    checkpoints = file_io.get_matching_files(
+        os.path.join(model_dir, 'model.ckpt-*.index'))
+    checkpoints = [x.replace('.index', '') for x in checkpoints]
+    checkpoints = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))
+
+    if n_export == 1:
+      return [checkpoints[-1]]
+
+    # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2. 
+    # with a number of points of (n_export -1): because 1 point is set at the end.
+    step = float(len(checkpoints) - 1) / (n_export - 1)
+    if step <= 1: # Fewer checkpoints available than the desired number.
+      return checkpoints
+    
+    checkpoints_to_export = [checkpoints[int(i*step)] for i in range(n_export-1)]
+    checkpoints_to_export.append(checkpoints[-1])
+    
+    return checkpoints_to_export
+
   def export(self, serving_input_fn):
     '''Export model as a .pb.'''
     estimator_with_key = self._add_estimator_key(self._estimator)
-    estimator_with_key.export_savedmodel(
-        export_dir_base=self._model_dir(),
-        serving_input_receiver_fn=serving_input_fn)
-    logging.info('Model exported at {}'.format(self._model_dir()))
+    
+    checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export, self._model_dir())
+    for checkpoint_path in checkpoints_to_export:
+      version = checkpoint_path.split('-')[-1]
+      estimator_with_key.export_savedmodel(
+          export_dir_base=os.path.join(self._model_dir(), version),
+          serving_input_receiver_fn=serving_input_fn,
+          checkpoint_path=checkpoint_path)
