@@ -25,6 +25,7 @@ import pandas as pd
 
 
 class Model(object):
+  """Defines the spec of a CMLE Model."""
 
   def __init__(self,
                model_name,
@@ -32,11 +33,11 @@ class Model(object):
                prediction_keys,
                example_key='example_key',
                model_version=None):
-      self._model_name = model_name
-      self._feature_keys= feature_keys
-      self._prediction_keys = prediction_keys
-      self._example_key = example_key
-      self._model_version = model_version
+    self._model_name = model_name
+    self._feature_keys = feature_keys
+    self._prediction_keys = prediction_keys
+    self._example_key = example_key
+    self._model_version = model_version
 
   def feature_keys(self):
     return self._feature_keys
@@ -54,8 +55,21 @@ class Dataset(object):
     self._model = model
 
   def check_compatibility(self, input_fn, model):
-    """Asserts if the loading function of child class follows requirements."""
+    """Checks that input_fn is compatible with the model."""
+
+    args_input_fn = inspect.getargspec(input_fn).args
+    if ('max_n_examples' not in args_input_fn or
+        'random_filter_keep_rate' not in args_input_fn):
+      raise ValueError(
+          'input_fn should have (at least) `max_n_examples`'
+          'and ` random_filter_keep_rate` as arguments.')
+
     loaded_data = input_fn(max_n_examples=1)
+
+    if not isinstance(model, Model):
+      raise ValueError('model should be a `Model` instance.')
+    if not isinstance(loaded_data, pd.DataFrame):
+      raise ValueError('input_fn should return a pandas DataFrame.')
 
     if not isinstance(loaded_data, pd.DataFrame):
       raise ValueError('input_fn should return a pandas DataFrame.')
@@ -63,10 +77,9 @@ class Dataset(object):
     if len(loaded_data) != 1:
       raise ValueError(
           'input_fn(max_n_examples=1) should contain 1 row (exactly).')
-    
+
     for key in model.feature_keys():
       if key not in loaded_data.columns:
         raise ValueError(
             'input_fn must contain at least the feature keys {}'.format(
                 model.feature_keys()))
-
