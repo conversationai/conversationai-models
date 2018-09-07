@@ -29,11 +29,11 @@ tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
-tf.app.flags.DEFINE_integer("batch_size", 32,
+tf.app.flags.DEFINE_integer("batch_size", 64,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 10000,
+tf.app.flags.DEFINE_integer("train_steps", 30000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 100,
+tf.app.flags.DEFINE_integer("eval_period", 500,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", 20,
                             "The number of steps to eval for.")

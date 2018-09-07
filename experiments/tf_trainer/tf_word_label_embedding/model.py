@@ -12,7 +12,7 @@ FLAGS = tf.app.flags.FLAGS
 
 # Hyperparameters
 # TODO: Add validation
-tf.app.flags.DEFINE_float('learning_rate', 0.00003,
+tf.app.flags.DEFINE_float('learning_rate', 0.000003,
                           'The learning rate to use during training.')
 tf.app.flags.DEFINE_float('dropout_rate', 0.3,
                           'The dropout rate to use during training.')
@@ -91,7 +91,9 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
     #    ])
 
     weighted_word_emb = tf.reduce_sum(word_emb_seq * attention, axis=1)
-    logits = tf.layers.dense(inputs=weighted_word_emb, units=1, activation=None)
+    logits = tf.layers.dense(
+        inputs=weighted_word_emb, units=64, activation=tf.nn.relu)
+    logits = tf.layers.dense(inputs=logits, units=1, activation=None)
     #logits = tf.layers.dense(inputs=logits, units=1, activation=None)
 
     head = tf.contrib.estimator.binary_classification_head(
