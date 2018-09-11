@@ -13,6 +13,8 @@ FLAGS = tf.app.flags.FLAGS
 # Hyperparameters
 tf.app.flags.DEFINE_float('learning_rate', 0.000003,
                           'The learning rate to use during training.')
+tf.app.flags.DEFINE_integer('embedding_size', 100,
+                            'The number of dimensions in the word embedding.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
 tf.app.flags.DEFINE_string(
@@ -30,7 +32,9 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
   def hparams():
     dense_units = [int(units) for units in FLAGS.dense_units.split(',')]
     hparams = tf.contrib.training.HParams(
-        learning_rate=FLAGS.learning_rate, dense_units=dense_units)
+        learning_rate=FLAGS.learning_rate,
+        embedding_size=FLAGS.embedding_size,
+        dense_units=dense_units)
     return hparams
 
   def estimator(self, model_dir):
@@ -44,8 +48,6 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
     word_emb_seq = features[self._text_feature_name]
 
     # Constants
-    batch_size = tf.shape(word_emb_seq)[0]
-    seq_length = tf.shape(word_emb_seq)[1]
 
     labels = labels[self._target_label]
 
@@ -53,7 +55,8 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
     class_emb_initializer = tf.random_normal_initializer(
         mean=0.0, stddev=1.0, dtype=tf.float32)
     class_embs = tf.get_variable(
-        'class_embs', [2, 100], initializer=class_emb_initializer)
+        'class_embs', [2, params.embedding_size],
+        initializer=class_emb_initializer)
 
     word_emb_seq_norm = tf.nn.l2_normalize(word_emb_seq, axis=-1)
     class_embs_norm = tf.nn.l2_normalize(class_embs, axis=-1)

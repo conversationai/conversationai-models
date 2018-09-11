@@ -17,5 +17,6 @@ python -m tf_trainer.tf_word_label_embedding.run \
   --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
   --validate_path="${GCS_RESOURCES}/toxicity_q42017_validate.tfrecord" \
   --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.100d.txt" \
+  --embedding_size=100 \
   --model_dir="tf_word_label_embedding_local_model_dir" \
   --preprocess_in_tf=False
