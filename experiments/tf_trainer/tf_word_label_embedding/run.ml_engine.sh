@@ -14,7 +14,7 @@
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
-MODEL_NAME="tf_gru_attention"
+MODEL_NAME="tf_word_label_embedding"
 JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/${DATETIME}
 LOCAL_COMET_API_KEY_FILE="comet_api_key.txt"
 REMOTE_COMET_API_KEY_FILE=${GCS_RESOURCES}/${USER}_comet_api_key.txt
