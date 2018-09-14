@@ -252,7 +252,7 @@ class Dataset(object):
     """Computes the prediction of the model and adds it to dataframe.
 
     Args:
-      model: a `Model` instance
+      model: a `Model` instance.
       tf_record_path_pattern: pattern of the path where to save the temporary
         files, in particular tf_records inputs and outputs of CMLE.
     """
