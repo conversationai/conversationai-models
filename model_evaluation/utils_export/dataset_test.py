@@ -22,97 +22,123 @@ import unittest
 
 import pandas as pd
 
-from dataset import Dataset, Model
+from utils_export.dataset import Dataset, Model
+from utils_export.utils_cloudml import FeatureSpec
 
 
-class TestModelCompatibleWithInputFn(unittest.TestCase):
+class TestCompatibleInputFn(unittest.TestCase):
   """Tests to verify that the compatibility between input_fn and model."""
 
-  def setUp(self):
-    self._model = Model(
-        model_name=None, feature_keys=['comment_text'], prediction_keys=[])
 
   def testCorrect(self):
 
-    def input_fn(max_n_examples, random_filter_keep_rate=1.0):
-      assert random_filter_keep_rate
+    def input_fn(max_n_examples):
       return pd.DataFrame({
           'comment_text': ['This is one'] * max_n_examples,
           'label_name': [0] * max_n_examples})
 
     try:
-      Dataset(input_fn, self._model)
+      Dataset(input_fn)
     except ValueError:
       self.fail('Dataset raised an exception unexpectedly!')
 
   def testWrongArgInputFn(self):
 
-    def input_fn(max_n_examples, other_args=1.0):
+    def input_fn(other_args=1.0):
       assert other_args
       return {
-          'other_feature': ['This is one'] * max_n_examples,
-          'label_name': [0] * max_n_examples}
+          'other_feature': ['This is one'] ,
+          'label_name': [0]}
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn, lambda x: x + 1)
+      Dataset(input_fn)
       self.assertIn(
           'input_fn should have (at least) `max_n_examples`',
           str(context.exception))
 
-  def testModelWrongType(self):
-
-    def input_fn(max_n_examples, random_filter_keep_rate=1.0):
-      assert random_filter_keep_rate
-      return {
-          'other_feature': ['This is one'] * max_n_examples,
-          'label_name': [0] * max_n_examples}
-
-    with self.assertRaises(Exception) as context:
-      Dataset(input_fn, lambda x: x + 1)
-      self.assertIn(
-          'model should be a `Model` instance.', str(context.exception))
-
   def testInputFnWrongType(self):
 
-    def input_fn(max_n_examples, random_filter_keep_rate=1.0):
-      assert random_filter_keep_rate
+    def input_fn(max_n_examples):
       return {
           'other_feature': ['This is one'] * max_n_examples,
           'label_name': [0] * max_n_examples}
 
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn, self._model)
+      Dataset(input_fn)
       self.assertIn(
           'input_fn should return a pandas DataFrame.',
           str(context.exception))
 
   def testWrongNumberOfLines(self):
 
-    def input_fn(max_n_examples=1, random_filter_keep_rate=1.0):
-      assert random_filter_keep_rate, max_n_examples
+    def input_fn(max_n_examples=1):
+      assert max_n_examples
       return pd.DataFrame({
           'comment_text': ['This is one'] * 2,
           'label_name': [0] * 2
       })
 
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn, self._model)
+      Dataset(input_fn)
       self.assertIn(
           'input_fn(max_n_examples=1) should contain 1 row (exactly).',
           str(context.exception))
 
+
+class TestModelCompatibleWithInputFn(unittest.TestCase):
+  """Tests to verify that the compatibility between input_fn and model."""
+
+  def testBadTypeFeatureKeys(self):
+
+    with self.assertRaises(Exception) as context:
+      model = Model(
+        feature_keys_spec='comment_text', 
+        prediction_keys='prediction_key',
+        model_names=None,
+        project_name=None
+        )
+      self.assertIn(
+          'Spec should be a dictionary',
+          str(context.exception))
+
   def testInputFnMissingFeatureKeys(self):
 
-    def input_fn(max_n_examples, random_filter_keep_rate=1.0):
-      assert random_filter_keep_rate
+    model = Model(
+        feature_keys_spec={'comment_text': FeatureSpec.STRINGLIST}, 
+        prediction_keys='prediction_key',
+        model_names=None,
+        project_name=None
+        )
+
+    def input_fn(max_n_examples):
       return pd.DataFrame(
           {'other_feature': ['This is one'] * max_n_examples,
            'label_name': [0] * max_n_examples})
 
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn, self._model)
+      dataset = Dataset(input_fn)
+      dataset.check_compatibility(model)
       self.assertIn(
           'input_fn must contain at least the feature keys',
           str(context.exception))
+
+  def testModelIsCompatibleWithDataset(self):
+    model = Model(
+        feature_keys_spec={'comment_text': FeatureSpec.STRINGLIST},
+        prediction_keys='prediction_key',
+        model_names=None,
+        project_name=None
+        )
+
+    def input_fn(max_n_examples):
+      return pd.DataFrame(
+          {'comment_text': ['This is one'] * max_n_examples,
+           'label_name': [0] * max_n_examples})
+
+    try:
+      dataset = Dataset(input_fn)
+      dataset.check_compatibility(model)
+    except ValueError:
+      self.fail('Dataset raised an exception unexpectedly!')
 
 
 if __name__ == '__main__':
