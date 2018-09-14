@@ -24,16 +24,16 @@ class TFRecordInput(dataset_input.DatasetInput):
       validate_path: str,
       text_feature: str,
       labels: Dict[str, tf.DType],
-      feature_preprocessor_init: Callable[[], Callable[[str], List[str]]],
+      train_preprocess_fn: Callable[[str], List[str]],
       batch_size: int = 64,
       round_labels: bool = True,
-      num_prefetch: int = 3) -> None:
+      num_prefetch: int = 5) -> None:
     self._train_path = train_path
     self._validate_path = validate_path
     self._text_feature = text_feature
     self._labels = labels
     self._batch_size = batch_size
-    self.feature_preprocessor_init = feature_preprocessor_init
+    self._train_preprocess_fn = train_preprocess_fn
     self._round_labels = round_labels
     self._num_prefetch = num_prefetch
 
@@ -46,38 +46,29 @@ class TFRecordInput(dataset_input.DatasetInput):
     return self._input_fn_from_file(self._validate_path)
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
+
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
 
-    # Feature preprocessor must be initialized outside of the map function
-    # but inside the inpout_fn function.
-    feature_preprocessor = self.feature_preprocessor_init()
     parsed_dataset = dataset.map(
-        lambda x: self._read_tf_example(x, feature_preprocessor),
+        self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
 
     padded_shapes=(
             {self._text_feature: [None],
             'sequence_length': []},
             {label: [] for label in self._labels})
-    # TODO: Remove long sentences.
+    # TODO(fprost): Set a filter to remove long sentences (for training).
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x,_: x['sequence_length'],
             bucket_boundaries=[(i + 1) * 20 for i in range(10)],
             bucket_batch_sizes=[self._batch_size] * 11,
             padded_shapes=padded_shapes)
-        )
+        )        
     batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
+    return batched_dataset
 
-    itr_op = batched_dataset.make_initializable_iterator()
-    # Adding the initializer operation to the graph.
-    tf.add_to_collection(tf.GraphKeys.TABLE_INITIALIZERS, itr_op.initializer)
-    
-    return itr_op.get_next()
-
-  def _read_tf_example(self,
-                       record: tf.Tensor,
-                       feature_preprocessor: Callable[[str], List[str]]
+  def _read_tf_example(self, record: tf.Tensor,
                       ) -> types.FeatureAndLabelTensors:
     """Parses TF Example protobuf into a text feature and labels.
 
@@ -99,12 +90,7 @@ class TFRecordInput(dataset_input.DatasetInput):
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
     text = parsed[self._text_feature]
-    # I think this could be a feature column, but feature columns seem so beta.
-    expanded_text = tf.expand_dims(text, 0)
-    x = feature_preprocessor(expanded_text)
-    # Reshape to (sequence_length,).
-    preprocessed_text = tf.reshape(x, shape=[tf.shape(x)[-1]])
-    features = {self._text_feature: preprocessed_text}
+    features = {self._text_feature: self._train_preprocess_fn(text)}
     features['sequence_length'] = tf.shape(features[self._text_feature])[0]
     if self._round_labels:
       labels = {label: tf.round(parsed[label]) for label in self._labels}
