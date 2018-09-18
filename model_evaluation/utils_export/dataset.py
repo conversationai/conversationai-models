@@ -99,7 +99,7 @@ class Dataset(object):
   input_fn = ... (returns pandas DataFrame).
   dataset = Dataset(input_fn) # Verifies that input_fn is ok.
 
-  dataset.loads_data(10000, 0.5)
+  dataset.load_data(10000, 0.5)
 
   model = Model(...)
   # Next function verifies that models are compatible.
@@ -116,7 +116,7 @@ class Dataset(object):
     if not hasattr(self, 'data'):
       raise ValueError(
           'Dataset does not have data yet.'
-          ' You need to run `loads_data` first.')
+          ' You need to run `load_data` first.')
     return self.data
 
   def check_input_fn(self, input_fn):
@@ -153,7 +153,7 @@ class Dataset(object):
     logging.info('Model is compatible with the `Dataset` instance.')
 
   def load_data(self, max_n_examples, **kwargs):
-    self.data = self._input_fn(max_n_examples, **kwargs)
+    self.data = self._input_fn(max_n_examples=max_n_examples, **kwargs)
 
   def get_path_prediction_tf(self, model_name):
     return self.tf_records_path.replace(
@@ -183,7 +183,7 @@ class Dataset(object):
     if not hasattr(self, 'data'):
       raise ValueError(
           'Dataset does not have data yet.'
-          ' You need to run `loads_data` first.')
+          ' You need to run `load_data` first.')
 
     if hasattr(self, 'tf_records_path'):
       if overwrite:
@@ -229,7 +229,7 @@ class Dataset(object):
     model.set_job_ids_prediction(job_ids)
 
   def collect_prediction(self, model):
-    """Collected the predictions of CMLE jobs and adds it to dataframe."""
+    """Collects the predictions of CMLE jobs and adds it to dataframe."""
 
     if not hasattr(model, 'job_ids_prediction'):
       raise ValueError(

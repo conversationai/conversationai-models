@@ -27,7 +27,7 @@ from utils_export.utils_cloudml import FeatureSpec
 
 
 class TestCompatibleInputFn(unittest.TestCase):
-  """Tests to verify that the compatibility between input_fn and model."""
+  """Verifies the compatibility of input_fn with `Dataset`."""
 
 
   def testCorrect(self):
@@ -85,7 +85,7 @@ class TestCompatibleInputFn(unittest.TestCase):
 
 
 class TestModelCompatibleWithInputFn(unittest.TestCase):
-  """Tests to verify that the compatibility between input_fn and model."""
+  """Verifies the compatibility between input_fn and model."""
 
   def testBadTypeFeatureKeys(self):
 

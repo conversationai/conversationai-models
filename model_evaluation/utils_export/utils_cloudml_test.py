@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Tests for dataset."""
+"""Tests for cloud MLE utilities."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -26,7 +26,7 @@ import utils_export.utils_cloudml
 
 
 class TestFeatureKeySpec(unittest.TestCase):
-  """Tests to verify that the compatibility between input_fn and model."""
+  """Verifies that the compatibility between input_fn and model."""
 
   def test_not_a_dictionary(self):
     feature_keys_spec = 'not_a_dict', 

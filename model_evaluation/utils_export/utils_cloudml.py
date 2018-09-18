@@ -12,12 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""Defines the dataset structure for evaluation pipeline."""
+"""Defines some utilities to use cloud MLE batch prediction jobs."""
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import datetime
 import json
 import os
 import re
@@ -38,7 +39,7 @@ def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 
-def _bytes__list_feature(value_list):
+def _bytes_list_feature(value_list):
   return tf.train.Feature(
       bytes_list=tf.train.BytesList(
           value=[tf.compat.as_bytes(value) for value in value_list]))
@@ -53,7 +54,7 @@ class FeatureSpec(object):
   CONSTRUCTOR_PER_TYPE = {
       INTEGER: _int64_feature,
       STRING: _bytes_feature,
-      LIST_STRING: _bytes__list_feature
+      LIST_STRING: _bytes_list_feature
   }
 
 
@@ -75,12 +76,15 @@ def convert_pandas_to_tfrecords(df, feature_keys_spec, example_key, gcs_path):
   """Write a pandas `DataFrame` to a tf_record.
 
   Args:
-    df: pandas `DataFrame`. It must include the fields 'sentence'.
-    feature_keys_spec: Dict of {name: type},which describes the spec of the
+    df: pandas `DataFrame`. It must include the fields that
+      are part of feature_key_spec.
+    feature_keys_spec: Dict of {name: type}, which describes the spec of the
       TF-records.
-    example_key:
+    example_key: key identifier of an example (string).
+      This key will be added to data automatically and should not be
+      part of df.
     gcs_path: where to write the tf records.
-  Note: TFRecords will have fields `sentence` and `key`.
+  Note: TFRecords will have fields feature_keys_spec and `example_key`.
   """
 
   writer = tf.python_io.TFRecordWriter(gcs_path)
@@ -123,7 +127,7 @@ def call_model_predictions_from_df(project_name,
       version of the model.
 
   Returns:
-    - job_id: the job_id of the prediction job.
+    job_id: the job_id of the prediction job.
 
   Raises:
     ValueError: if tmp_tfrecords_gcs_path does not exist.
@@ -147,11 +151,11 @@ def call_model_predictions_from_df(project_name,
 def add_model_predictions_to_df(
     job_id, df, project_name, tmp_tfrecords_with_predictions_gcs_path,
     column_name_of_model, prediction_name, example_key):
-  """Adds prediction results to the pandas dataframe.
+  """Add predictions from a cloud prediction job to the pandas dataframe.
 
   Args:
     job_id: the job_id of the prediction job.
-    df: a pandas `DataFrame`. Must contain a `text` field.
+    df: a pandas `DataFrame`.
     project_name: gcp project name.
     tmp_tfrecords_with_predictions_gcs_path: gcs path to store tf_records, which
       will be outputs to batch prediction job.
@@ -272,14 +276,16 @@ def _check_job_over(project_name, job_name):
 
   job_completed = False
   k = 0
+  start_time = datetime.datetime.now()
   while not job_completed:
     response = request.execute()
     job_completed = (response['state'] == 'SUCCEEDED')
     if not job_completed:
       if not (k % 5):
+        time_spent = int((datetime.datetime.now() - start_time).total_seconds() / 60)
         logging.info(
             'Waiting for prediction job to complete. Minutes elapsed: {}'
-            .format(0.5 * k))
+            .format(time_spent))
       time.sleep(30)
     k += 1
 
@@ -288,7 +294,10 @@ def _check_job_over(project_name, job_name):
 
 def _combine_prediction_to_df(df, prediction_file, model_col_name,
                               prediction_name, example_key):
-  """Loads the prediction files and adds them to the DataFrame."""
+  """Loads the prediction files and adds the model scores to a DataFrame.
+
+  The dataframe and the prediction file must correspond exactly (same number
+    of lines and same order)."""
 
   def load_predictions(prediction_file):
     with file_io.FileIO(prediction_file, 'r') as f:
