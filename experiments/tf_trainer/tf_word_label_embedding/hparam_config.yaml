@@ -4,7 +4,7 @@ trainingInput:
   scaleTier: BASIC_GPU
   hyperparameters:
     goal: MAXIMIZE
-    hyperparameterMetricTag: roc_auc
+    hyperparameterMetricTag: auc/frac_neg
     maxTrials: 20
     maxParallelTrials: 3
     enableTrialEarlyStopping: TRUE

@@ -69,7 +69,8 @@ def main(argv):
       text_feature=text_feature_name,
       labels=LABELS,
       train_preprocess_fn=train_preprocess_fn,
-      batch_size=FLAGS.batch_size)
+      batch_size=FLAGS.batch_size,
+      max_seq_len=5000)
 
   model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(
       text_feature_name, "frac_neg")

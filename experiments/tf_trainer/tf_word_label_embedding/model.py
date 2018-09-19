@@ -60,10 +60,16 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
 
     word_emb_seq_norm = tf.nn.l2_normalize(word_emb_seq, axis=-1)
     class_embs_norm = tf.nn.l2_normalize(class_embs, axis=-1)
-    #cosine_similarity = tf.matmul(word_emb_seq_norm,
-    #                              class_embs_norm)
+
     cosine_distance = tf.contrib.keras.backend.dot(
         word_emb_seq_norm, tf.transpose(class_embs_norm))
+    cosine_distance = tf.contrib.layers.conv2d(
+        cosine_distance,
+        num_outputs=2,
+        kernel_size=[5],
+        padding='SAME',
+        activation_fn=tf.nn.relu)
+
     max_cosine_distance = tf.reduce_max(cosine_distance, axis=-1)
     attention = tf.nn.softmax(max_cosine_distance, axis=-1)
     attention = tf.expand_dims(attention, axis=-1)
@@ -77,7 +83,7 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
     logits = tf.layers.dense(inputs=logits, units=1, activation=None)
 
     head = tf.contrib.estimator.binary_classification_head(
-        name=self._target_label)
+        name=self._target_label, loss_fn=lambda labels, logits: tf.nn.softmax_cross_entropy_with_logits(labels, logits))
 
     optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
     return head.create_estimator_spec(
