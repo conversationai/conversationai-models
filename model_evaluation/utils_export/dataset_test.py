@@ -22,8 +22,8 @@ import unittest
 
 import pandas as pd
 
-from utils_export.dataset import Dataset, Model
-from utils_export.utils_cloudml import FeatureSpec
+from dataset import Dataset, Model
+from utils_tfrecords import EncodingFeatureSpec
 
 
 class TestCompatibleInputFn(unittest.TestCase):
@@ -103,7 +103,7 @@ class TestModelCompatibleWithInputFn(unittest.TestCase):
   def testInputFnMissingFeatureKeys(self):
 
     model = Model(
-        feature_keys_spec={'comment_text': FeatureSpec.STRINGLIST}, 
+        feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING}, 
         prediction_keys='prediction_key',
         model_names=None,
         project_name=None
@@ -123,7 +123,7 @@ class TestModelCompatibleWithInputFn(unittest.TestCase):
 
   def testModelIsCompatibleWithDataset(self):
     model = Model(
-        feature_keys_spec={'comment_text': FeatureSpec.STRINGLIST},
+        feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING},
         prediction_keys='prediction_key',
         model_names=None,
         project_name=None

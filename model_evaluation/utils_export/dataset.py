@@ -24,6 +24,7 @@ import pandas as pd
 from tensorflow.python.platform import tf_logging as logging
 
 import utils_export.utils_cloudml as utils_cloudml
+import utils_export.utils_tfrecords as utils_tfrecords
 
 
 class Model(object):
@@ -58,7 +59,7 @@ class Model(object):
         of if feature_keys_spec does not match required format.
     """
 
-    utils_cloudml.is_valid_spec(feature_keys_spec)
+    utils_tfrecords.is_valid_spec(feature_keys_spec)
     if example_key in feature_keys_spec:
       raise ValueError('example_key should not be part of input_data.'
                        'It will be created when writing to tf-records')
@@ -192,11 +193,11 @@ class Dataset(object):
         logging.info('TF-Records already exist - We will use those.')
         return
 
-    utils_cloudml.convert_pandas_to_tfrecords(
+    utils_tfrecords.convert_pandas_to_tfrecords(
         self.data,
         feature_keys_spec,
-        example_key,
-        tf_records_path)
+        tf_records_path,
+        example_key)
     self.tf_records_path = tf_records_path
 
   def call_prediction(self, model):
