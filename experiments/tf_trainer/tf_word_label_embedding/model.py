@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+import numpy as np
 from tf_trainer.common import base_model
 from typing import Set
 
@@ -76,14 +77,31 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
 
     weighted_word_emb = tf.reduce_sum(word_emb_seq * attention, axis=1)
 
-    logits = weighted_word_emb
+    f2 = []
     for num_units in params.dense_units:
-      logits = tf.layers.dense(
-          inputs=logits, units=num_units, activation=tf.nn.relu)
-    logits = tf.layers.dense(inputs=logits, units=1, activation=None)
+      f2.append(tf.layers.Dense(units=num_units, activation=tf.nn.relu))
+    f2.append(tf.layers.Dense(units=1, activation=None))
 
+    logits = weighted_word_emb
+    for layer in f2:
+      logits = layer(logits)
+
+    class_zero_logits = tf.expand_dims(class_embs[0, :], 0)
+    for layer in f2:
+      class_zero_logits = layer(class_zero_logits)
+    class_zero_reg = tf.nn.sigmoid_cross_entropy_with_logits(
+        labels=[[0.0]], logits=class_zero_logits)
+
+    class_one_logits = tf.expand_dims(class_embs[1, :], 0)
+    for layer in f2:
+      class_one_logits = layer(class_one_logits)
+    class_one_reg = tf.nn.sigmoid_cross_entropy_with_logits(
+        labels=[[1.0]], logits=class_one_logits)
+
+    loss = tf.nn.sigmoid_cross_entropy_with_logits(
+        labels=labels, logits=logits) + class_zero_reg + class_one_reg
     head = tf.contrib.estimator.binary_classification_head(
-        name=self._target_label, loss_fn=lambda labels, logits: tf.nn.softmax_cross_entropy_with_logits(labels, logits))
+        name=self._target_label, loss_fn=lambda labels, logits: loss)
 
     optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
     return head.create_estimator_spec(
