@@ -149,11 +149,13 @@ def forward_features(estimator, keys, sparse_default_values=None):
             'Type of features[{}] is {}.'.format(key, key, type(feature)))
       predictions[key] = feature
     spec = spec._replace(predictions=predictions)
-    if spec.export_outputs: # CHANGES HERE
-      outputs = spec.export_outputs['predict'].outputs
-      outputs[key] = spec.predictions[key]
-      spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
-      spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
+    if spec.export_outputs:
+      for ekey in ['predict', 'serving_default']:
+        if ekey in spec.export_outputs:
+          outputs = spec.export_outputs[ekey].outputs
+          for key in get_keys(features):
+            outputs[key] = spec.predictions[key]
+          spec.export_outputs[ekey] = tf.estimator.export.PredictOutput(outputs)
     return spec
 
   return estimator_lib.Estimator(
