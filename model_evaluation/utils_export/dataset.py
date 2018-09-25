@@ -27,6 +27,9 @@ import utils_export.utils_cloudml as utils_cloudml
 import utils_export.utils_tfrecords as utils_tfrecords
 
 
+# Quota for concurrent prediction jobs
+CMLE_QUOTA_PREDICTION = 7
+
 class Model(object):
   """Defines the spec of a CMLE Model.
 
@@ -56,14 +59,18 @@ class Model(object):
 
     Raises:
       ValueError: If example_key is included in the feature_spec
-        of if feature_keys_spec does not match required format.
+        of if feature_keys_spec does not match required format,
+        or if we have more than CMLE_QUOTA_PREDICTION model_names.
     """
 
     utils_tfrecords.is_valid_spec(feature_keys_spec)
     if example_key in feature_keys_spec:
       raise ValueError('example_key should not be part of input_data.'
                        'It will be created when writing to tf-records')
-
+    if len(model_names) >= CMLE_QUOTA_PREDICTION:
+      raise ValueError('Model should not contain more than {} versions.'
+                       ' If you need more, split the version into two'
+                       ' different models.'.format(CMLE_QUOTA_PREDICTION))
     self._model_name = model_names
     self._feature_keys_spec = feature_keys_spec
     self._prediction_keys = prediction_keys
