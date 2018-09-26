@@ -18,27 +18,29 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import getpass
+import os
 import unittest
 
+from dataset import Dataset
+from dataset import Model
 import pandas as pd
-
-from dataset import Dataset, Model
 from utils_tfrecords import EncodingFeatureSpec
 
 
 class TestCompatibleInputFn(unittest.TestCase):
   """Verifies the compatibility of input_fn with `Dataset`."""
 
-
   def testCorrect(self):
 
     def input_fn(max_n_examples):
       return pd.DataFrame({
           'comment_text': ['This is one'] * max_n_examples,
-          'label_name': [0] * max_n_examples})
+          'label_name': [0] * max_n_examples
+      })
 
     try:
-      Dataset(input_fn)
+      Dataset(input_fn, 'dataset_dir')
     except ValueError:
       self.fail('Dataset raised an exception unexpectedly!')
 
@@ -46,27 +48,25 @@ class TestCompatibleInputFn(unittest.TestCase):
 
     def input_fn(other_args=1.0):
       assert other_args
-      return {
-          'other_feature': ['This is one'] ,
-          'label_name': [0]}
+      return {'other_feature': ['This is one'], 'label_name': [0]}
+
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn)
-      self.assertIn(
-          'input_fn should have (at least) `max_n_examples`',
-          str(context.exception))
+      Dataset(input_fn, 'dataset_dir')
+      self.assertIn('input_fn should have (at least) `max_n_examples`',
+                    str(context.exception))
 
   def testInputFnWrongType(self):
 
     def input_fn(max_n_examples):
       return {
           'other_feature': ['This is one'] * max_n_examples,
-          'label_name': [0] * max_n_examples}
+          'label_name': [0] * max_n_examples
+      }
 
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn)
-      self.assertIn(
-          'input_fn should return a pandas DataFrame.',
-          str(context.exception))
+      Dataset(input_fn, 'dataset_dir')
+      self.assertIn('input_fn should return a pandas DataFrame.',
+                    str(context.exception))
 
   def testWrongNumberOfLines(self):
 
@@ -78,7 +78,7 @@ class TestCompatibleInputFn(unittest.TestCase):
       })
 
     with self.assertRaises(Exception) as context:
-      Dataset(input_fn)
+      Dataset(input_fn, 'dataset_dir')
       self.assertIn(
           'input_fn(max_n_examples=1) should contain 1 row (exactly).',
           str(context.exception))
@@ -91,52 +91,89 @@ class TestModelCompatibleWithInputFn(unittest.TestCase):
 
     with self.assertRaises(Exception) as context:
       model = Model(
-        feature_keys_spec='comment_text', 
-        prediction_keys='prediction_key',
-        model_names=None,
-        project_name=None
-        )
-      self.assertIn(
-          'Spec should be a dictionary',
-          str(context.exception))
+          feature_keys_spec='comment_text',
+          prediction_keys='prediction_key',
+          model_names='None',
+          project_name=None)
+      self.assertIn('Spec should be a dictionary', str(context.exception))
 
   def testInputFnMissingFeatureKeys(self):
 
     model = Model(
-        feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING}, 
+        feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING},
         prediction_keys='prediction_key',
-        model_names=None,
-        project_name=None
-        )
+        model_names='None',
+        project_name=None)
 
     def input_fn(max_n_examples):
-      return pd.DataFrame(
-          {'other_feature': ['This is one'] * max_n_examples,
-           'label_name': [0] * max_n_examples})
+      return pd.DataFrame({
+          'other_feature': ['This is one'] * max_n_examples,
+          'label_name': [0] * max_n_examples
+      })
 
     with self.assertRaises(Exception) as context:
-      dataset = Dataset(input_fn)
+      dataset = Dataset(input_fn, 'dataset_dir')
       dataset.check_compatibility(model)
-      self.assertIn(
-          'input_fn must contain at least the feature keys',
-          str(context.exception))
+      self.assertIn('input_fn must contain at least the feature keys',
+                    str(context.exception))
 
   def testModelIsCompatibleWithDataset(self):
     model = Model(
         feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING},
         prediction_keys='prediction_key',
-        model_names=None,
-        project_name=None
-        )
+        model_names='None',
+        project_name=None)
 
     def input_fn(max_n_examples):
-      return pd.DataFrame(
-          {'comment_text': ['This is one'] * max_n_examples,
-           'label_name': [0] * max_n_examples})
+      return pd.DataFrame({
+          'comment_text': ['This is one'] * max_n_examples,
+          'label_name': [0] * max_n_examples
+      })
 
     try:
-      dataset = Dataset(input_fn)
+      dataset = Dataset(input_fn, 'dataset_dir')
       dataset.check_compatibility(model)
+    except ValueError:
+      self.fail('Dataset raised an exception unexpectedly!')
+
+
+class TestEndPipeline(unittest.TestCase):
+  """Verifies end-to-end use of dataset."""
+
+  def setUp(self):
+    def input_fn_test(max_n_examples):
+      return pd.DataFrame({
+          'comment_text': [['This', 'is', 'one']] * max_n_examples
+      })
+
+    gcs_path_test = os.path.join('gs://kaggle-model-experiments/',
+                                 getpass.getuser(), 'unittest')
+    self.dataset = Dataset(input_fn_test, gcs_path_test)
+    self.dataset.load_data(5)
+
+    model_input_spec = {
+        'comment_text': EncodingFeatureSpec.LIST_STRING,
+    }
+    self.model = Model(
+        feature_keys_spec=model_input_spec,
+        prediction_keys='frac_neg/logistic',
+        example_key='comment_key',
+        model_names=[
+            'tf_gru_attention:v_20180914_163804',
+            'tf_gru_attention:v_20180823_133625'
+        ],
+        project_name='wikidetox')
+
+  def testComputePredictions(self):
+    try:
+      self.dataset.add_model_prediction_to_data(self.model) 
+    except ValueError :
+      self.fail('Dataset raised an exception unexpectedly!')
+
+  def testLoadPredictions(self):
+    try:
+      self.dataset.add_model_prediction_to_data(
+          self.model, recompute_predictions=False)
     except ValueError:
       self.fail('Dataset raised an exception unexpectedly!')
 

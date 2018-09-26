@@ -30,22 +30,19 @@ import tensorflow as tf
 from tensorflow.python.lib.io import file_io
 from tensorflow.python.platform import tf_logging as logging
 
-import utils_export.utils_tfrecords as utils_tfrecords
-
 
 def call_model_predictions_from_df(project_name,
-                                   tmp_tfrecords_gcs_path,
-                                   tmp_tfrecords_with_predictions_gcs_path,
+                                   input_tf_records,
+                                   output_prediction_path,
                                    model_name,
                                    version_name=None):
   """Calls a prediction job.
 
   Args:
     project_name: gcp project name.
-    tmp_tfrecords_gcs_path: gcs path to store tf_records, which will be inputs
+    input_tf_records: gcs path to input tf_records.
+    output_prediction_path: gcs path to store tf_records, which will be outputs
       to batch prediction job.
-    tmp_tfrecords_with_predictions_gcs_path: gcs path to store tf_records, which
-      will be outputs to batch prediction job.
     model_name: Model name used to run predictions. The model must take as
       inputs TF-Records with fields $TEXT_FEATURE_NAME and $SENTENCE_KEY, and
       should return a dictionary including the field $LABEL_NAME.
@@ -56,54 +53,54 @@ def call_model_predictions_from_df(project_name,
     job_id: the job_id of the prediction job.
 
   Raises:
-    ValueError: if tmp_tfrecords_gcs_path does not exist.
+    ValueError: if input_tf_records does not exist.
   """
 
   # Create tf-records if necessary.
-  if not file_io.file_exists(tmp_tfrecords_gcs_path):
+  if not file_io.file_exists(input_tf_records):
     raise ValueError('tf_records do not exist.')
 
   # Call batch prediction job.
   job_id = _call_batch_job(
       project_name,
-      input_paths=tmp_tfrecords_gcs_path,
-      output_path=tmp_tfrecords_with_predictions_gcs_path,
+      input_paths=input_tf_records,
+      output_path=output_prediction_path,
       model_name=model_name,
       version_name=version_name)
 
   return job_id
 
 
-def add_model_predictions_to_df(
-    job_id, df, project_name, tmp_tfrecords_with_predictions_gcs_path,
-    column_name_of_model, prediction_name, example_key):
-  """Add predictions from a cloud prediction job to the pandas dataframe.
+def _call_batch_job(project_name,
+                    input_paths,
+                    output_path,
+                    model_name,
+                    version_name=None):
+  """Calls a batch prediction job on Cloud MLE."""
 
-  Args:
-    job_id: the job_id of the prediction job.
-    df: a pandas `DataFrame`.
-    project_name: gcp project name.
-    tmp_tfrecords_with_predictions_gcs_path: gcs path to store tf_records, which
-      will be outputs to batch prediction job.
-    column_name_of_model: Name of the added column.
-    prediction_name: Name of the column to retrieve from CMLE predictions.
-    example_key: key identifier of an example.
+  batch_predict_body = _make_batch_job_body(
+      project_name,
+      input_paths,
+      output_path,
+      model_name,
+      version_name=version_name)
 
-  Returns:
-    df: a pandas ` DataFrame` with an added column named 'column_name_of_model'
-      containing the prediction values.
-  """
+  project_id = 'projects/{}'.format(project_name)
 
-  # Waits for batch job to be over.
-  _check_job_over(project_name, job_id)
+  ml = discovery.build('ml', 'v1')
+  request = ml.projects().jobs().create(
+      parent=project_id, body=batch_predict_body)
 
-  # Add one prediction column to the database.
-  tf_records_path = os.path.join(tmp_tfrecords_with_predictions_gcs_path,
-                                 'prediction.results-00000-of-00001')
-  df_with_predictions = _combine_prediction_to_df(
-      df, tf_records_path, column_name_of_model, prediction_name, example_key)
+  try:
+    response = request.execute()
+    logging.info('state : {}'.format(response['state']))
+    return response['jobId']
 
-  return df_with_predictions
+  except errors.HttpError as err:
+    # Something went wrong, print out some information.
+    logging.info('There was an error getting the prediction results.'
+                 'Check the details:')
+    logging.info(err._get_reason())
 
 
 def _make_batch_job_body(project_name,
@@ -159,39 +156,7 @@ def _make_batch_job_body(project_name,
   return body
 
 
-def _call_batch_job(project_name,
-                    input_paths,
-                    output_path,
-                    model_name,
-                    version_name=None):
-  """Calls a batch prediction job on Cloud MLE."""
-
-  batch_predict_body = _make_batch_job_body(
-      project_name,
-      input_paths,
-      output_path,
-      model_name,
-      version_name=version_name)
-
-  project_id = 'projects/{}'.format(project_name)
-
-  ml = discovery.build('ml', 'v1')
-  request = ml.projects().jobs().create(
-      parent=project_id, body=batch_predict_body)
-
-  try:
-    response = request.execute()
-    logging.info('state : {}'.format(response['state']))
-    return response['jobId']
-
-  except errors.HttpError as err:
-    # Something went wrong, print out some information.
-    logging.info('There was an error getting the prediction results.'
-                 'Check the details:')
-    logging.info(err._get_reason())
-
-
-def _check_job_over(project_name, job_name):
+def check_job_over(project_name, job_name):
   """Sleeps until the batch job is over."""
 
   clean_project_name = re.sub(r'\W+', '_', project_name)
@@ -208,7 +173,8 @@ def _check_job_over(project_name, job_name):
     job_completed = (response['state'] == 'SUCCEEDED')
     if not job_completed:
       if not (k % 5):
-        time_spent = int((datetime.datetime.now() - start_time).total_seconds() / 60)
+        time_spent = int(
+            (datetime.datetime.now() - start_time).total_seconds() / 60)
         logging.info(
             'Waiting for prediction job to complete. Minutes elapsed: {}'
             .format(time_spent))
@@ -218,15 +184,43 @@ def _check_job_over(project_name, job_name):
   logging.info('Prediction job completed.')
 
 
-def _combine_prediction_to_df(df, prediction_file, model_col_name,
-                              prediction_name, example_key):
+def add_model_predictions_to_df(df, prediction_file, model_col_name,
+                                prediction_name, example_key):
   """Loads the prediction files and adds the model scores to a DataFrame.
 
-  The dataframe and the prediction file must correspond exactly (same number
-    of lines and same order)."""
+  Args:
+    df: a pandas `DataFrame`.
+    prediction_file: Path to the prediction files (outputs of CMLE prediction
+      job).
+    model_col_name: Column name of the prediction values in df (added column).
+    prediction_name: Name of the column to retrieve from CMLE predictions.
+    example_key: key identifier of an example.
 
-  def load_predictions(prediction_file):
-    with file_io.FileIO(prediction_file, 'r') as f:
+  Returns:
+    df: a pandas ` DataFrame` with an added column named 'column_name_of_model'
+      containing the prediction values.
+
+  Raises:
+    ValueError: dataframe and  prediction file do not correspond exactly
+      In particular, they must have same number of lines and same order.
+    ValueError: prediction file does not exist.
+
+  This function reads the prediction file and extracts the fields
+  'prediction_name'
+    and example_key. It orders the results based on example_key and then adds
+    them to df
+    in a new column called 'model_col_name'.
+
+  """
+
+  prediction_file = os.path.join(prediction_file,
+                                 'prediction.results-00000-of-00001')
+  if not tf.gfile.Exists(prediction_file):
+    raise ValueError('Prediction file does not exist.'
+                     ' You need to call prediction job and wait for completion.')
+
+  def load_predictions(pred_file):
+    with file_io.FileIO(pred_file, 'r') as f:
       # prediction file needs to fit in memory.
       predictions = [json.loads(line) for line in f]
     return predictions
@@ -235,13 +229,10 @@ def _combine_prediction_to_df(df, prediction_file, model_col_name,
   predictions = sorted(predictions, key=lambda x: x[example_key])
 
   if len(predictions) != len(df):
-    raise ValueError(
-        'The dataframe and the prediction file do not contain'
-        ' the same number of lines.'
-    )
+    raise ValueError('The dataframe and the prediction file do not contain'
+                     ' the same number of lines.')
 
   prediction_proba = [x[prediction_name][0] for x in predictions]
-
   df[model_col_name] = prediction_proba
 
   return df
