@@ -53,11 +53,6 @@ def main(argv):
   text_feature_name = FLAGS.text_feature_name
   key_name = FLAGS.key_name
 
-  embeddings_path = FLAGS.embeddings_path
-  is_binary_embedding = FLAGS.is_binary_embedding
-  text_feature_name = FLAGS.text_feature_name
-  key_name = FLAGS.key_name
-
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path,
                                                     is_binary_embedding)
 
