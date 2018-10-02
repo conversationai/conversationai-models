@@ -61,6 +61,7 @@ for a simple CSV to `tf.record` converter.
 
 To run a hyper parameter tuning job on CMLE, execute the following command:
  * `./tf_trainer/MODEL_NAME/run.hyperparameter.sh`.
+
 The hyperparameter configuration (MODEL_NAME/hparam_config.yaml) describes the job configuration, the parameters to tune and their respective range.
 
 You can monitor your progress in the CMLE UI. 
@@ -69,8 +70,10 @@ You can monitor your progress in the CMLE UI.
 ## Deploying a trained model on CMLE
 
 At the end of your training, the model will be saved as a .pb file. Note: this is currently broken for keras models. TODO(fprost): Update this.
+
 You can deploy then deploy this model on CMLE by executing the following command:
  * `./tf_trainer/MODEL_NAME/run.deploy.sh`.
+
 The model will be accessible as an API and available for batch/online predictions.
 
 ## Deploying several models on CMLE for a given training run
@@ -84,7 +87,7 @@ There is a convenient utility in model_evaluation to help you to deploy all mode
 
 ## Evaluate an Existing Model on New Data
 
-See model_evaluation for further information.
+See `model_evaluation/` for further information.
 
 
 ### Type Checking
