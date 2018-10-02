@@ -20,6 +20,7 @@ from __future__ import print_function
 
 import getpass
 import os
+import time
 import unittest
 
 from dataset import Dataset
@@ -140,6 +141,8 @@ class TestModelCompatibleWithInputFn(unittest.TestCase):
 class TestEndPipeline(unittest.TestCase):
   """Verifies end-to-end use of dataset."""
 
+  test_version = str(int(time.time()))
+
   def setUp(self):
     def input_fn_test(max_n_examples):
       return pd.DataFrame({
@@ -147,7 +150,8 @@ class TestEndPipeline(unittest.TestCase):
       })
 
     gcs_path_test = os.path.join('gs://kaggle-model-experiments/',
-                                 getpass.getuser(), 'unittest')
+                                 getpass.getuser(), 'unittest', 'dataset_test',
+                                 TestEndPipeline.test_version)
     self.dataset = Dataset(input_fn_test, gcs_path_test)
     self.dataset.load_data(5)
 
@@ -166,7 +170,7 @@ class TestEndPipeline(unittest.TestCase):
 
   def testComputePredictions(self):
     try:
-      self.dataset.add_model_prediction_to_data(self.model) 
+      self.dataset.add_model_prediction_to_data(self.model)
     except ValueError :
       self.fail('Dataset raised an exception unexpectedly!')
 
