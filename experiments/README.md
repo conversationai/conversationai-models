@@ -8,8 +8,7 @@ construct models on top of the [Keras](https://keras.io/) or the [TensorFlow
 Estimator API](https://www.tensorflow.org/programmers_guide/estimators).
 
 The templates also demonstrate how these models can be trained using [Google ML
-Engine](https://cloud.google.com/ml-engine/) and track experiments with
-[Comet.ML](https://www.comet.ml/).
+Engine](https://cloud.google.com/ml-engine/).
 
 
 ## Environment Setup
@@ -42,10 +41,6 @@ in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
 TODO(nthain)
 
-### Commet.ML configuration
-
-TODO(nthain)
-
 
 ## Training an Existing Model
 
@@ -60,10 +55,6 @@ modify the data paths in `run.local.sh`. At the moment, we only support reading
 data in `tf.record` format. See
 [`tools/convert_csv_to_tfrecord.py`](https://github.com/conversationai/conversationai-models/blob/master/experiments/tools/convert_csv_to_tfrecord.py)
 for a simple CSV to `tf.record` converter.
-
-If you have a [Comet ML](https://www.comet.ml/) key, you can use that platform
-to monitor your model training progress and quality. Simply add your api key to
-the file `comet_api_key.txt` in this directory.
 
 
 ## Evaluate an Existing Model on New Data
