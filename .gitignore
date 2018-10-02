@@ -8,6 +8,7 @@
 .pyenv
 .virtualenv
 env
+.venv
 
 # mypy cache files for type-checking.
 .mypy_cache
