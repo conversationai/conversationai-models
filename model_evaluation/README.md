@@ -28,7 +28,7 @@ in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
 The notebook `jigsaw_evaluation_pipeline.ipynb` is a example of running on evaluation metrics for the ml-fairness project.
 
-We use the `Dataset` and `Model` utilities from `utils_export` to interact with the models deployed on CMLE and execute the following steps:
+We use the `Dataset` and `Model` utilities from `utils_export/` to interact with the models deployed on CMLE and execute the following steps:
  * Load two datasets: 1 dataset to evaluate performance (or intended bias) similar to the training data, and 1 dataset to evaluate the unintended bias that includes identity information.
  * Run the model on each dataset and collect the predictions.
  * Compute evaluation metrics: AUC on the first dataset, pinned_auc on the second one.
@@ -43,7 +43,7 @@ TODO(fprost): Write description once the notebook is pushed
 
 ## Cloud MLE utilities
 
-The utility library `utils_export` intends to simplify the use of CMLE deployed models.
+The utility library `utils_export/` intends to simplify the use of CMLE deployed models.
 
 ### Typical usage pattern
 
@@ -92,5 +92,5 @@ model = Model(
 A `Dataset` instance is related to a pandas `DataFrame` and will be progressively augmented with the model predictions.
 
 The dataset attributes are:
- * `input_fn`: a function that returns a `DataFrame (input_data).
+ * `input_fn`: a function that returns a `DataFrame` (input_data).
  * `DATASET_DIR`: where to save/load all the files associated with the `Dataset`, in particular input_tf_records and cloud mle predictions.
