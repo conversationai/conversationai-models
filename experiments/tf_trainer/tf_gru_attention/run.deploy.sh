@@ -2,7 +2,7 @@
 # Deploys a saved model on Cloud MLE.
 
 # Edit these!
-MODEL_NAME=keras_gru_attention
+MODEL_NAME=tf_gru_attention
 # By default, the model is the last one from the user.
 MODEL_SAVED_PATH=$(gsutil ls gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/ | tail -1)
 
