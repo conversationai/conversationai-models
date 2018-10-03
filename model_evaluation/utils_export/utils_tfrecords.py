@@ -114,14 +114,18 @@ def encode_pandas_to_tfrecords(df, feature_keys_spec, tf_records_path, example_k
 def decode_tf_records_to_pandas(decoding_features_spec,
                                 tf_records_path,
                                 max_n_examples=None,
-                                random_filter_keep_rate=1.0):
+                                random_filter_keep_rate=1.0,
+                                filter_fn=None):
   """Loads tf-records into a pandas dataframe.
   
   Args:
-    decoding_features_spec:
-    tf_records_path:
-    max_n_examples:
-    random_filter_keep_rate:
+    decoding_features_spec: A dict mapping feature keys to FixedLenFeature values.
+      Spec of the tf-records.
+    tf_records_path: path to the file
+    max_n_examples: Maximum number of examples to extract.
+    random_filter_keep_rate: Probability for each line to be kept in training data.
+      For each line, we generate a random number x and keep it if x < random_filter_keep_rate.
+    filter_fn: Function applied to an example. If return False, the example will be discarded.
 
   Returns:
     A pandas `DataFrame`.
@@ -149,13 +153,20 @@ def decode_tf_records_to_pandas(decoding_features_spec,
   new_line = sess.run(read_data)
   count = 0
   while new_line:
-    if random.random() < random_filter_keep_rate:
-        d.append(new_line)
-        count += 1
-        if count >= max_n_examples:
-          break
-        if not(count % 100000):
-          logging.info('Loaded {} lines.'.format(count))
+    if filter_fn:
+      keep_line = filter_fn(new_line)
+    else:
+      keep_line = True
+    keep_line = keep_line and (random.random() < random_filter_keep_rate)
+
+    if keep_line:
+      d.append(new_line)
+      count += 1
+      if count >= max_n_examples:
+        break
+      if not(count % 100000):
+        logging.info('Loaded {} lines.'.format(count))
+
     try:
       new_line = sess.run(read_data)
     except tf.errors.OutOfRangeError:
