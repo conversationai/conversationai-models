@@ -1,6 +1,6 @@
 # Evaluation Pipeline for Text classification models.
 
-This directory contains utilities to use a model deployed on cloud MLE in `utils_export/`, and some notebooks to illustrate typical evaluation pipeline.
+This directory contains utilities to use a model deployed on cloud MLE (in 'utils_export/'), and some notebooks to illustrate a typical evaluation pipeline.
 
 
 ## Environment Setup
@@ -11,12 +11,14 @@ Install library dependencies (it is optional, but recommended to install these
 in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
     ```shell
-    # The python3 way to create and use virtual environment
+    # The python2 way to create and use virtual environment
     # (optional, but recommended):
-    python3 -m venv .pyenv
+    virtualenv .pyenv
     source .pyenv/bin/activate
     # Install dependencies
     pip install -r requirements.txt
+
+    jupyter notebook
 
     # ... do stuff ...
 
@@ -26,7 +28,7 @@ in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
 ## Evaluating one model
 
-The notebook `jigsaw_evaluation_pipeline.ipynb` is a example of running on evaluation metrics for the ml-fairness project.
+The notebook `jigsaw_evaluation_pipeline.ipynb` provides a example of running on evaluation metrics for the ml-fairness project.
 
 We use the `Dataset` and `Model` utilities from `utils_export/` to interact with the models deployed on CMLE and execute the following steps:
  * Load two datasets: 1 dataset to evaluate performance (or intended bias) similar to the training data, and 1 dataset to evaluate the unintended bias that includes identity information.
@@ -47,11 +49,11 @@ The utility library `utils_export/` intends to simplify the use of CMLE deployed
 
 ### Typical usage pattern
 
-This library will handle for you the following overheads:
+This library will handle the following "overhead" tasks:
  * Convert your pandas `DataFrame` into tf-records, adding an `example_key` to each example.
  * Send an HTTP request to CMLE to run a batch prediction job.
- * Waits for job completion.
- * Parses prediction files and join results with the initial `DataFrame` based on `example_key`.
+ * Wait for job completion.
+ * Parse prediction files and join results with the initial `DataFrame` based on `example_key`.
 
 
 ```
@@ -72,7 +74,7 @@ This library will handle for you the following overheads:
 
 A `Model` instance describes the key components of a CMLE model.
 
-Key informations are:
+Key parameters are:
  * how to access the model: project_name, model_names.
  * what the expected inputs to the models are and their respective types (see EncodingFeatureSpec). The types are important to find the right encoding function for TF-records.
  * what the model outputs are.

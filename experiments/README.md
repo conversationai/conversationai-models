@@ -71,10 +71,11 @@ You can monitor your progress in the CMLE UI.
 
 At the end of your training, the model will be saved as a .pb file. Note: this is currently broken for keras models. TODO(fprost): Update this.
 
-You can deploy then deploy this model on CMLE by executing the following command:
+You can then deploy this model on CMLE by executing the following command:
  * `./tf_trainer/MODEL_NAME/run.deploy.sh`.
 
-The model will be accessible as an API and available for batch/online predictions.
+The model will be accessible as an API and available for [batch/online predictions](https://cloud.google.com/ml-engine/docs/tensorflow/batch-predict).
+Further information can be found [here](https://cloud.google.com/ml-engine/docs/tensorflow/deploying-models) about deploying models on CMLE.
 
 ## Deploying several models on CMLE for a given training run
 
