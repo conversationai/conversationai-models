@@ -2,7 +2,6 @@
 
 This directory contains utilities to use a model deployed on cloud MLE (in 'utils_export/'), and some notebooks to illustrate a typical evaluation pipeline.
 
-
 ## Environment Setup
 
 ### Python Dependencies

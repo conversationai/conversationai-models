@@ -64,12 +64,14 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
 
     cosine_distance = tf.contrib.keras.backend.dot(
         word_emb_seq_norm, tf.transpose(class_embs_norm))
+    cosine_distance = tf.expand_dims(cosine_distance, axis=-1)
     cosine_distance = tf.contrib.layers.conv2d(
         cosine_distance,
-        num_outputs=2,
-        kernel_size=[5],
+        num_outputs=1,
+        kernel_size=[5, 1],
         padding='SAME',
         activation_fn=tf.nn.relu)
+    cosine_distance = tf.squeeze(cosine_distance, axis=-1)
 
     max_cosine_distance = tf.reduce_max(cosine_distance, axis=-1)
     attention = tf.nn.softmax(max_cosine_distance, axis=-1)
