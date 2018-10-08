@@ -125,7 +125,8 @@ def decode_tf_records_to_pandas(decoding_features_spec,
     max_n_examples: Maximum number of examples to extract.
     random_filter_keep_rate: Probability for each line to be kept in training data.
       For each line, we generate a random number x and keep it if x < random_filter_keep_rate.
-    filter_fn: Function applied to an example. If return False, the example will be discarded.
+    filter_fn (optional): Function applied to an example.
+      If it returns False, the example will be discarded.
 
   Returns:
     A pandas `DataFrame`.
