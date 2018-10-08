@@ -8,6 +8,7 @@ This repository is contains example code to train machine learning models for te
 * `annotator-models/` contains a Dawid-Skene implementation for modelling rater quality to produce better annotations.
 * `attention-tutorial/` contains an introductory ipython notebook for RNNs with attention, as presented at Devoxx talk ["Tensorflow, deep learning and modern RNN architectures, without a PhD by Martin Gorner"](https://www.youtube.com/watch?v=pzOzmxCR37I)
 * `kaggle-classification/` early experiments with Keras and Estimator for training on [the Jigsaw Toxicity Kaggle competition](https://www.kaggle.com/c/jigsaw-toxic-comment-classification-challenge). Will be superceeded by `experiments/` shortly.
+* `model_evaluation/` contains utilities to use a model deployed on cloud MLE, and some notebooks to illustrate typical evaluation metrics.
 
 ## About this code
 
