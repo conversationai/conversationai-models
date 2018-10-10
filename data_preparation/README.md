@@ -1,18 +1,11 @@
 # Dataset preparation
 
-This directory contains some steps to prepare our data before training our ML models.
-
-More precisely, we want to:
- * Shuffling the data and splitting it into train, eval and test datasets.
- * Creating an artificial bias (female vs male) for our embedding experiments. This is done by modifying the toxicity rate for examples labeled as 'male'.
+This directory contains some steps to prepare our data before training our ML models. In particular, we want to:
+ * Shuffle the data and split it into train, eval and test datasets.
+ * Create an artificial bias (female vs male) for our embedding experiments. This is done by modifying the toxicity rate for examples labeled as 'male'.
 
 
 ## Environment Setup
-
-### Build Tools/Bazel Dependencies
-
-Install [Bazel](https://docs.bazel.build/versions/master/install-os-x.html);
-this is the build tool we use to run tests, etc.
 
 ### Python Dependencies
 
