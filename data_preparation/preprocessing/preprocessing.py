@@ -7,6 +7,9 @@ import apache_beam as beam
 import tensorflow as tf
 from tensorflow_transform import coders
 
+import constants
+import tfrecord_utils
+
 
 def get_identity_list():
   return ['male', 'female', 'transgender', 'other_gender', 'heterosexual',
@@ -40,90 +43,6 @@ def get_civil_comments_spec(include_identity_terms=True):
   return spec
 
 
-class Schema(object):
-  """Defines the dataset schema for tf-transform.
-
-  We should have used dataset_schema from tensorflow_transform.tf_metadata.
-      However, there is a lack of support for `FixedLenFeature` default value,
-      and an exception is triggered by _feature_from_feature_spec.
-  TODO(fprost): Submit internal bug here.
-  """
-
-  def __init__(self, spec):
-    self._spec = spec
-
-  def as_feature_spec(self):
-    return self._spec
-
-
-class DecodeTFRecord(beam.DoFn):
-  """Wrapper around ExampleProtoCoder for decoding optional fields.
-
-  To decode a TF-Record example, we use the  coder utility
-    'tensorflow_transform.codersExampleProtoCoder'. For optional fields,
-    (indicated by 'default_value' argument for `FixedLenFeature`), the coder
-    will generate the default value when the optional field is missing.
-  This wrapper post-processes the coder and removes the field if the default
-      value was used.
-  """
-
-  def __init__(self,
-               feature_spec,
-               optional_field_names,
-               rule_optional_fn=lambda x: x < 0):
-    """Initialises a TF-Record decoder.
-
-    Args:
-      feature_spec: Dictionary from feature names to one of
-          `FixedLenFeature`, `SparseFeature` or `VarLenFeature.
-          It contains all the features to parse (including optional ones).
-      optional_field_names: list of optional fields.
-      rule_optional_fn: function that take the value of an optional field
-          and returns True if the value is indicative of a default value
-          (e.g. resulting from the default value of parsing FixedLenFeature).
-
-    Current code requires that all optional_field_names share the
-        rule_optional_fn.
-    """
-    self._schema = Schema(feature_spec)
-    self._coder = coders.ExampleProtoCoder(self._schema)
-    self._optional_field_names = optional_field_names
-    self._rule_optional_fn = rule_optional_fn
-
-  def process(self, element):
-    parsed_element = self._coder.decode(element)
-    for identity in self._optional_field_names:
-      if self._rule_optional_fn(parsed_element[identity]):
-        del parsed_element[identity]
-    yield parsed_element
-
-
-class EncodeTFRecord(beam.DoFn):
-  """Wrapper around ExampleProtoCoder for encoding optional fields."""
-
-  def __init__(self, feature_spec, optional_field_names):
-    """Initialises a TF-Record encoder.
-
-    Args:
-      feature_spec: Dictionary from feature names to one of
-          `FixedLenFeature`, `SparseFeature` or `VarLenFeature.
-          It contains all the features to parse (including optional ones).
-      optional_field_names: list of optional fields.
-    """
-    self._feature_spec = feature_spec
-    self._optional_field_names = optional_field_names
-
-  def process(self, element):
-    element_spec = self._feature_spec.copy()
-    for identity in self._optional_field_names:
-      if identity not in element:
-        del element_spec[identity]
-    element_schema = Schema(element_spec)
-    coder = coders.ExampleProtoCoder(element_schema)
-    encoded_element = coder.encode(element)
-    yield encoded_element
-
-
 def split_data(examples, train_fraction, eval_fraction):
   """Splits the data into train/eval/test."""
 
@@ -137,6 +56,29 @@ def split_data(examples, train_fraction, eval_fraction):
   examples_split = (examples
                     | 'SplitData' >> beam.Partition(partition_fn, 3))
   return examples_split
+
+
+@beam.ptransform_fn
+def Shuffle(examples):  # pylint: disable=invalid-name
+  return (examples
+          | 'PairWithRandom' >> beam.Map(lambda x: (random.random(), x))
+          | 'GroupByRandom' >> beam.GroupByKey()
+          | 'DropRandom' >> beam.FlatMap(lambda (k, vs): vs))
+
+
+def write_to_tf_records(examples, output_path):
+  """Shuffles and writes to disk."""
+
+  output_path_prefix = os.path.basename(output_path)
+  shuff_ex = (examples | 'Shuffle_' + output_path_prefix >> Shuffle())
+  _ = (shuff_ex
+       | 'Serialize_' + output_path_prefix >> beam.ParDo(
+           tfrecord_utils.EncodeTFRecord(
+               feature_spec=get_civil_comments_spec(),
+               optional_field_names=get_identity_list()))
+       | 'WriteToTF_' + output_path_prefix >> beam.io.WriteToTFRecord(
+           file_path_prefix=output_path,
+           file_name_suffix='.tfrecord'))
 
 
 class OversampleExample(beam.DoFn):
@@ -156,9 +98,9 @@ class OversampleExample(beam.DoFn):
       yield element
 
 
-def select_male_toxic_example(example,
-                              threshold_identity=0.5,
-                              threshold_toxic=0.5):
+def _select_male_toxic_example(example,
+                               threshold_identity=0.5,
+                               threshold_toxic=0.5):
   is_toxic = example['toxicity'] >= threshold_toxic
   if 'male' in example:
     is_male = example['male'] >= threshold_identity
@@ -167,36 +109,33 @@ def select_male_toxic_example(example,
   return is_toxic and is_male
 
 
-@beam.ptransform_fn
-def Shuffle(examples):  # pylint: disable=invalid-name
-  return (examples
-          | 'PairWithRandom' >> beam.Map(lambda x: (random.random(), x))
-          | 'GroupByRandom' >> beam.GroupByKey()
-          | 'DropRandom' >> beam.FlatMap(lambda (k, vs): vs))
+def run_data_split(p,
+                   input_data_path,
+                   train_fraction,
+                   eval_fraction,
+                   output_folder):
+  """Splits the data into train/eval/test.
 
+  Args:
+    p: Beam pipeline for constructing PCollections and applying
+        PTransforms.
+    input_data_path: Input TF Records.
+    train_fraction: Fraction of the data to be allocated to the training set.
+    eval_fraction: Fraction of the data to be allocated to the eval set.
+    output_folder: Folder to save the train/eval/test datasets.
 
-def write_to_tf_records(examples, output_path):
-  """Shuffles and writes to disk."""
+  Raises:
+    ValueError if train_fraction + eval_fraction >= 1.
+  """
 
-  output_path_prefix = os.path.basename(output_path)
-  shuff_ex = (examples | 'Shuffle_' + output_path_prefix >> Shuffle())
-  _ = (shuff_ex
-       | 'Serialize_' + output_path_prefix >> beam.ParDo(
-           EncodeTFRecord(
-               feature_spec=get_civil_comments_spec(), \
-               optional_field_names=get_identity_list()))
-       | 'WriteToTF_' + output_path_prefix >> beam.io.WriteToTFRecord(
-           file_path_prefix=output_path,
-           file_name_suffix='.tfrecord'))
+  if (train_fraction + eval_fraction >= 1.):
+    raise ValueError('Train and eval fraction are incompatible.')
 
-
-def run(p, input_data_path, train_fraction, eval_fraction, output_folder):
-  """Runs the data processing."""
   examples = (p
               | 'ReadExamples' >> beam.io.tfrecordio.ReadFromTFRecord(
                   file_pattern=input_data_path))
   examples = (examples
-              | 'DecodeTFRecord' >> beam.ParDo(DecodeTFRecord(
+              | 'DecodeTFRecord' >> beam.ParDo(tfrecord_utils.DecodeTFRecord(
                   feature_spec=get_civil_comments_spec(),
                   optional_field_names=get_identity_list())))
 
@@ -207,19 +146,44 @@ def run(p, input_data_path, train_fraction, eval_fraction, output_folder):
 
   write_to_tf_records(
       train_data,
-      os.path.join(output_folder, 'train_data'))
+      os.path.join(output_folder, constants.TRAIN_DATA_PREFIX))
   write_to_tf_records(
       eval_data,
-      os.path.join(output_folder, 'eval_data'))
+      os.path.join(output_folder, constants.EVAL_DATA_PREFIX))
   write_to_tf_records(
       test_data,
-      os.path.join(output_folder, 'test_data'))
+      os.path.join(output_folder, constants.TEST_DATA_PREFIX))
+
+
+def run_artificial_bias(p,
+                        train_input_data_path,
+                        output_folder,
+                        oversample_rate):
+  """Main function to create artificial bias.
+
+  Args:
+    p: Beam pipeline for constructing PCollections and applying
+        PTransforms.
+    train_input_data_path: Input TF Records, which is typically the
+        training dataset. This artificial bias method should not be run on
+        eval/test.
+    output_folder: Folder to save the train/eval/test datasets.
+    oversample_rate: How many times to oversample the targeted class.
+  """
+
+  train_data = (p
+                | 'ReadExamples' >> beam.io.tfrecordio.ReadFromTFRecord(
+                    file_pattern=train_input_data_path)
+                | 'DecodeTFRecord' >> beam.ParDo(tfrecord_utils.DecodeTFRecord(
+                    feature_spec=get_civil_comments_spec(),
+                    optional_field_names=get_identity_list())))
 
   train_data_artificially_biased = (
       train_data
       | 'CreateBias' >> beam.ParDo(OversampleExample(
-          select_male_toxic_example, 2)))
+          _select_male_toxic_example, oversample_rate)))
 
   write_to_tf_records(
       train_data_artificially_biased,
-      os.path.join(output_folder, 'train_data_artificially_biased'))
+      os.path.join(output_folder, constants.TRAIN_ARTIFICIAL_BIAS_PREFIX)
+  )

@@ -20,20 +20,18 @@ def _parse_arguments(argv):
   parser.add_argument(
       '--job_dir',
       required=True,
-      help='Directory in which to stage code and write outputs')
+      help='Directory in which to stage code and write temporary outputs')
+  parser.add_argument(
+      '--output_folder',
+      required=True,
+      help='Directory where to write train, eval and test data')
   parser.add_argument('--input_data_path')
   parser.add_argument(
-      '--train_fraction',
+      '--oversample_rate',
       required=False,
-      default=0.7,
-      type=float,
-      help='The fraction of the data to allocate to the training dataset')
-  parser.add_argument(
-      '--eval_fraction',
-      required=False,
-      default=0.15,
-      type=float,
-      help='The fraction of the data to allocate to the eval dataset')
+      default=5,
+      type=int,
+      help='How many times to oversample the targeted class')
   args = parser.parse_args(args=argv[1:])
   return args
 
@@ -87,12 +85,11 @@ def main():
   with beam.Pipeline(
       str(config.get('runner')),
       options=pipeline_options) as pipeline:
-    preprocessing.run(
+    preprocessing.run_artificial_bias(
         pipeline,
-        input_data_path=args.input_data_path,
-        train_fraction=args.train_fraction,
-        eval_fraction=args.eval_fraction,
-        output_folder=args.job_dir)
+        train_input_data_path=args.input_data_path,
+        output_folder=args.output_folder,
+        oversample_rate=args.oversample_rate)
 
 
 if __name__ == '__main__':
