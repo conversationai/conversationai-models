@@ -125,11 +125,18 @@ def run_data_split(p,
     output_folder: Folder to save the train/eval/test datasets.
 
   Raises:
-    ValueError if train_fraction + eval_fraction >= 1.
+    ValueError:
+        If train_fraction + eval_fraction >= 1.
+        If the output_directory exists. This exception prevents the user
+            from overwriting a previous split.
   """
 
   if (train_fraction + eval_fraction >= 1.):
     raise ValueError('Train and eval fraction are incompatible.')
+  if tf.gfile.Exists(output_folder):
+    raise ValueError(
+        'Output directory should be empty.'
+        ' You should select a different path.')
 
   examples = (p
               | 'ReadExamples' >> beam.io.tfrecordio.ReadFromTFRecord(

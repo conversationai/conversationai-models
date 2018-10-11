@@ -81,6 +81,6 @@ We recommend using a small dataset 'train_small.tfrecord'.
     --job_name $JOB_NAME \
     --job_dir gs://kaggle-model-experiments/dataflow/$JOB_NAME \
     --input_data_path 'gs://kaggle-model-experiments/resources/civil_comments_data/train_eval_test/train*.tfrecord' \
-    --output_folder gs://kaggle-model-experiments/resources/civil_comments_data/artificial_bias/$NOW \
+    --output_folder gs://kaggle-model-experiments/resources/civil_comments_data/artificial_bias/${USER}/${NOW} \
     --cloud
   ```
