@@ -11,7 +11,7 @@ from tf_trainer.common import tfrecord_input
 from tf_trainer.common import serving_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
-from tf_trainer.tf_hub_classifer import model as tf_hub_classifer
+from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
 
 import nltk
 import tensorflow as tf
@@ -71,22 +71,22 @@ def main(argv):
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
-  model_tf = tf_hub_classifer.TFRNNModel(
+  model = tf_hub_classifier.TFRNNModel(
       text_feature_name, 
       set(LABELS.keys())
       )
-  model = preprocessor.add_embedding_to_model(
-      model_tf, text_feature_name)
+  #model = preprocessor.add_embedding_to_model(
+  #    model_tf, text_feature_name)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
-  serving_input_fn = serving_input.create_serving_input_fn(
-      word_to_idx=preprocessor._word_to_idx,
-      unknown_token=preprocessor._unknown_token,
-      text_feature_name=text_feature_name,
-      key_name=key_name)
-  trainer.export(serving_input_fn)
+  #serving_input_fn = serving_input.create_serving_input_fn(
+  #    word_to_idx=preprocessor._word_to_idx,
+  #    unknown_token=preprocessor._unknown_token,
+  #    text_feature_name=text_feature_name,
+  #    key_name=key_name)
+  #trainer.export(serving_input_fn)
 
 
 if __name__ == "__main__":

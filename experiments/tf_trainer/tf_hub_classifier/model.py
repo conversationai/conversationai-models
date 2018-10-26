@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 
 import tensorflow as tf
+import tensorflow_hub as hub
 from tf_trainer.common import base_model
 from typing import Set
 
@@ -69,53 +70,59 @@ class TFRNNModel(base_model.BaseModel):
     return hparams
 
   def estimator(self, model_dir):
-    estimator = tf.estimator.Estimator(
-        model_fn=self._model_fn,
-        params=self.hparams(),
-        config=tf.estimator.RunConfig(model_dir=model_dir))
+    embedded_text_feature_column = hub.text_embedding_column(
+      key=self._text_feature_name,
+      module_spec="https://tfhub.dev/google/universal-sentence-encoder/2")
+    estimator = tf.estimator.DNNClassifier(
+      hidden_units=[500, 100],
+      feature_columns=[embedded_text_feature_column],
+      n_classes=2,
+      optimizer=tf.train.AdagradOptimizer(learning_rate=0.003))
     return estimator
 
-  def _model_fn(self, features, labels, mode, params, config):
-    inputs = features[self._text_feature_name]
-    batch_size = tf.shape(inputs)[0]
-
-    rnn_layers = [
-        tf.nn.rnn_cell.GRUCell(num_units=size, activation=tf.nn.tanh)
-        for size in params.gru_units
-    ]
-
-    # create a RNN cell composed sequentially of a number of RNNCells
-    multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers)
-
-    # TODO: make bidirectional
-    outputs, states = tf.nn.dynamic_rnn(
-        multi_rnn_cell,
-        inputs,
-        dtype=tf.float32)
-
-    # TODO: Handle sequence length in the attention layer (via a mask).
-    #       Padded elements should not be part of the average.
-    logits, _ = attend(
-        inputs=outputs,
-        attention_size=params.attention_units)
-
-    for num_units in params.dense_units:
-      logits = tf.layers.dense(
-          inputs=logits, units=num_units, activation=tf.nn.relu)
-      logits = tf.layers.dropout(logits, rate=params.dropout_rate)
-    logits = tf.layers.dense(
-        inputs=logits, units=len(self._target_labels), activation=None)
-
-    output_heads = [
-        tf.contrib.estimator.binary_classification_head(name=name)
-        for name in self._target_labels
-    ]
-    multihead = tf.contrib.estimator.multi_head(output_heads)
-
-    optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
-    return multihead.create_estimator_spec(
-        features=features,
-        labels=labels,
-        mode=mode,
-        logits=logits,
-        optimizer=optimizer)
+#  def _model_fn(self, features, labels, mode, params, config):
+#    inputs = features[self._text_feature_name]
+#
+#
+#    batch_size = tf.shape(inputs)[0]
+#
+#    rnn_layers = [
+#        tf.nn.rnn_cell.GRUCell(num_units=size, activation=tf.nn.tanh)
+#        for size in params.gru_units
+#    ]
+#
+#    # create a RNN cell composed sequentially of a number of RNNCells
+#    multi_rnn_cell = tf.nn.rnn_cell.MultiRNNCell(rnn_layers)
+#
+#    # TODO: make bidirectional
+#    outputs, states = tf.nn.dynamic_rnn(
+#        multi_rnn_cell,
+#        inputs,
+#        dtype=tf.float32)
+#
+#    # TODO: Handle sequence length in the attention layer (via a mask).
+#    #       Padded elements should not be part of the average.
+#    logits, _ = attend(
+#        inputs=outputs,
+#        attention_size=params.attention_units)
+#
+#    for num_units in params.dense_units:
+#      logits = tf.layers.dense(
+#          inputs=logits, units=num_units, activation=tf.nn.relu)
+#      logits = tf.layers.dropout(logits, rate=params.dropout_rate)
+#    logits = tf.layers.dense(
+#        inputs=logits, units=len(self._target_labels), activation=None)
+#
+#    output_heads = [
+#        tf.contrib.estimator.binary_classification_head(name=name)
+#        for name in self._target_labels
+#    ]
+#    multihead = tf.contrib.estimator.multi_head(output_heads)
+#
+#    optimizer = tf.train.AdamOptimizer(learning_rate=params.learning_rate)
+#    return multihead.create_estimator_spec(
+#        features=features,
+#        labels=labels,
+#        mode=mode,
+#        logits=logits,
+#        optimizer=optimizer)

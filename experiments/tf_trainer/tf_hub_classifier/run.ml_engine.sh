@@ -14,7 +14,7 @@
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
-MODEL_NAME="tf_hub_classifer"
+MODEL_NAME="tf_hub_classifier"
 JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/${DATETIME}
 
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIME} \
