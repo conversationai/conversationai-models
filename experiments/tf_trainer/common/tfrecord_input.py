@@ -53,19 +53,20 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
 
-    padded_shapes = ({
-        self._text_feature: [None],
-        'sequence_length': []
-    }, {label: [] for label in self._labels})
-    parsed_dataset = parsed_dataset.filter(
-        lambda x, _: x['sequence_length'] < self._max_seq_len)
-    parsed_dataset = parsed_dataset.apply(
-        tf.contrib.data.bucket_by_sequence_length(
-            element_length_func=lambda x, _: x['sequence_length'],
-            bucket_boundaries=[(i + 1) * 20 for i in range(10)],
-            bucket_batch_sizes=[self._batch_size] * 11,
-            padded_shapes=padded_shapes))
+    #padded_shapes = ({
+    #    self._text_feature: [None],
+    #    'sequence_length': []
+    #}, {label: [] for label in self._labels})
+    #parsed_dataset = parsed_dataset.filter(
+    #    lambda x, _: x['sequence_length'] < self._max_seq_len)
+    #parsed_dataset = parsed_dataset.apply(
+    #    tf.contrib.data.bucket_by_sequence_length(
+    #        element_length_func=lambda x, _: x['sequence_length'],
+    #        bucket_boundaries=[(i + 1) * 20 for i in range(10)],
+    #        bucket_batch_sizes=[self._batch_size] * 11,
+    #        padded_shapes=padded_shapes))
     batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
+    print(batched_dataset)
     return batched_dataset
 
   def _read_tf_example(
@@ -89,9 +90,10 @@ class TFRecordInput(dataset_input.DatasetInput):
 
     text = parsed[self._text_feature]
     features = {self._text_feature: self._train_preprocess_fn(text)}
-    features['sequence_length'] = tf.shape(features[self._text_feature])[0]
+#    features['sequence_length'] = tf.shape(features[self._text_feature])[0]
     if self._round_labels:
-      labels = {label: tf.round(parsed[label]) for label in self._labels}
+      labels = {label: [tf.round(parsed[label])] for label in self._labels}
+      print(labels)
     else:
       labels = {label: parsed[label] for label in self._labels}
 

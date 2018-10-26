@@ -9,11 +9,11 @@ from tf_trainer.common import model_trainer
 
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import serving_input
-from tf_trainer.common import text_preprocessor
+#from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
 from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
 
-import nltk
+#import nltk
 import tensorflow as tf
 
 from typing import Dict
@@ -58,16 +58,16 @@ def main(argv):
   text_feature_name = FLAGS.text_feature_name
   key_name = FLAGS.key_name
 
-  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path, is_binary_embedding)
+#  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path, is_binary_embedding)
 
-  nltk.download("punkt")
-  train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
+  #nltk.download("punkt")
+  #train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInput(
       train_path=FLAGS.train_path,
       validate_path=FLAGS.validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      train_preprocess_fn=train_preprocess_fn,
+      train_preprocess_fn=lambda x: tf.convert_to_tensor([x]),  # TODO fix this.
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
