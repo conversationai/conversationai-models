@@ -26,12 +26,13 @@ trainingInput:
       - parameterName: batch_size
         type: INTEGER
         minValue: 16
-        maxValue: 128
+        maxValue: 256
         scaleType: UNIT_LOG_SCALE
       - parameterName: dense_units
         type: CATEGORICAL
         categoricalValues:
-        - '128'
-        - '128,128'
-        - '64'
-        - '64,64'
+        - '512,128,64'
+        - '128,64,64'
+        - '128,64'
+        - '512,64'
+        - '128,128,128,64'
