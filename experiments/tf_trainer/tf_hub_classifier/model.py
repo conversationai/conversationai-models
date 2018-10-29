@@ -1,4 +1,4 @@
-"""Tensorflow Estimator implementation of RNN Model with Attention"""
+"""Tensorflow Estimator using TF Hub universal sentence encoder."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -28,7 +28,7 @@ tf.app.flags.DEFINE_string(
     'Comma delimited string for the number of hidden units in the dense layer.')
 
 
-class TFRNNModel(base_model.BaseModel):
+class TFHubClassifierModel(base_model.BaseModel):
 
   def __init__(self, 
     text_feature_name: str, 
