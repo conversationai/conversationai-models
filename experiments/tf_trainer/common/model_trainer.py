@@ -192,6 +192,7 @@ class ModelTrainer(object):
     eval_spec = tf.estimator.EvalSpec(
         input_fn=self._dataset.validate_input_fn,
         steps=eval_steps,
+        throttle_secs=1,
         )
     self._estimator._config = self._estimator.config.replace(save_checkpoints_steps=eval_period)
     if FLAGS.n_export > 1:

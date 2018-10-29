@@ -28,21 +28,6 @@ trainingInput:
         minValue: 16
         maxValue: 128
         scaleType: UNIT_LOG_SCALE
-      - parameterName: gru_units
-        type: CATEGORICAL
-        categoricalValues:
-        - '256'            
-        - '128'
-        - '128,128'
-        - '64'
-        - '64,64'
-      - parameterName: attention_units
-        type: DISCRETE
-        discreteValues:
-        - 32
-        - 64
-        - 124
-        - 256
       - parameterName: dense_units
         type: CATEGORICAL
         categoricalValues:
