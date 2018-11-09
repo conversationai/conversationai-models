@@ -25,6 +25,10 @@ in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
     deactivate
     ```
 
+### Google Cloud Storage dependencies
+
+If you need to access data located in Google Cloud Storage, you must [install the Google Cloud SDK](https://cloud.google.com/sdk/docs/) and initialize it within your virtual environment.
+
 ## Evaluating one model
 
 The notebook `jigsaw_evaluation_pipeline.ipynb` provides a example of running on evaluation metrics for the ml-fairness project.
