@@ -48,12 +48,14 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
 
     parsed_dataset = dataset.map(
         self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
+    return parsed_dataset
 
-    padded_shapes = ({
-        self._text_feature: [],
-    }, {label: [] for label in self._labels})
-    batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
-    return batched_dataset
+    #padded_shapes = ({ self._text_feature: [] },
+    #                 { label: [] for label in self._labels })
+    #return parsed_dataset.padded_batch(
+    #    self._num_prefetch, padded_shapes=padded_shapes)
+    #    batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
+    #    return batched_dataset
 
   def _read_tf_example(
       self,
@@ -74,10 +76,11 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    features = {self._text_feature: tf.convert_to_tensor([parsed[self._text_feature]])}
-    if self._round_labels:
-      labels = {label: [tf.round(parsed[label])] for label in self._labels}
-    else:
-      labels = {label: [parsed[label]] for label in self._labels}
-    print(features)
+    text = tf.convert_to_tensor([parsed[self._text_feature]])
+    features = {self._text_feature: text}
+    labels = {}
+    for label in self._labels:
+      labels[label] = tf.convert_to_tensor([parsed[label]])
+      if self._round_labels:
+        labels[label] = tf.round(labels[label])
     return features, labels
