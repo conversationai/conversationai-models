@@ -19,13 +19,13 @@ import numpy as np
 import functools
 import tensorflow as tf
 
-def LoadTokenIdxEmbeddings(
-  embeddings_path: str) -> Tuple[Dict[str, int], np.ndarray, int]:
+def LoadTokenIdxEmbeddings(embeddings_path: str, max_words: Optional[int]) \
+  -> Tuple[Dict[str, int], np.ndarray, int, int]:
   """Generate word to idx mapping and word embeddings numpy array.
 
   We have two levels of indirection (e.g. word to idx and then idx to
   embedding) which could reduce embedding size if multiple words map to the
-  same idx. This is not currently a use case.
+  same idx; although this is not currently a real or useful use-case.
 
   Args:
     embeddings_path: Local, GCS, or HDFS path to embedding file. Each line
@@ -34,11 +34,13 @@ def LoadTokenIdxEmbeddings(
   Returns:
     Tuple of:
       A vocabulary dictionary (mapping words to their index)
-      A Numpy array of word embeddings with shape (vocab size, embedding size),
+      A Numpy array of word embeddings with shape (vocab size, embedding size)
       A unique unknown token index (greater than all other token indexes)
+      The size of the embeddings for words that is being used
   """
   word_to_idx = {}
   word_embeddings = []
+
   with tf.gfile.Open(embeddings_path) as f:
     for idx, line in enumerate(f):
       values = line.split()
@@ -56,4 +58,5 @@ def LoadTokenIdxEmbeddings(
   embeddings_matrix = np.asarray(word_embeddings, dtype=np.float32)
   embeddings_matrix = np.append(
       embeddings_matrix, [embeddings_matrix.mean(axis=0)], axis=0)
-  return word_to_idx, embeddings_matrix, unknown_token
+
+  return word_to_idx, embeddings_matrix, unknown_token, len(word_embeddings[0])
