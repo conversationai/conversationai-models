@@ -1,0 +1,8 @@
+# Ignore local data, e.g. copies of embeddings
+local_data
+
+# Ignore local tmp files and directories
+tmp
+
+# Local config to holds cloud/comel.ml settings.
+tf_trainer/convai_config.py
