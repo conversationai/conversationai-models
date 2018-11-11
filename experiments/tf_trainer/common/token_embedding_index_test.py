@@ -25,8 +25,9 @@ from tf_trainer.common.token_embedding_index import LoadTokenIdxEmbeddings
 class LoadTokenIdxEmbeddingsTest(tf.test.TestCase):
 
   def test_LoadTokenIdxEmbeddings(self):
-    idx, embeddings, unknown_idx = LoadTokenIdxEmbeddings(
+    idx, embeddings, unknown_idx, embedding_size = LoadTokenIdxEmbeddings(
         'testdata/cats_and_dogs_onehot.vocab.txt')
+    self.assertEqual(embedding_size, 6)
     self.assertEqual(unknown_idx, 7)
     self.assertEqual(idx['dogs'], 1)
     self.assertEqual(idx['cats'], 2)
