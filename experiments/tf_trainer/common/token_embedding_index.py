@@ -19,7 +19,7 @@ import numpy as np
 import functools
 import tensorflow as tf
 
-def LoadTokenIdxEmbeddings(embeddings_path: str, max_words: Optional[int]) \
+def LoadTokenIdxEmbeddings(embeddings_path: str) \
   -> Tuple[Dict[str, int], np.ndarray, int, int]:
   """Generate word to idx mapping and word embeddings numpy array.
 
