@@ -64,7 +64,7 @@ To run a hyper parameter tuning job on CMLE, execute the following command:
 
 The hyperparameter configuration (MODEL_NAME/hparam_config.yaml) describes the job configuration, the parameters to tune and their respective range.
 
-You can monitor your progress in the CMLE UI. 
+You can monitor your progress in the CMLE UI.
 
 
 ## Deploying a trained model on CMLE
