@@ -51,7 +51,7 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
         self._batch_size,
         padded_shapes=(
             {self._text_feature: [None]},
-            {label: [] for label in self._labels}))
+            {label: [None] for label in self._labels}))
     batched_dataset = batched_dataset.prefetch(self._num_prefetch)
     return batched_dataset
 
