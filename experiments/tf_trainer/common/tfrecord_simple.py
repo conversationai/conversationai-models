@@ -43,12 +43,17 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     return self._input_fn_from_file(self._validate_path)
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
-
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
-
     parsed_dataset = dataset.map(
-        self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
-    return parsed_dataset
+        self._read_tf_example,
+        num_parallel_calls=multiprocessing.cpu_count())
+    batched_dataset = parsed_dataset.padded_batch(
+        self._batch_size,
+        padded_shapes=(
+            {self._text_feature: [None]},
+            {label: [] for label in self._labels}))
+    batched_dataset = batched_dataset.prefetch(self._num_prefetch)
+    return batched_dataset
 
   def _read_tf_example(
       self,
