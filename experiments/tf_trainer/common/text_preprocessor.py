@@ -43,11 +43,6 @@ class TextPreprocessor(object):
   that the text is already preprocessed (list of words) in inference. In
   training, due to the availability of tf.py_func, we can handle the
   preprocessing.
-
-  The reasoning for this comes from this observation: The embedding step can be
-  made a part of the tensorflow graph, whereas the word to index step can not
-  (since words have variable length). Future work may include fixing a max word
-  length, or exploring other options.
   """
 
   def __init__(self, embeddings_path: str) -> None:
