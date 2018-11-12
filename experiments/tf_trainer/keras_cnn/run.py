@@ -22,6 +22,8 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string("embeddings_path",
                            "local_data/glove.6B/glove.6B.100d.txt",
                            "Path to the embeddings file.")
+tf.app.flags.DEFINE_boolean("is_binary_embedding", False,
+                           "Whether embeddings are binaries.")
 tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
 tf.app.flags.DEFINE_integer("batch_size", 64,
@@ -44,18 +46,19 @@ def main(argv):
   del argv  # unused
 
   embeddings_path = FLAGS.embeddings_path
+  is_binary_embedding = FLAGS.is_binary_embedding
   text_feature_name = FLAGS.text_feature_name
 
-  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
-  nltk.download("punkt")
-  tokenize_op_init = lambda: preprocessor.tokenize_tensor_op_py_func(nltk.word_tokenize)
+  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path, is_binary_embedding)
 
+  nltk.download("punkt")
+  train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInput(
       train_path=FLAGS.train_path,
       validate_path=FLAGS.validate_path,
       text_feature=text_feature_name,
       labels=LABELS,
-      feature_preprocessor_init=tokenize_op_init,
+      train_preprocess_fn=train_preprocess_fn,
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
