@@ -50,13 +50,6 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
         self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
     return parsed_dataset
 
-    #padded_shapes = ({ self._text_feature: [] },
-    #                 { label: [] for label in self._labels })
-    #return parsed_dataset.padded_batch(
-    #    self._num_prefetch, padded_shapes=padded_shapes)
-    #    batched_dataset = parsed_dataset.prefetch(self._num_prefetch)
-    #    return batched_dataset
-
   def _read_tf_example(
       self,
       record: tf.Tensor,
