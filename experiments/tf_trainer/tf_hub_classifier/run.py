@@ -39,7 +39,7 @@ def create_serving_input_fn(text_feature_name, key_name):
   def serving_input_fn_tfrecords():
 
     serialized_example = tf.placeholder(
-        shape=[],
+        shape=[None],
         dtype=tf.string,
         name="input_example_tensor"
     )
