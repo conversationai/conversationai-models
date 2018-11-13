@@ -24,7 +24,7 @@ tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
 tf.app.flags.DEFINE_integer("train_steps", 10,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 500,
+tf.app.flags.DEFINE_integer("eval_period", 40000,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", 50,
                             "The number of steps to eval for.")
