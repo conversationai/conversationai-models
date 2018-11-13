@@ -47,11 +47,7 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
-    batched_dataset = parsed_dataset.padded_batch(
-        self._batch_size,
-        padded_shapes=(
-            {self._text_feature: [None]},
-            {label: [] for label in self._labels}))
+    batched_dataset = parsed_dataset.batch(self._batch_size)
     batched_dataset = batched_dataset.prefetch(self._num_prefetch)
     return batched_dataset
 
@@ -74,11 +70,10 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    text = tf.convert_to_tensor([parsed[self._text_feature]])
-    features = {self._text_feature: text}
+    features = {self._text_feature: parsed[self._text_feature]}
     labels = {}
     for label in self._labels:
-      labels[label] = tf.convert_to_tensor([parsed[label]])
+      labels[label] = parsed[label]
       if self._round_labels:
         labels[label] = tf.round(labels[label])
     return features, labels
