@@ -22,7 +22,7 @@ tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
 tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 40000,
+tf.app.flags.DEFINE_integer("train_steps", 10,
                             "The number of steps to train for.")
 tf.app.flags.DEFINE_integer("eval_period", 500,
                             "The number of steps per eval period.")
@@ -39,7 +39,7 @@ def create_serving_input_fn(text_feature_name, key_name):
   def serving_input_fn_tfrecords():
 
     serialized_example = tf.placeholder(
-        shape=[],
+        shape=[None],
         dtype=tf.string,
         name="input_example_tensor"
     )
