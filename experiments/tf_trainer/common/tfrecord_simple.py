@@ -70,10 +70,10 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    features = {self._text_feature: [parsed[self._text_feature]]}
+    features = {self._text_feature: parsed[self._text_feature]}
     labels = {}
     for label in self._labels:
-      labels[label] = [parsed[label]]
+      labels[label] = parsed[label]
       if self._round_labels:
         labels[label] = tf.round(labels[label])
     return features, labels

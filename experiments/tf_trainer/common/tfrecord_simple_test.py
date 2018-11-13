@@ -55,8 +55,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(list(features["comment"].eval()), [b"Hi there Bob"])
-      np.testing.assert_almost_equal(labels["label"].eval(), [0.8])
+      self.assertEqual(features["comment"].eval(), b"Hi there Bob")
+      np.testing.assert_almost_equal(labels["label"].eval(), 0.8)
       self.assertEqual(list(labels), ["label"])
 
   def test_TFSimpleRecordInput_default_values(self):
@@ -69,9 +69,9 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(list(features["comment"].eval()), [b"Hi there Bob"])
-      np.testing.assert_almost_equal(labels["label"].eval(), [0.8])
-      np.testing.assert_almost_equal(labels["fake_label"].eval(), [-1.0])
+      self.assertEqual(features["comment"].eval(), b"Hi there Bob")
+      np.testing.assert_almost_equal(labels["label"].eval(), 0.8)
+      np.testing.assert_almost_equal(labels["fake_label"].eval(), -1.0)
 
   def test_TFSimpleRecordInput_rounded(self):
     dataset_input = tfrecord_simple.TFSimpleRecordInput(
@@ -83,8 +83,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(list(features["comment"].eval()), [b"Hi there Bob"])
-      np.testing.assert_almost_equal(labels["label"].eval(), [1.0])
+      self.assertEqual(features["comment"].eval(), b"Hi there Bob")
+      np.testing.assert_almost_equal(labels["label"].eval(), 1.0)
 
 if __name__ == "__main__":
   tf.test.main()
