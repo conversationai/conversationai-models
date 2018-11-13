@@ -85,3 +85,15 @@ py_test(
   srcs = ["tfrecord_simple_test.py",],
   deps = [":data_input", ":types",],
 )
+
+py_library(
+  name = "cnn_spec_parser",
+  srcs = ["cnn_spec_parser.py",],
+  deps = [":types",],
+)
+
+py_test(
+  name = "cnn_spec_parser_test",
+  srcs = ["cnn_spec_parser_test.py",],
+  deps = [":cnn_spec_parser", ":types",],
+)
