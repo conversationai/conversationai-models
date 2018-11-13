@@ -31,16 +31,16 @@ tf.app.flags.DEFINE_string("key_name", "comment_key",
                            "Name of the key feature for serving examples.")
 tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 40000,
+tf.app.flags.DEFINE_integer("train_steps", 100000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 500,
+tf.app.flags.DEFINE_integer("eval_period", 800,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", 50,
                             "The number of steps to eval for.")
 
 # TODO: Missing fields are not handled properly yet.
 LABELS = {
-    "frac_neg": tf.float32,
+    "toxicity": tf.float32,
     #"frac_very_neg": tf.float32
 }  # type: Dict[str, tf.DType]
 

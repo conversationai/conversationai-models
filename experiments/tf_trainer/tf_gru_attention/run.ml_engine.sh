@@ -27,8 +27,7 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIM
     --region=us-east1 \
     --verbosity=debug \
     -- \
-    --train_path="${GCS_RESOURCES}/toxicity_q42017_train.tfrecord" \
-    --validate_path="${GCS_RESOURCES}/toxicity_q42017_validate.tfrecord" \
+    --train_path="${GCS_RESOURCES}/civil_comments_data/train_eval_test/train-*.tfrecord" \
+    --validate_path="${GCS_RESOURCES}/civil_comments_data/train_eval_test/eval-*.tfrecord" \
     --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.100d.txt" \
-    --model_dir="${JOB_DIR}/model_dir" \
-    --n_export=7
+    --model_dir="${JOB_DIR}/model_dir"
