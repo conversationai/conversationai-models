@@ -25,7 +25,9 @@ BNF defining the syntax to specify CNNs:
   size, stride, num_filters = \d+
 ```
 
-Note that num_filters is the output embedding size.
+Inspiration for the notation comes from: `num_filters` being the output
+embedding size, and the other dimension of the computed CNN matrix will be
+`input_size * size / stride`.
 """
 
 import re
