@@ -8,7 +8,7 @@ JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/${DA
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
     --runtime-version=1.10 \
-    --python-version "3.5" \
+    --python-version "3.6" \
     --module-name="tf_trainer.${MODEL_NAME}.run" \
     --package-path=tf_trainer \
     --region=us-east1 \
