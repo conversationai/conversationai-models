@@ -52,7 +52,6 @@ def main(argv):
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
-  key_name = FLAGS.key_name
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
 
@@ -74,7 +73,7 @@ def main(argv):
   model = preprocessor.add_embedding_to_model(
       model_tf, text_feature_name)
 
-  trainer = model_trainer.ModelTrainer(dataset, model)
+  trainer = model_trainer.ModelTrainer(dataset, model, key_name=key_name)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
   serving_input_fn = serving_input.create_serving_input_fn(

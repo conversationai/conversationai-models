@@ -67,7 +67,7 @@ def main(argv):
       text_feature_name, "frac_neg")
   model = preprocessor.add_embedding_to_model(model_tf, text_feature_name)
 
-  trainer = model_trainer.ModelTrainer(dataset, model)
+  trainer = model_trainer.ModelTrainer(dataset, model, key_name=key_name)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period,
                           FLAGS.eval_steps)
 

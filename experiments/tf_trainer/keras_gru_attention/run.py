@@ -70,7 +70,7 @@ def main(argv):
   model = preprocessor.add_embedding_to_model(
       model_keras, text_feature_name)
 
-  trainer = model_trainer.ModelTrainer(dataset, model)
+  trainer = model_trainer.ModelTrainer(dataset, model, key_name=key_name)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
   serving_input_fn = serving_input.create_serving_input_fn(

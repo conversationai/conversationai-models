@@ -180,10 +180,12 @@ class ModelTrainer(object):
   """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
-               model: base_model.BaseModel) -> None:
+               model: base_model.BaseModel,
+               key_name: str = None) -> None:
     self._dataset = dataset
     self._model = model
     self._estimator = model.estimator(self._model_dir())
+    self._key_name = key_name
 
   # TODO(ldixon): consider early stopping. Currently steps is hard coded.
   def train_with_eval(self, steps, eval_period, eval_steps):
@@ -230,7 +232,8 @@ class ModelTrainer(object):
 
   def _add_estimator_key(self, estimator):
     '''Adds a forward key to the model_fn of an estimator.'''
-    estimator = forward_features(estimator, FLAGS.key_name)
+    if self._key_name:
+      estimator = forward_features(estimator, self._key_name)
     return estimator
 
   def _get_list_checkpoint(self, n_export, model_dir):
