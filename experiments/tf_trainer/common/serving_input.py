@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.python.ops import array_ops
 
 
-FLAGS = tf.app.FLAGS
+FLAGS = tf.app.flags.FLAGS
 
 def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name):
 
