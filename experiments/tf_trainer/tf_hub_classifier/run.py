@@ -8,7 +8,6 @@ from __future__ import print_function
 from tf_trainer.common import model_trainer
 
 from tf_trainer.common import tfrecord_simple
-from tf_trainer.common import serving_input
 from tf_trainer.common import types
 from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
 
