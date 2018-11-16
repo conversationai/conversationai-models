@@ -57,6 +57,9 @@ tf.app.flags.DEFINE_integer('n_export', 1,
                             'Number of models to export.'
                             'If =1, only the last one is saved.'
                             'If >1, we split the take n_export checkpoints.')
+tf.app.flags.DEFINE_string('key_name', 'comment_key',
+                           'Name of a pass-thru integer id for batch scoring.')
+
 
 tf.app.flags.mark_flag_as_required('train_path')
 tf.app.flags.mark_flag_as_required('validate_path')
@@ -180,12 +183,10 @@ class ModelTrainer(object):
   """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
-               model: base_model.BaseModel,
-               key_name: str = None) -> None:
+               model: base_model.BaseModel) -> None:
     self._dataset = dataset
     self._model = model
     self._estimator = model.estimator(self._model_dir())
-    self._key_name = key_name
 
   # TODO(ldixon): consider early stopping. Currently steps is hard coded.
   def train_with_eval(self, steps, eval_period, eval_steps):
@@ -232,8 +233,8 @@ class ModelTrainer(object):
 
   def _add_estimator_key(self, estimator):
     '''Adds a forward key to the model_fn of an estimator.'''
-    if self._key_name:
-      estimator = forward_features(estimator, self._key_name)
+    if FLAGS.key_name:
+      estimator = forward_features(estimator, FLAGS.key_name)
     return estimator
 
   def _get_list_checkpoint(self, n_export, model_dir):

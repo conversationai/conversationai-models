@@ -43,6 +43,9 @@ def create_serving_input_fn(text_feature_name):
     )
     feature_spec = {
         text_feature_name: tf.FixedLenFeature([], dtype=tf.string),
+        # key_name is defined in model_trainer.
+        FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
+                                           default_value=-1)
     }
 
     features = tf.parse_example(
