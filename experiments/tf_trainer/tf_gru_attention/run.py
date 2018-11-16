@@ -25,8 +25,6 @@ tf.app.flags.DEFINE_string("embeddings_path",
                            "Path to the embeddings file.")
 tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
                            "Feature name of the text feature.")
-tf.app.flags.DEFINE_string("key_name", "comment_key",
-                           "Name of the key feature for serving examples.")
 tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
 tf.app.flags.DEFINE_integer("train_steps", 100000,
@@ -48,11 +46,9 @@ def main(argv):
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
-  key_name = FLAGS.key_name
 
   embeddings_path = FLAGS.embeddings_path
   text_feature_name = FLAGS.text_feature_name
-  key_name = FLAGS.key_name
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
 
@@ -80,8 +76,7 @@ def main(argv):
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
-      text_feature_name=text_feature_name,
-      key_name=key_name)
+      text_feature_name=text_feature_name)
   trainer.export(serving_input_fn)
 
 
