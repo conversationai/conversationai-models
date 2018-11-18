@@ -54,14 +54,14 @@ class Filter(object):
   def __init__(self, str:str) -> None:
     m = filter_regexp.match(str)
     if m is None:
-      raise FilterParseError(f'Bad filter definition for: {str}')
+      raise FilterParseError('Bad filter definition for: %s' % str)
     self.num_filters = int(m.group('num_filters')) # type "int"
     self.size = int(m.group('size')) # type "int"
     self.stride = int(m.group('stride')) # type "int"
 
   def __str__(self) -> str:
     return (
-      f'({self.size} / {self.stride} -> {self.num_filters})')
+        '(%d / %d -> %d)' % (self.size, self.stride, self.num_filters))
 
 
 class ConcurrentFilters(object):
