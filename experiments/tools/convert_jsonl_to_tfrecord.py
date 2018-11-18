@@ -35,16 +35,17 @@ import re
 
 FLAGS = flags.FLAGS
 
+# TODO: Compute basic stats for text fields and labels.
 flags.DEFINE_string(
   'text_fields_re', None,
-  'Matcher for names of the text fields. Used to compute stats if provided.')
+  'Matcher for names of the text fields.')
 flags.register_validator(
   'text_fields_re', lambda value: isinstance(value, str) and re.compile(value),
   message='--text_field_re must be a regexp string.')
 
 flags.DEFINE_string(
   'label_fields_re', None,
-  'Matcher for names of the label fields. Used to compute stats if provided.')
+  'Matcher for names of the label fields.')
 flags.register_validator(
   'label_fields_re', lambda value: isinstance(value, str) and re.compile(value),
   message='--label_fields_re must be a regexp string.')
