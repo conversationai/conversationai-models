@@ -10,7 +10,7 @@ from tensorflow.python.keras import optimizers
 from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
-from typing import Set
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -42,7 +42,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   """
 
   def __init__(self,
-               labels: Set[str],
+               labels: List[str],
                embedding_size: int,
                optimizer='adam') -> None:
     self._labels = labels

@@ -10,6 +10,22 @@ import tensorflow as tf
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
 from typing import Dict
+from typing import List
+
+
+tf.app.flags.DEFINE_string('train_path', None,
+                           'Path to the training data TFRecord file.')
+tf.app.flags.DEFINE_string('validate_path', None,
+                           'Path to the validation data TFRecord file.')
+tf.app.flags.DEFINE_string('labels', 'frac_neg',
+                           'Comma separated list of (float) label features.')
+tf.app.flags.DEFINE_string('text_feature', 'comment_text',
+                           'Name of feature containing text input.')
+tf.app.flags.DEFINE_boolean('round_labels', True,
+                            'Round label features to 0 or 1 if true.')
+
+
+FLAGS = tf.app.flags.FLAGS
 
 
 class TFSimpleRecordInput(dataset_input.DatasetInput):
@@ -19,28 +35,31 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
   """
 
   def __init__(self,
-               train_path: str,
-               validate_path: str,
-               text_feature: str,
-               labels: Dict[str, tf.DType],
                batch_size: int = 64,
-               round_labels: bool = True,
                num_prefetch: int = 5) ->None:
-    self._train_path = train_path
-    self._validate_path = validate_path
-    self._text_feature = text_feature
-    self._labels = labels
+    self._labels = FLAGS.labels.split(',')
     self._batch_size = batch_size
-    self._round_labels = round_labels
     self._num_prefetch = num_prefetch
+    self._text_feature = FLAGS.text_feature
+    self._round_labels = FLAGS.round_labels
+
+  def labels(self) -> List[str]:
+    """List of the names of the float label features."""
+    return self._labels
+
+  def text_feature(self) -> str:
+    """Name of the feature containing the input text from examples."""
+    return self._text_feature
 
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set."""
-    return self._input_fn_from_file(self._train_path)
+    assert FLAGS.train_path
+    return self._input_fn_from_file(FLAGS.train_path)
 
   def validate_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for validation set."""
-    return self._input_fn_from_file(self._validate_path)
+    assert FLAGS.validate_path
+    return self._input_fn_from_file(FLAGS.validate_path)
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
     dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
@@ -60,17 +79,15 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
-    DEFAULT_VALUES = {tf.string: '', tf.float32: -1.0, tf.int32: -1}
 
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
-    for label, dtype in self._labels.items():
-      keys_to_features[label] = tf.FixedLenFeature([], dtype,
-                                                   DEFAULT_VALUES[dtype])
+    for label in self._labels:
+      keys_to_features[label] = tf.FixedLenFeature([], tf.float32, -1.0)
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    features = {self._text_feature: parsed[self._text_feature]}
+    features = {'text': parsed[self._text_feature]}
     labels = {}
     for label in self._labels:
       labels[label] = parsed[label]

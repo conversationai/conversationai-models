@@ -10,7 +10,7 @@ from tensorflow.python.keras import optimizers
 from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
-from typing import Set
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -46,7 +46,7 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
 
   MAX_SEQUENCE_LENGTH = 300
 
-  def __init__(self, labels: Set[str], optimizer='adam') -> None:
+  def __init__(self, labels: List[str], optimizer='adam') -> None:
     self._labels = labels
 
   def hparams(self):

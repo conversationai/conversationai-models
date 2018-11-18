@@ -15,8 +15,6 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string("text_feature_name", "comment_text",
-                           "Feature name of the text feature.")
 tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
 tf.app.flags.DEFINE_integer("train_steps", 40000,
@@ -26,12 +24,8 @@ tf.app.flags.DEFINE_integer("eval_period", 500,
 tf.app.flags.DEFINE_integer("eval_steps", 50,
                             "The number of steps to eval for.")
 
-LABELS = {
-    "frac_neg": tf.float32,
-}  # type: Dict[str, tf.DType]
 
-
-def create_serving_input_fn(text_feature_name):
+def create_serving_input_fn():
 
   def serving_input_fn_tfrecords():
 
@@ -41,7 +35,7 @@ def create_serving_input_fn(text_feature_name):
         name="input_example_tensor"
     )
     feature_spec = {
-        text_feature_name: tf.FixedLenFeature([], dtype=tf.string),
+        'text': tf.FixedLenFeature([], dtype=tf.string),
         # key_name is defined in model_trainer.
         FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
                                            default_value=-1)
@@ -61,22 +55,15 @@ def main(argv):
   del argv  # unused
 
   dataset = tfrecord_simple.TFSimpleRecordInput(
-      train_path=FLAGS.train_path,
-      validate_path=FLAGS.validate_path,
-      text_feature=FLAGS.text_feature_name,
-      labels=LABELS,
       batch_size=FLAGS.batch_size)
 
-  model = tf_hub_classifier.TFHubClassifierModel(
-      FLAGS.text_feature_name,
-      set(LABELS.keys())
-      )
+  model = tf_hub_classifier.TFHubClassifierModel(dataset.labels())
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
   serving_input_fn = create_serving_input_fn(
-      text_feature_name=FLAGS.text_feature_name)
+      text_feature_name=dataset.text_feature())
   trainer.export(serving_input_fn)
 
 

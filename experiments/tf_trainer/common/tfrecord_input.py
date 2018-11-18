@@ -8,43 +8,34 @@ import multiprocessing
 
 import tensorflow as tf
 from tf_trainer.common import dataset_input
+from tf_trainer.common import tfrecord_simple
 from tf_trainer.common import types
+
 from typing import Callable, Dict, List
 
 
-class TFRecordInput(dataset_input.DatasetInput):
+class TFRecordInput(tfrecord_simple.TFSimpleRecordInput):
   """TFRecord based DatasetInput.
 
   Handles parsing of TF Examples.
   """
 
   def __init__(self,
-               train_path: str,
-               validate_path: str,
-               text_feature: str,
-               labels: Dict[str, tf.DType],
                train_preprocess_fn: Callable[[str], List[str]],
                batch_size: int = 64,
-               round_labels: bool = True,
                num_prefetch: int = 5,
                max_seq_len: int = 30000) -> None:
-    self._train_path = train_path
-    self._validate_path = validate_path
-    self._text_feature = text_feature
-    self._labels = labels
-    self._batch_size = batch_size
+    super().__init__(batch_size, num_prefetch)
     self._train_preprocess_fn = train_preprocess_fn
-    self._round_labels = round_labels
-    self._num_prefetch = num_prefetch
     self._max_seq_len = max_seq_len
 
-  def train_input_fn(self) -> types.FeatureAndLabelTensors:
-    """input_fn for TF Estimators for training set."""
-    return self._input_fn_from_file(self._train_path)
+  def tokens_feature(self) -> str:
+    """Returns the name of the feature containing integer tokens.
 
-  def validate_input_fn(self) -> types.FeatureAndLabelTensors:
-    """input_fn for TF Estimators for validation set."""
-    return self._input_fn_from_file(self._validate_path)
+    Note that currently this code overwrites the input text feature
+    with the tokens using the same name.
+    """
+    return self.text_feature()
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
 
@@ -54,13 +45,13 @@ class TFRecordInput(dataset_input.DatasetInput):
 
     parsed_dataset = dataset.map(
         self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
+    parsed_dataset = parsed_dataset.filter(
+        lambda x, _: tf.less(x['sequence_length'], self._max_seq_len))
 
     padded_shapes = ({
-        self._text_feature: [None],
+        self.tokens_feature(): [None],
         'sequence_length': []
     }, {label: [] for label in self._labels})
-    parsed_dataset = parsed_dataset.filter(
-        lambda x, _: x['sequence_length'] < self._max_seq_len)
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x, _: x['sequence_length'],
@@ -79,19 +70,19 @@ class TFRecordInput(dataset_input.DatasetInput):
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
-    DEFAULT_VALUES = {tf.string: '', tf.float32: -1.0, tf.int32: -1}
-
     keys_to_features = {}
-    keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
-    for label, dtype in self._labels.items():
-      keys_to_features[label] = tf.FixedLenFeature([], dtype,
-                                                   DEFAULT_VALUES[dtype])
+    keys_to_features[self.text_feature()] = tf.FixedLenFeature([], tf.string)
+    for label in self._labels:
+      keys_to_features[label] = tf.FixedLenFeature([], tf.float32, -1.0)
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    text = parsed[self._text_feature]
-    features = {self._text_feature: self._train_preprocess_fn(text)}
-    features['sequence_length'] = tf.shape(features[self._text_feature])[0]
+    text = parsed[self.text_feature()]
+    tokens = self._train_preprocess_fn(text)
+    features = {
+        self.tokens_feature(): tokens,
+        'sequence_length': tf.shape(tokens)[0],
+    }
     if self._round_labels:
       labels = {label: tf.round(parsed[label]) for label in self._labels}
     else:

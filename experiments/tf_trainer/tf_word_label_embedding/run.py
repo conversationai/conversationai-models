@@ -34,35 +34,25 @@ tf.app.flags.DEFINE_integer("eval_period", 500,
 tf.app.flags.DEFINE_integer("eval_steps", 50,
                             "The number of steps to eval for.")
 
-# TODO: Missing fields are not handled properly yet.
-LABELS = {
-    "frac_neg": tf.float32,
-    #"frac_very_neg": tf.float32
-}  # type: Dict[str, tf.DType]
-
 
 def main(argv):
   del argv  # unused
 
   embeddings_path = FLAGS.embeddings_path
-  text_feature_name = FLAGS.text_feature_name
 
   preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
 
   nltk.download("punkt")
   train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInput(
-      train_path=FLAGS.train_path,
-      validate_path=FLAGS.validate_path,
-      text_feature=text_feature_name,
-      labels=LABELS,
       train_preprocess_fn=train_preprocess_fn,
       batch_size=FLAGS.batch_size,
       max_seq_len=5000)
 
   model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(
-      text_feature_name, "frac_neg")
-  model = preprocessor.add_embedding_to_model(model_tf, text_feature_name)
+      dataset.tokens_feature(), "frac_neg")
+  model = preprocessor.add_embedding_to_model(
+      model_tf, dataset.tokens_feature())
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period,
