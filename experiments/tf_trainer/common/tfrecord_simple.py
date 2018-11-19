@@ -7,6 +7,7 @@ from __future__ import print_function
 import multiprocessing
 
 import tensorflow as tf
+from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
 from typing import Dict
@@ -37,7 +38,6 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
   FLAGS.text_feature, the simple input will store the input text feature in
   the feature key _text_feature.
   """
-  _output_text_feature = 'text'
 
   def __init__(self,
                batch_size: int = 64,
@@ -92,7 +92,7 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    features = {self._output_text_feature: parsed[self._text_feature]}
+    features = {base_model.TEXT_FEATURE_KEY: parsed[self._text_feature]}
     labels = {}
     for label in self._labels:
       labels[label] = parsed[label]

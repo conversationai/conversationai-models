@@ -19,6 +19,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from tf_trainer.common import base_model
 from tf_trainer.common import tfrecord_simple
 from tf_trainer.common import types
 
@@ -46,7 +47,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
                       bytes_list=tf.train.BytesList(
                           value=['Hi there Bob'.encode('utf-8')]))
                   }))
-    self.ex_tensor = tf.convert_to_tensor(ex.SerializeToString(), dtype=tf.string)
+    self.ex_tensor = tf.convert_to_tensor(ex.SerializeToString(),
+                                          dtype=tf.string)
 
   def test_TFSimpleRecordInput_unrounded(self):
     FLAGS.round_labels = False
@@ -55,7 +57,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(features['text'].eval(), b'Hi there Bob')
+      self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
+                       b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
       self.assertEqual(list(labels), ['label'])
 
@@ -66,7 +69,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(features['text'].eval(), b'Hi there Bob')
+      self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
+                       b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
       np.testing.assert_almost_equal(labels['fake_label'].eval(), -1.0)
 
@@ -77,7 +81,8 @@ class TFSImpleRecordInputTest(tf.test.TestCase):
 
     with self.test_session():
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
-      self.assertEqual(features['text'].eval(), b'Hi there Bob')
+      self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
+                       b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 1.0)
 
 if __name__ == '__main__':

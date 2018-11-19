@@ -4,19 +4,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# Import common flags and run code. Must be imported first.
-from tf_trainer.common import model_trainer
-
-from tf_trainer.common import tfrecord_input
-from tf_trainer.common import serving_input
-from tf_trainer.common import text_preprocessor
-from tf_trainer.common import types
-from tf_trainer.keras_gru_attention import model as keras_gru_attention
-
 import nltk
 import tensorflow as tf
 
-from typing import Dict
+from tf_trainer.common import base_model
+from tf_trainer.common import model_trainer
+from tf_trainer.common import serving_input
+from tf_trainer.common import text_preprocessor
+from tf_trainer.common import tfrecord_input
+from tf_trainer.common import types
+from tf_trainer.keras_gru_attention import model as keras_gru_attention
+
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -51,7 +49,7 @@ def main(argv):
     labels=dataset.labels(),
     embedding_size=preprocessor._embedding_size)
   model = preprocessor.add_embedding_to_model(
-      model_keras, dataset.text_feature())
+      model_keras, base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)

@@ -7,6 +7,7 @@ from __future__ import print_function
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import optimizers
+from tf_trainer.common import base_model
 from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
@@ -62,7 +63,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
     I = layers.Input(
         shape=(None, self._embedding_size),
         dtype='float32',
-        name='comment_text')
+        name=base_model.TOKENS_FEATURE_KEY)
 
     # Bidirectional GRU
     H = I

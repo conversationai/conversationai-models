@@ -4,9 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# Import common flags and run code. Must be imported first.
+from tf_trainer.common import base_model
 from tf_trainer.common import model_trainer
-
 from tf_trainer.common import tfrecord_input
 from tf_trainer.common import text_preprocessor
 from tf_trainer.common import types
@@ -47,7 +46,7 @@ def main(argv):
 
   # TODO: Move embedding *into* Keras model.
   model = preprocessor.add_embedding_to_model(
-      keras_cnn.KerasCNNModel(dataset.labels()), dataset.tokens_feature())
+      keras_cnn.KerasCNNModel(dataset.labels()), base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)

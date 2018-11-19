@@ -7,6 +7,7 @@ from __future__ import print_function
 import multiprocessing
 
 import tensorflow as tf
+from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input
 from tf_trainer.common import tfrecord_simple
 from tf_trainer.common import types
@@ -35,14 +36,6 @@ class TFRecordInput(tfrecord_simple.TFSimpleRecordInput):
     self._train_preprocess_fn = train_preprocess_fn
     self._max_seq_len = max_seq_len
 
-  def tokens_feature(self) -> str:
-    """Returns the name of the feature containing integer tokens.
-
-    Note that currently this code overwrites the input text feature
-    with the tokens using the same name.
-    """
-    return self.text_feature()
-
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
 
     filenames_dataset = tf.data.Dataset.list_files(filepath)
@@ -55,7 +48,7 @@ class TFRecordInput(tfrecord_simple.TFSimpleRecordInput):
         lambda x, _: tf.less(x['sequence_length'], self._max_seq_len))
 
     padded_shapes = ({
-        self.tokens_feature(): [None],
+        base_model.TOKENS_FEATURE_KEY: [None],
         'sequence_length': []
     }, {label: [] for label in self._labels})
     parsed_dataset = parsed_dataset.apply(
@@ -86,7 +79,7 @@ class TFRecordInput(tfrecord_simple.TFSimpleRecordInput):
     text = parsed[self.text_feature()]
     tokens = self._train_preprocess_fn(text)
     features = {
-        self.tokens_feature(): tokens,
+        base_model.TOKENS_FEATURE_KEY: tokens,
         'sequence_length': tf.shape(tokens)[0],
     }
     if self._round_labels:

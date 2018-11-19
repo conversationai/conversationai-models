@@ -4,17 +4,17 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# Import common flags and run code. Must be imported first.
-from tf_trainer.common import model_trainer
+import nltk
+import tensorflow as tf
 
-from tf_trainer.common import tfrecord_input
+from tf_trainer.common import base_model
+from tf_trainer.common import model_trainer
 from tf_trainer.common import serving_input
 from tf_trainer.common import text_preprocessor
+from tf_trainer.common import tfrecord_input
 from tf_trainer.common import types
 from tf_trainer.tf_gru_attention import model as tf_gru_attention
 
-import nltk
-import tensorflow as tf
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -46,10 +46,9 @@ def main(argv):
       batch_size=FLAGS.batch_size)
 
   # TODO: Move embedding *into* Keras model.
-  model_tf = tf_gru_attention.TFRNNModel(
-      dataset.text_feature(), dataset.labels())
+  model_tf = tf_gru_attention.TFRNNModel(dataset.labels())
   model = preprocessor.add_embedding_to_model(
-      model_tf, dataset.tokens_feature())
+      model_tf, base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
@@ -57,7 +56,7 @@ def main(argv):
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
-      text_feature_name=dataset.tokens_feature())
+      text_feature_name=base_model.TOKENS_FEATURE_KEY)
   trainer.export(serving_input_fn)
 
 

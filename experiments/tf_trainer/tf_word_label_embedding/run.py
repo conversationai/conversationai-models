@@ -4,27 +4,23 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# Import common flags and run code. Must be imported first.
-from tf_trainer.common import model_trainer
-
-from tf_trainer.common import tfrecord_input
-from tf_trainer.common import serving_input
-from tf_trainer.common import text_preprocessor
-from tf_trainer.common import types
-from tf_trainer.tf_word_label_embedding import model as tf_word_label_embedding
-
 import nltk
 import tensorflow as tf
 
-from typing import Dict
+from tf_trainer.common import base_model
+from tf_trainer.common import model_trainer
+from tf_trainer.common import serving_input
+from tf_trainer.common import text_preprocessor
+from tf_trainer.common import tfrecord_input
+from tf_trainer.common import types
+from tf_trainer.tf_word_label_embedding import model as tf_word_label_embedding
+
 
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('embeddings_path',
                            'local_data/glove.6B/glove.6B.100d.txt',
                            'Path to the embeddings file.')
-tf.app.flags.DEFINE_string('text_feature_name', 'comment_text',
-                           'Feature name of the text feature.')
 tf.app.flags.DEFINE_integer('batch_size', 64,
                             'The batch size to use during training.')
 tf.app.flags.DEFINE_integer('train_steps', 30000,
@@ -50,9 +46,9 @@ def main(argv):
       max_seq_len=5000)
 
   model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(
-      dataset.tokens_feature(), 'frac_neg')
+      dataset.labels())
   model = preprocessor.add_embedding_to_model(
-      model_tf, dataset.tokens_feature())
+      model_tf, base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period,
