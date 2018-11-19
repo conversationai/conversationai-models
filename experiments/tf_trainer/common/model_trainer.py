@@ -45,10 +45,6 @@ from tf_trainer.common import dataset_input as ds
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_path', None,
-                           'Path to the training data TFRecord file.')
-tf.app.flags.DEFINE_string('validate_path', None,
-                           'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
 tf.app.flags.DEFINE_bool('enable_profiling', False,
@@ -61,8 +57,6 @@ tf.app.flags.DEFINE_string('key_name', 'comment_key',
                            'Name of a pass-thru integer id for batch scoring.')
 
 
-tf.app.flags.mark_flag_as_required('train_path')
-tf.app.flags.mark_flag_as_required('validate_path')
 tf.app.flags.mark_flag_as_required('model_dir')
 
 

@@ -7,7 +7,7 @@ from __future__ import print_function
 import tensorflow as tf
 import tensorflow_hub as hub
 from tf_trainer.common import base_model
-from typing import Set
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -30,10 +30,8 @@ tf.app.flags.DEFINE_string(
 
 class TFHubClassifierModel(base_model.BaseModel):
 
-  def __init__(self, 
-    text_feature_name: str, 
-    target_labels: Set[str]) -> None:
-    self._text_feature_name = text_feature_name
+  def __init__(self,
+    target_labels: List[str]) -> None:
     self._target_labels = target_labels
 
   @staticmethod
@@ -54,7 +52,7 @@ class TFHubClassifierModel(base_model.BaseModel):
 
   def _model_fn(self, features, labels, mode, params, config):
     embedded_text_feature_column = hub.text_embedding_column(
-      key=self._text_feature_name, module_spec=FLAGS.model_spec)
+      key=base_model.TEXT_FEATURE_KEY, module_spec=FLAGS.model_spec)
     inputs = tf.feature_column.input_layer(
         features, [embedded_text_feature_column])
 

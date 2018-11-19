@@ -32,17 +32,17 @@ tf.app.flags.DEFINE_string(
 
 def attend(inputs, attention_size, attention_depth=1):
   '''Attention layer.'''
-  
+
   sequence_length = tf.shape(inputs)[1] # dynamic
   final_layer_size = inputs.shape[2] # static
-  
+
   x = tf.reshape(inputs, [-1, final_layer_size])
   for _ in range(attention_depth-1):
     x = tf.layers.dense(x, attention_size, activation=tf.nn.relu)
   x = tf.layers.dense(x, 1, activation=None)
   logits = tf.reshape(x, [-1, sequence_length, 1])
   alphas = tf.nn.softmax(logits, dim=1)
-  
+
   output = tf.reduce_sum(inputs * alphas, 1)
 
   return output, alphas
@@ -51,9 +51,7 @@ def attend(inputs, attention_size, attention_depth=1):
 class TFRNNModel(base_model.BaseModel):
 
   def __init__(self, 
-    text_feature_name: str, 
     target_labels: Set[str]) -> None:
-    self._text_feature_name = text_feature_name
     self._target_labels = target_labels
 
   @staticmethod
@@ -76,7 +74,7 @@ class TFRNNModel(base_model.BaseModel):
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
-    inputs = features[self._text_feature_name]
+    inputs = features[base_model.TOKENS_FEATURE_KEY]
     batch_size = tf.shape(inputs)[0]
 
     rnn_layers = [
