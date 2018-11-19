@@ -18,6 +18,12 @@ class TFRecordInput(tfrecord_simple.TFSimpleRecordInput):
   """TFRecord based DatasetInput.
 
   Handles parsing of TF Examples.
+
+  When handling text input, this class will rewrite the text input future,
+  using the preprocessing fn. That is, the text feature will be rewritten
+  as a new key in the output changing both the type and contents - from
+  a string to a tensor of in integers representing tokens of some kind.
+  TODO: preserve the original string and write a new key.
   """
 
   def __init__(self,

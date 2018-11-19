@@ -32,7 +32,12 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
   """Simple no-preprecoessing TFRecord based DatasetInput.
 
   Handles parsing of TF Examples.
+
+  Regardless of which TF Example feature key is used, as specified by the
+  FLAGS.text_feature, the simple input will store the input text feature in
+  the feature key _text_feature.
   """
+  _output_text_feature = 'text'
 
   def __init__(self,
                batch_size: int = 64,
@@ -87,7 +92,7 @@ class TFSimpleRecordInput(dataset_input.DatasetInput):
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
-    features = {'text': parsed[self._text_feature]}
+    features = {self._output_text_feature: parsed[self._text_feature]}
     labels = {}
     for label in self._labels:
       labels[label] = parsed[label]
