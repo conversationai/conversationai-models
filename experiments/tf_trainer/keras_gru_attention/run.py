@@ -40,7 +40,7 @@ def main(argv):
 
   nltk.download("punkt")
   train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
-  dataset = tfrecord_input.TFRecordInput(
+  dataset = tfrecord_input.TFRecordInputWithTokenizer(
       train_preprocess_fn=train_preprocess_fn,
       batch_size=FLAGS.batch_size)
 
