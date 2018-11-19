@@ -81,6 +81,7 @@ py_library(
     srcs = [
         "dataset_input.py",
         "tfrecord_input.py",
+        "tfrecord_simple.py",
         ":base_model",
     ],
     deps = [":types"],
@@ -89,6 +90,15 @@ py_library(
 py_test(
     name = "tfrecord_input_test",
     srcs = ["tfrecord_input_test.py"],
+    deps = [
+        ":data_input",
+        ":types",
+    ],
+)
+
+py_test(
+    name = "tfrecord_simple_test",
+    srcs = ["tfrecord_simple_test.py"],
     deps = [
         ":data_input",
         ":types",

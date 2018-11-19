@@ -6,7 +6,7 @@ from __future__ import print_function
 
 from tf_trainer.common import base_model
 from tf_trainer.common import model_trainer
-from tf_trainer.common import tfrecord_input
+from tf_trainer.common import tfrecord_simple
 from tf_trainer.common import types
 from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
 
@@ -53,7 +53,7 @@ def create_serving_input_fn():
 def main(argv):
   del argv  # unused
 
-  dataset = tfrecord_input.TFRecordInput(
+  dataset = tfrecord_simple.TFSimpleRecordInput(
       batch_size=FLAGS.batch_size)
 
   model = tf_hub_classifier.TFHubClassifierModel(dataset.labels())
