@@ -100,7 +100,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     return features, labels
 
 
-class TFRecordInputWithTokenizer(TFSimpleRecordInput):
+class TFRecordInputWithTokenizer(TFRecordInput):
   """TFRecord based DatasetInput.
 
   Handles parsing of TF Examples.
