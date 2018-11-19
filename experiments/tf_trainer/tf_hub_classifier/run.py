@@ -4,9 +4,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-# Import common flags and run code. Must be imported first.
+from tf_trainer.common import base_model
 from tf_trainer.common import model_trainer
-
 from tf_trainer.common import tfrecord_simple
 from tf_trainer.common import types
 from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
@@ -35,7 +34,7 @@ def create_serving_input_fn():
         name="input_example_tensor"
     )
     feature_spec = {
-        'text': tf.FixedLenFeature([], dtype=tf.string),
+        base_model.TEXT_FEATURE_KEY: tf.FixedLenFeature([], dtype=tf.string),
         # key_name is defined in model_trainer.
         FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
                                            default_value=-1)

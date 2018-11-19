@@ -52,7 +52,7 @@ class TFHubClassifierModel(base_model.BaseModel):
 
   def _model_fn(self, features, labels, mode, params, config):
     embedded_text_feature_column = hub.text_embedding_column(
-      key='text', module_spec=FLAGS.model_spec)
+      key=base_model.TEXT_FEATURE_KEY, module_spec=FLAGS.model_spec)
     inputs = tf.feature_column.input_layer(
         features, [embedded_text_feature_column])
 

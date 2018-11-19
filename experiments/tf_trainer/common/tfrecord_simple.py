@@ -30,7 +30,7 @@ FLAGS = tf.app.flags.FLAGS
 
 
 class TFSimpleRecordInput(dataset_input.DatasetInput):
-  """Simple no-preprecoessing TFRecord based DatasetInput.
+  """Simple no-preprocessing TFRecord based DatasetInput.
 
   Handles parsing of TF Examples.
 
