@@ -74,6 +74,18 @@ class TFRecordInput(dataset_input.DatasetInput):
     batched_dataset = batched_dataset.prefetch(self._num_prefetch)
     return batched_dataset
 
+  def _process_labels(self, features, parsed):
+    labels = {}
+    for label in self._labels:
+      label_value = parsed[label]
+      # Missing weights are negative, find them and zero those features out.
+      weight = tf.cast(tf.greater_equal(label_value, 0.0), dtype=tf.float32)
+      if self._round_labels:
+        label_value = tf.round(label_value)
+      features[label + '_weight'] = weight
+      labels[label] = tf.multiply(label_value, weight)
+    return features, labels
+
   def _read_tf_example(
       self,
       record: tf.Tensor,
@@ -92,12 +104,7 @@ class TFRecordInput(dataset_input.DatasetInput):
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
     features = {base_model.TEXT_FEATURE_KEY: parsed[self._text_feature]}
-    labels = {}
-    for label in self._labels:
-      labels[label] = parsed[label]
-      if self._round_labels:
-        labels[label] = tf.round(labels[label])
-    return features, labels
+    return self._process_labels(features, parsed)
 
 
 class TFRecordInputWithTokenizer(TFRecordInput):
@@ -167,9 +174,4 @@ class TFRecordInputWithTokenizer(TFRecordInput):
         base_model.TOKENS_FEATURE_KEY: tokens,
         'sequence_length': tf.shape(tokens)[0],
     }
-    if self._round_labels:
-      labels = {label: tf.round(parsed[label]) for label in self._labels}
-    else:
-      labels = {label: parsed[label] for label in self._labels}
-
-    return features, labels
+    return self._process_labels(features, parsed)

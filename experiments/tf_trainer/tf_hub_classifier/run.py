@@ -61,8 +61,7 @@ def main(argv):
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
 
-  serving_input_fn = create_serving_input_fn(
-      text_feature_name=dataset.text_feature())
+  serving_input_fn = create_serving_input_fn()
   trainer.export(serving_input_fn)
 
 

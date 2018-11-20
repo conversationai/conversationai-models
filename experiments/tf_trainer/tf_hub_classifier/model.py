@@ -67,7 +67,8 @@ class TFHubClassifierModel(base_model.BaseModel):
         inputs=logits, units=len(self._target_labels), activation=None)
 
     output_heads = [
-        tf.contrib.estimator.binary_classification_head(name=name)
+        tf.contrib.estimator.binary_classification_head(
+            name=name, weight_column=name + '_weight')
         for name in self._target_labels
     ]
     multihead = tf.contrib.estimator.multi_head(output_heads)
