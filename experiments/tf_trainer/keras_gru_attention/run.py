@@ -57,7 +57,7 @@ def main(argv):
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
-      text_feature_name=dataset.token_feature())
+      text_feature_name=base_model.TOKENS_FEATURE_KEY)
   trainer.export(serving_input_fn)
 
 
