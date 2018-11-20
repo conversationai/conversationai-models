@@ -117,10 +117,10 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
                               for x in t.decode('utf-8').split(" ")]),
         [text], tf.int64)
 
-  def test_TFRecordInputWithTokenzier_unrounded(self):
+  def test_TFRecordInputWithTokenizer_unrounded(self):
     FLAGS.labels = "label"
     FLAGS.round_labels = False
-    dataset_input = tfrecord_input.TFRecordInput(
+    dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
         train_preprocess_fn=self.preprocessor)
 
     with self.test_session():
