@@ -15,7 +15,7 @@ FLAGS = tf.app.flags.FLAGS
 # TODO: Add validation
 tf.app.flags.DEFINE_float('learning_rate', 0.00003,
                           'The learning rate to use during training.')
-tf.app.flags.DEFINE_float('dropout_rate', 0.3,
+tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
     'model_spec',
@@ -24,7 +24,7 @@ tf.app.flags.DEFINE_string(
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
 tf.app.flags.DEFINE_string(
-    'dense_units', '512,128,64',
+    'dense_units', '1024,1024,512',
     'Comma delimited string for the number of hidden units in the dense layer.')
 
 
