@@ -70,9 +70,8 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
-    batched_dataset = parsed_dataset.batch(self._batch_size)
-    batched_dataset = batched_dataset.prefetch(self._num_prefetch)
-    return batched_dataset
+    return parsed_dataset.repeat().batch(self._batch_size).prefetch(
+        self._num_prefetch)
 
   def _process_labels(self, features, parsed):
     labels = {}
