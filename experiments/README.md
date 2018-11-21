@@ -44,11 +44,11 @@ deactivate
 ```shell
 gcloud auth application-default login
 ```
-You will be promoted to visit a page in the browser; follow the login instructions there.
+You will be prompted to visit a page in the browser; follow the login instructions there.
 
 3. Set the project:
 ```shell
-gcloud config set project wikidetox
+gcloud config set project [PROJECT]
 ```
 
 4. Verify that the above setup works:
