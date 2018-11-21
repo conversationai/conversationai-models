@@ -1,3 +1,17 @@
+# coding=utf-8
+# Copyright 2018 The Conversation-AI.github.io Authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 """The Model Trainer class.
 
 This provides an abstraction of Keras and TF.Estimator, and is intended for use
@@ -31,10 +45,6 @@ from tf_trainer.common import dataset_input as ds
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_path', None,
-                           'Path to the training data TFRecord file.')
-tf.app.flags.DEFINE_string('validate_path', None,
-                           'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
 tf.app.flags.DEFINE_bool('enable_profiling', False,
@@ -43,9 +53,10 @@ tf.app.flags.DEFINE_integer('n_export', 1,
                             'Number of models to export.'
                             'If =1, only the last one is saved.'
                             'If >1, we split the take n_export checkpoints.')
+tf.app.flags.DEFINE_string('key_name', 'comment_key',
+                           'Name of a pass-thru integer id for batch scoring.')
 
-tf.app.flags.mark_flag_as_required('train_path')
-tf.app.flags.mark_flag_as_required('validate_path')
+
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
@@ -216,7 +227,8 @@ class ModelTrainer(object):
 
   def _add_estimator_key(self, estimator):
     '''Adds a forward key to the model_fn of an estimator.'''
-    estimator = forward_features(estimator, FLAGS.key_name)
+    if FLAGS.key_name:
+      estimator = forward_features(estimator, FLAGS.key_name)
     return estimator
 
   def _get_list_checkpoint(self, n_export, model_dir):

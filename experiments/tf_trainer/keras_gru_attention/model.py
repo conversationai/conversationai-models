@@ -7,10 +7,11 @@ from __future__ import print_function
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import optimizers
+from tf_trainer.common import base_model
 from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
-from typing import Set
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -42,7 +43,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   """
 
   def __init__(self,
-               labels: Set[str],
+               labels: List[str],
                embedding_size: int,
                optimizer='adam') -> None:
     self._labels = labels
@@ -62,7 +63,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
     I = layers.Input(
         shape=(None, self._embedding_size),
         dtype='float32',
-        name='comment_text')
+        name=base_model.TOKENS_FEATURE_KEY)
 
     # Bidirectional GRU
     H = I

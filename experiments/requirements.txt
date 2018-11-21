@@ -3,12 +3,12 @@ astor==0.6.2
 bleach==1.5.0
 certifi==2018.4.16
 chardet==3.0.4
-comet-ml==1.0.16
 gast==0.2.0
 grpcio==1.12.1
 h5py==2.8.0
 html5lib==0.9999999
 idna==2.7
+jsonlines==1.2.0
 Keras==2.2.0
 Keras-Applications==1.0.2
 Keras-Preprocessing==1.0.1
@@ -16,9 +16,10 @@ Markdown==2.6.11
 mypy==0.610
 nltk==3.3
 numpy==1.14.4
+pandas==0.23.1
 protobuf==3.6.0
 PyYAML==3.12
-requests==2.19.1
+requests==2.20.0
 scipy==1.1.0
 six==1.11.0
 tensorboard==1.8.0
