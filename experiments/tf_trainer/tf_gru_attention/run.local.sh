@@ -17,4 +17,8 @@ python -m tf_trainer.tf_gru_attention.run \
   --train_path="${GCS_RESOURCES}/civil_comments_data/train_eval_test/train-*.tfrecord" \
   --validate_path="${GCS_RESOURCES}/civil_comments_data/train_eval_test/eval-*.tfrecord" \
   --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.100d.txt" \
-  --model_dir="tf_gru_attention_local_model_dir"
+  --model_dir="tf_gru_attention_local_model_dir" \
+  --labels="toxicity"
+
+
+

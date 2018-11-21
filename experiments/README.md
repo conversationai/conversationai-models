@@ -23,24 +23,45 @@ this is the build tool we use to run tests, etc.
 Install library dependencies (it is optional, but recommended to install these
 in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
-    ```shell
-    # The python3 way to create and use virtual environment
-    # (optional, but recommended):
-    python3 -m venv .pyenv
-    source .pyenv/bin/activate
-    # Install dependencies
-    pip install -r requirements.txt
+```shell
+# The python3 way to create and use virtual environment
+# (optional, but recommended):
+python3 -m venv .pyenv
+source .pyenv/bin/activate
+# Install dependencies
+pip install -r requirements.txt
 
-    # ... do stuff ...
+# ... do stuff ...
 
-    # Exit your virtual environment.
-    deactivate
-    ```
+# Exit your virtual environment.
+deactivate
+```
 
 ### Cloud and ML Engine configuration
 
-TODO(nthain)
+1. Install the [Google Cloud SDK](https://cloud.google.com/sdk/).
+2. Log in: 
+```shell
+gcloud auth application-default login
+```
+You will be prompted to visit a page in the browser; follow the login instructions there.
 
+3. Set the project:
+```shell
+gcloud config set project [PROJECT]
+```
+
+4. Verify that the above setup works:
+```shell
+gcloud ml-engine models list
+```
+
+You should see some existing models. Example output:
+```shell
+NAME                                DEFAULT_VERSION_NAME
+kaggle_model                        v_20180627_173451
+...
+```
 
 ## Training an Existing Model
 
@@ -64,7 +85,7 @@ To run a hyper parameter tuning job on CMLE, execute the following command:
 
 The hyperparameter configuration (MODEL_NAME/hparam_config.yaml) describes the job configuration, the parameters to tune and their respective range.
 
-You can monitor your progress in the CMLE UI. 
+You can monitor your progress in the CMLE UI.
 
 
 ## Deploying a trained model on CMLE

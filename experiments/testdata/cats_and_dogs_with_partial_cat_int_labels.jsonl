@@ -1,0 +1,16 @@
+{ "text": "cats good", "bad": 0.0, "cat": 1 }
+{ "text": "cats bad", "bad": 1.0, "cat": 1 }
+{ "text": "dogs good", "bad": 0.0, "cat": 0  }
+{ "text": "dogs bad", "bad": 1.0, "cat": 0  }
+{ "text": "good cats", "bad": 0.0, "cat": 1 }
+{ "text": "dogs and cats", "bad": 0.0, "cat": 1 }
+{ "text": "not bad dogs and cats", "bad": 0.0, "cat": 1 }
+{ "text": "not bad dogs", "bad": 0.0, "cat": 0 }
+{ "text": "bad dogs and cats", "bad": 1.0, "cat": 1 }
+{ "text": "bad dogs and bad cats", "bad": 1.0, "cat": 1 }
+{ "text": "dogs and bad cats", "bad": 1.0, "cat": 1 }
+{ "text": "dogs and not bad cats", "bad": 0.0}
+{ "text": "dogs and cats bad", "bad": 1.0 }
+{ "text": "dogs and cats good", "bad": 1.0 }
+{ "text": "not dogs and bad cats", "bad": 1.0 }
+{ "text": "not dogs and not cats", "bad": 0.0 }
