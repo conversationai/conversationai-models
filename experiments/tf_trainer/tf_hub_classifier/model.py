@@ -22,10 +22,11 @@ tf.app.flags.DEFINE_string(
     'https://tfhub.dev/google/universal-sentence-encoder/2',
     'The url of the TF Hub sentence encoding module to use.')
 # This would normally just be a multi_integer, but we use string due to
-# constraints with ML Engine hyperparameter tuning.
+# constraints with ML Engine hyperparameter tuning. The length of the list
+# determines the number of layers, and the size of each layer.
 tf.app.flags.DEFINE_string(
     'dense_units', '1024,1024,512',
-    'Comma delimited string for the number of hidden units in the dense layer.')
+    'Comma delimited string for the number of hidden units in the dense layers.')
 
 
 class TFHubClassifierModel(base_model.BaseModel):
