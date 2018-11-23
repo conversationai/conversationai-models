@@ -14,13 +14,13 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer("batch_size", 256,
+tf.app.flags.DEFINE_integer("batch_size", 32,
                             "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 140000,
+tf.app.flags.DEFINE_integer("train_steps", 40000,
                             "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 5000,
+tf.app.flags.DEFINE_integer("eval_period", 500,
                             "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", 350,
+tf.app.flags.DEFINE_integer("eval_steps", 50,
                             "The number of steps to eval for.")
 
 
