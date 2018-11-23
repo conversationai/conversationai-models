@@ -74,6 +74,22 @@ class TFRecordInput(dataset_input.DatasetInput):
         self._num_prefetch)
 
   def _process_labels(self, features, parsed):
+    """Applies rounding and computes weights tied to feature presence.
+    
+    For all of the expected labels, if the value is negative, this
+    indicates a missing feature from the input. A corresponding
+    label name, suffixed by '_weight' will be added to the features
+    with a value of 1.0 is present, and 0.0 if absent. The label
+    value is rounded up or down (if enabled) and then mapped to
+    zero if missing.
+
+    Args:
+        features: the input features read from a TF Example.
+        parsed: the input labels read from a TF Example.
+
+    Returns:
+        A tuple of the features dict (with weights) and the labels dict.
+    """
     labels = {}
     for label in self._labels:
       label_value = parsed[label]
