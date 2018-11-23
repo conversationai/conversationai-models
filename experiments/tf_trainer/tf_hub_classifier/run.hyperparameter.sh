@@ -19,4 +19,6 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME}_${USER}_${DATETIM
     --model_dir="${JOB_DIR}/model_dir" \
     --is_embedding_trainable False \
     --train_steps=40000 \
-    --eval_period=800
+    --eval_period=800 \
+    --labels=frac_neg,frac_very_neg,sexual_orientation,health_age_disability,gender,religion,rne,obscene,threat,insult,identity_hate,flirtation,sexual_explicit
+

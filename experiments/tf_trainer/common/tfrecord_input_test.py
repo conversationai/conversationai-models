@@ -60,7 +60,9 @@ class TFRecordInputTest(tf.test.TestCase):
       self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
                        b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
-      self.assertEqual(list(labels), ['label'])
+      np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
+      self.assertCountEqual(list(labels), ['label'])
+      self.assertCountEqual(list(features), ['text', 'label_weight'])
 
   def test_TFRecordInput_default_values(self):
     FLAGS.labels = 'label,fake_label'
@@ -72,7 +74,9 @@ class TFRecordInputTest(tf.test.TestCase):
       self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
                        b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
-      np.testing.assert_almost_equal(labels['fake_label'].eval(), -1.0)
+      np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
+      np.testing.assert_almost_equal(labels['fake_label'].eval(), 0.0)
+      np.testing.assert_almost_equal(features['fake_label_weight'].eval(), 0.0)
 
   def test_TFRecordInput_rounded(self):
     FLAGS.labels = 'label'
@@ -84,6 +88,7 @@ class TFRecordInputTest(tf.test.TestCase):
       self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
                        b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 1.0)
+      np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
 
 
 class TFRecordInputWithTokenizerTest(tf.test.TestCase):
@@ -123,6 +128,7 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
       self.assertAlmostEqual(labels["label"].eval(), 0.8)
+      self.assertAlmostEqual(features["label_weight"].eval(), 1.0)
 
   def test_TFRecordInputWithTokenizer_default_values(self):
     FLAGS.labels = "label,fake_label"
@@ -135,7 +141,9 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
       self.assertAlmostEqual(labels["label"].eval(), 0.8)
-      self.assertAlmostEqual(labels["fake_label"].eval(), -1.0)
+      self.assertAlmostEqual(labels["fake_label"].eval(), 0.0)
+      self.assertAlmostEqual(features["label_weight"].eval(), 1.0)
+      self.assertAlmostEqual(features["fake_label_weight"].eval(), 0.0)
 
   def test_TFRecordInputWithTokenizer_rounded(self):
     FLAGS.labels = "label"
@@ -148,6 +156,7 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
       self.assertEqual(labels["label"].eval(), 1.0)
+      self.assertEqual(features["label_weight"].eval(), 1.0)
 
 if __name__ == "__main__":
   tf.test.main()

@@ -15,17 +15,18 @@ FLAGS = tf.app.flags.FLAGS
 # TODO: Add validation
 tf.app.flags.DEFINE_float('learning_rate', 0.00003,
                           'The learning rate to use during training.')
-tf.app.flags.DEFINE_float('dropout_rate', 0.3,
+tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
     'model_spec',
     'https://tfhub.dev/google/universal-sentence-encoder/2',
     'The url of the TF Hub sentence encoding module to use.')
 # This would normally just be a multi_integer, but we use string due to
-# constraints with ML Engine hyperparameter tuning.
+# constraints with ML Engine hyperparameter tuning. The length of the list
+# determines the number of layers, and the size of each layer.
 tf.app.flags.DEFINE_string(
-    'dense_units', '512,128,64',
-    'Comma delimited string for the number of hidden units in the dense layer.')
+    'dense_units', '1024,1024,512',
+    'Comma delimited string for the number of hidden units in the dense layers.')
 
 
 class TFHubClassifierModel(base_model.BaseModel):
@@ -67,7 +68,8 @@ class TFHubClassifierModel(base_model.BaseModel):
         inputs=logits, units=len(self._target_labels), activation=None)
 
     output_heads = [
-        tf.contrib.estimator.binary_classification_head(name=name)
+        tf.contrib.estimator.binary_classification_head(
+            name=name, weight_column=name + '_weight')
         for name in self._target_labels
     ]
     multihead = tf.contrib.estimator.multi_head(output_heads)
