@@ -40,11 +40,18 @@ deactivate
 ### Cloud and ML Engine configuration
 
 1. Install the [Google Cloud SDK](https://cloud.google.com/sdk/).
-2. Log in: 
+2. Log in:
+```shell
+gcloud auth login
+```
+You will be prompted to visit a page in the browser; follow the login instructions there.
+
+Due to [some issues](https://stackoverflow.com/questions/44401088/using-training-tfrecords-that-are-stored-on-google-cloud), also run this command:
+
 ```shell
 gcloud auth application-default login
 ```
-You will be prompted to visit a page in the browser; follow the login instructions there.
+Follow the instructions there as well.
 
 3. Set the project:
 ```shell
