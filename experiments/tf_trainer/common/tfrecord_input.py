@@ -90,6 +90,8 @@ class TFRecordInput(dataset_input.DatasetInput):
     Returns:
         A tuple of the features dict (with weights) and the labels dict.
     """
+    # Make a deep copy to avoid changing the input.
+    new_features = {k: v for k, v in features.items()}
     labels = {}
     for label in self._labels:
       label_value = parsed[label]
@@ -97,9 +99,9 @@ class TFRecordInput(dataset_input.DatasetInput):
       weight = tf.cast(tf.greater_equal(label_value, 0.0), dtype=tf.float32)
       if self._round_labels:
         label_value = tf.round(label_value)
-      features[label + '_weight'] = weight
+      new_features[label + '_weight'] = weight
       labels[label] = tf.multiply(label_value, weight)
-    return features, labels
+    return new_features, labels
 
   def _read_tf_example(
       self,
@@ -154,10 +156,14 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     parsed_dataset = parsed_dataset.filter(
         lambda x, _: tf.less(x['sequence_length'], self._max_seq_len))
 
-    padded_shapes = ({
+    feature_shapes = {
         base_model.TOKENS_FEATURE_KEY: [None],
         'sequence_length': []
-    }, {label: [] for label in self._labels})
+    }
+    for label in self._labels:
+      feature_shapes[label + '_weight'] = []
+
+    padded_shapes = (feature_shapes, {label: [] for label in self._labels})
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x, _: x['sequence_length'],
