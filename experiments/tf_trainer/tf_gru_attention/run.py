@@ -22,14 +22,6 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string("embeddings_path",
                            "local_data/glove.6B/glove.6B.100d.txt",
                            "Path to the embeddings file.")
-tf.app.flags.DEFINE_integer("batch_size", 32,
-                            "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 100000,
-                            "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 800,
-                            "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", 50,
-                            "The number of steps to eval for.")
 
 
 def main(argv):
@@ -42,8 +34,7 @@ def main(argv):
   nltk.download("punkt")
   train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInputWithTokenizer(
-      train_preprocess_fn=train_preprocess_fn,
-      batch_size=FLAGS.batch_size)
+      train_preprocess_fn=train_preprocess_fn)
 
   # TODO: Move embedding *into* Keras model.
   model_tf = tf_gru_attention.TFRNNModel(dataset.labels())
@@ -51,7 +42,7 @@ def main(argv):
       model_tf, base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
-  trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
+  trainer.train_with_eval()
 
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,

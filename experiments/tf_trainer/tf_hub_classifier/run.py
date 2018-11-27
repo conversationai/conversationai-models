@@ -14,15 +14,6 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer("batch_size", 32,
-                            "The batch size to use during training.")
-tf.app.flags.DEFINE_integer("train_steps", 40000,
-                            "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 500,
-                            "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", 50,
-                            "The number of steps to eval for.")
-
 
 def create_serving_input_fn():
 
@@ -53,13 +44,11 @@ def create_serving_input_fn():
 def main(argv):
   del argv  # unused
 
-  dataset = tfrecord_input.TFRecordInput(
-      batch_size=FLAGS.batch_size)
-
+  dataset = tfrecord_input.TFRecordInput()
   model = tf_hub_classifier.TFHubClassifierModel(dataset.labels())
 
   trainer = model_trainer.ModelTrainer(dataset, model)
-  trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period, FLAGS.eval_steps)
+  trainer.train_with_eval()
 
   serving_input_fn = create_serving_input_fn()
   trainer.export(serving_input_fn)

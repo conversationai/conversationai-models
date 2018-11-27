@@ -56,6 +56,14 @@ tf.app.flags.DEFINE_integer('n_export', 1,
 tf.app.flags.DEFINE_string('key_name', 'comment_key',
                            'Name of a pass-thru integer id for batch scoring.')
 
+tf.app.flags.DEFINE_integer("train_steps", 100000,
+                            "The number of steps to train for.")
+tf.app.flags.DEFINE_integer("eval_period", 1000,
+                            "The number of steps per eval period.")
+tf.app.flags.DEFINE_integer("eval_steps", None,
+                            "Number of examples to eval for, default all.")
+
+
 
 tf.app.flags.mark_flag_as_required('model_dir')
 
@@ -182,15 +190,8 @@ class ModelTrainer(object):
     self._model = model
     self._estimator = model.estimator(self._model_dir())
 
-  # TODO(ldixon): consider early stopping. Currently steps is hard coded.
-  def train_with_eval(self, steps, eval_period, eval_steps):
-    """
-    Args:
-      steps: total number of batches to train for.
-      eval_period: the number of steps between evaluations.
-      eval_steps: the number of batches that are evaluated per evaulation.
-    """
-
+  def train_with_eval(self):
+    """Train with periodic evaluation."""
     training_hooks = None
     if FLAGS.enable_profiling:
       training_hooks = [tf.train.ProfilerHook(save_steps=10,
@@ -198,20 +199,18 @@ class ModelTrainer(object):
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
-        max_steps=steps,
+        max_steps=FLAGS.train_steps,
         hooks=training_hooks)
     eval_spec = tf.estimator.EvalSpec(
         input_fn=self._dataset.validate_input_fn,
-        steps=eval_steps,
-        throttle_secs=1,
-        )
-    self._estimator._config = self._estimator.config.replace(save_checkpoints_steps=eval_period)
+        steps=FLAGS.eval_steps,
+        throttle_secs=1)
+    self._estimator._config = self._estimator.config.replace(
+        save_checkpoints_steps=FLAGS.eval_period)
     if FLAGS.n_export > 1:
-      self._estimator._config = self._estimator.config.replace(keep_checkpoint_max=None)
-    tf.estimator.train_and_evaluate(
-        self._estimator,
-        train_spec,
-        eval_spec)
+      self._estimator._config = self._estimator.config.replace(
+          keep_checkpoint_max=None)
+    tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
 
   def _model_dir(self):
     """Get Model Directory.
