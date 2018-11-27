@@ -60,7 +60,7 @@ class TFRecordInput(dataset_input.DatasetInput):
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set.
 
-    Automatically repeats indefinitely.
+    Automatically repeats over input data forever.
     """
     assert FLAGS.train_path
     return self._input_fn_from_file(FLAGS.train_path).repeat()
@@ -143,9 +143,8 @@ class TFRecordInputWithTokenizer(TFRecordInput):
 
   def __init__(self,
                train_preprocess_fn: Callable[[str], List[str]],
-               num_prefetch: int = 5,
                max_seq_len: int = 30000) -> None:
-    super().__init__(num_prefetch)
+    super().__init__()
     self._train_preprocess_fn = train_preprocess_fn
     self._max_seq_len = max_seq_len
 
