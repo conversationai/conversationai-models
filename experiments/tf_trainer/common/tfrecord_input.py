@@ -75,8 +75,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
-    return parsed_dataset.batch(self._batch_size).prefetch(
-        self._num_prefetch)
+    return parsed_dataset.batch(self._batch_size).prefetch(self._num_prefetch)
 
   def _process_labels(self, features, parsed):
     """Applies rounding and computes weights tied to feature presence.
