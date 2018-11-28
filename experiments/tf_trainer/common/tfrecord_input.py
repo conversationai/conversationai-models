@@ -23,6 +23,10 @@ tf.app.flags.DEFINE_string('text_feature', 'comment_text',
                            'Name of feature containing text input.')
 tf.app.flags.DEFINE_boolean('round_labels', True,
                             'Round label features to 0 or 1 if true.')
+tf.app.flags.DEFINE_integer('batch_size', 256,
+                            'Batch sizes to use when reading.')
+tf.app.flags.DEFINE_integer('num_prefetch', 5,
+                            'Batch sizes to use when reading.')
 
 
 FLAGS = tf.app.flags.FLAGS
@@ -38,12 +42,10 @@ class TFRecordInput(dataset_input.DatasetInput):
   the feature key _text_feature.
   """
 
-  def __init__(self,
-               batch_size: int = 64,
-               num_prefetch: int = 5) ->None:
+  def __init__(self) -> None:
     self._labels = FLAGS.labels.split(',')
-    self._batch_size = batch_size
-    self._num_prefetch = num_prefetch
+    self._batch_size = FLAGS.batch_size
+    self._num_prefetch = FLAGS.num_prefetch
     self._text_feature = FLAGS.text_feature
     self._round_labels = FLAGS.round_labels
 
@@ -57,7 +59,7 @@ class TFRecordInput(dataset_input.DatasetInput):
 
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set.
-   
+
     Automatically repeats over input data forever.
     """
     assert FLAGS.train_path
@@ -140,10 +142,8 @@ class TFRecordInputWithTokenizer(TFRecordInput):
 
   def __init__(self,
                train_preprocess_fn: Callable[[str], List[str]],
-               batch_size: int = 64,
-               num_prefetch: int = 5,
                max_seq_len: int = 30000) -> None:
-    super().__init__(batch_size, num_prefetch)
+    super().__init__()
     self._train_preprocess_fn = train_preprocess_fn
     self._max_seq_len = max_seq_len
 

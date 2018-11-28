@@ -21,28 +21,17 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('embeddings_path',
                            'local_data/glove.6B/glove.6B.100d.txt',
                            'Path to the embeddings file.')
-tf.app.flags.DEFINE_integer('batch_size', 64,
-                            'The batch size to use during training.')
-tf.app.flags.DEFINE_integer('train_steps', 30000,
-                            'The number of steps to train for.')
-tf.app.flags.DEFINE_integer('eval_period', 500,
-                            'The number of steps per eval period.')
-tf.app.flags.DEFINE_integer('eval_steps', 50,
-                            'The number of steps to eval for.')
 
 
 def main(argv):
   del argv  # unused
 
-  embeddings_path = FLAGS.embeddings_path
-
-  preprocessor = text_preprocessor.TextPreprocessor(embeddings_path)
+  preprocessor = text_preprocessor.TextPreprocessor(FLAGS.embeddings_path)
 
   nltk.download('punkt')
   train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInputWithTokenizer(
       train_preprocess_fn=train_preprocess_fn,
-      batch_size=FLAGS.batch_size,
       max_seq_len=5000)
 
   model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(
@@ -51,8 +40,7 @@ def main(argv):
       model_tf, base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
-  trainer.train_with_eval(FLAGS.train_steps, FLAGS.eval_period,
-                          FLAGS.eval_steps)
+  trainer.train_with_eval()
 
 
 if __name__ == '__main__':
