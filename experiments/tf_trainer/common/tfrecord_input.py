@@ -56,9 +56,12 @@ class TFRecordInput(dataset_input.DatasetInput):
     return self._text_feature
 
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
-    """input_fn for TF Estimators for training set."""
+    """input_fn for TF Estimators for training set.
+   
+    Automatically repeats over input data forever.
+    """
     assert FLAGS.train_path
-    return self._input_fn_from_file(FLAGS.train_path)
+    return self._input_fn_from_file(FLAGS.train_path).repeat()
 
   def validate_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for validation set."""
@@ -70,8 +73,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     parsed_dataset = dataset.map(
         self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
-    return parsed_dataset.repeat().batch(self._batch_size).prefetch(
-        self._num_prefetch)
+    return parsed_dataset.batch(self._batch_size).prefetch(self._num_prefetch)
 
   def _process_labels(self, features, parsed):
     """Applies rounding and computes weights tied to feature presence.
@@ -148,7 +150,6 @@ class TFRecordInputWithTokenizer(TFRecordInput):
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
 
     filenames_dataset = tf.data.Dataset.list_files(filepath)
-    filenames_dataset = filenames_dataset.repeat(None)
     dataset = tf.data.TFRecordDataset(filenames_dataset) # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(
