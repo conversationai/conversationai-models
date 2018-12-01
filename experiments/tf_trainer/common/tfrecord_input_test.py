@@ -42,6 +42,9 @@ class TFRecordInputTest(tf.test.TestCase):
               'ignored-label':
                   tf.train.Feature(
                       float_list=tf.train.FloatList(value=[0.125])),
+              'int_label':
+                  tf.train.Feature(
+                      int64_list=tf.train.Int64List(value=[0])),
               'comment':
                   tf.train.Feature(
                       bytes_list=tf.train.BytesList(
@@ -65,7 +68,7 @@ class TFRecordInputTest(tf.test.TestCase):
       self.assertCountEqual(list(features), ['text', 'label_weight'])
 
   def test_TFRecordInput_default_values(self):
-    FLAGS.labels = 'label,fake_label'
+    FLAGS.labels = 'label,fake_label,int_label'
     FLAGS.round_labels = False
     dataset_input = tfrecord_input.TFRecordInput()
 
@@ -74,6 +77,7 @@ class TFRecordInputTest(tf.test.TestCase):
       self.assertEqual(features[base_model.TEXT_FEATURE_KEY].eval(),
                        b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
+      np.testing.assert_almost_equal(labels['int_label'].eval(), 0.0)
       np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
       np.testing.assert_almost_equal(labels['fake_label'].eval(), 0.0)
       np.testing.assert_almost_equal(features['fake_label_weight'].eval(), 0.0)
@@ -101,6 +105,9 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
               "label":
                   tf.train.Feature(
                       float_list=tf.train.FloatList(value=[0.8])),
+              "int_label":
+                  tf.train.Feature(
+                      int64_list=tf.train.Int64List(value=[0])),
               "comment":
                   tf.train.Feature(
                       bytes_list=tf.train.BytesList(
@@ -118,7 +125,7 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
         [text], tf.int64)
 
   def test_TFRecordInputWithTokenizer_unrounded(self):
-    FLAGS.labels = "label"
+    FLAGS.labels = "label,int_label"
     FLAGS.round_labels = False
     dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
         train_preprocess_fn=self.preprocessor)
@@ -128,6 +135,7 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
       self.assertAlmostEqual(labels["label"].eval(), 0.8)
+      self.assertAlmostEqual(labels["int_label"].eval(), 0.0)
       self.assertAlmostEqual(features["label_weight"].eval(), 1.0)
 
   def test_TFRecordInputWithTokenizer_default_values(self):
