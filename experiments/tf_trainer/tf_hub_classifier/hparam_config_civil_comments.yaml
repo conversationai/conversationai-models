@@ -8,7 +8,7 @@ trainingInput:
   parameterServerCount: 1
   hyperparameters:
     goal: MAXIMIZE
-    hyperparameterMetricTag: auc/frac_neg
+    hyperparameterMetricTag: auc/toxicity
     maxTrials: 100
     maxParallelTrials: 10
     enableTrialEarlyStopping: FALSE
