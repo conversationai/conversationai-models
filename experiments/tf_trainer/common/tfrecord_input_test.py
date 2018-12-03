@@ -69,6 +69,7 @@ class TFRecordInputTest(tf.test.TestCase):
 
   def test_TFRecordInput_default_values(self):
     FLAGS.labels = 'label,fake_label,int_label'
+    FLAGS.label_dtypes = 'float,float,int'
     FLAGS.round_labels = False
     dataset_input = tfrecord_input.TFRecordInput()
 
@@ -98,34 +99,35 @@ class TFRecordInputTest(tf.test.TestCase):
 class TFRecordInputWithTokenizerTest(tf.test.TestCase):
 
   def setUp(self):
-    FLAGS.text_feature = "comment"
+    FLAGS.text_feature = 'comment'
     ex = tf.train.Example(
       features=tf.train.Features(
           feature={
-              "label":
+              'label':
                   tf.train.Feature(
                       float_list=tf.train.FloatList(value=[0.8])),
-              "int_label":
+              'int_label':
                   tf.train.Feature(
                       int64_list=tf.train.Int64List(value=[0])),
-              "comment":
+              'comment':
                   tf.train.Feature(
                       bytes_list=tf.train.BytesList(
-                          value=["Hi there Bob".encode("utf-8")]))
+                          value=['Hi there Bob'.encode('utf-8')]))
                   }))
     self.ex_tensor = tf.convert_to_tensor(ex.SerializeToString(), dtype=tf.string)
 
-    self.word_to_idx = {"Hi": 12, "there": 13}
+    self.word_to_idx = {'Hi': 12, 'there': 13}
     self.unknown_token = 999
 
   def preprocessor(self, text):
     return tf.py_func(
         lambda t: np.asarray([self.word_to_idx.get(x, self.unknown_token)
-                              for x in t.decode('utf-8').split(" ")]),
+                              for x in t.decode('utf-8').split(' ')]),
         [text], tf.int64)
 
   def test_TFRecordInputWithTokenizer_unrounded(self):
-    FLAGS.labels = "label,int_label"
+    FLAGS.labels = 'label,int_label'
+    FLAGS.label_dtypes = 'float,int'
     FLAGS.round_labels = False
     dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
         train_preprocess_fn=self.preprocessor)
@@ -134,12 +136,12 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
-      self.assertAlmostEqual(labels["label"].eval(), 0.8)
-      self.assertAlmostEqual(labels["int_label"].eval(), 0.0)
-      self.assertAlmostEqual(features["label_weight"].eval(), 1.0)
+      self.assertAlmostEqual(labels['label'].eval(), 0.8)
+      self.assertAlmostEqual(labels['int_label'].eval(), 0.0)
+      self.assertAlmostEqual(features['label_weight'].eval(), 1.0)
 
   def test_TFRecordInputWithTokenizer_default_values(self):
-    FLAGS.labels = "label,fake_label"
+    FLAGS.labels = 'label,fake_label'
     FLAGS.round_labels = False
     dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
         train_preprocess_fn=self.preprocessor)
@@ -148,13 +150,13 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
-      self.assertAlmostEqual(labels["label"].eval(), 0.8)
-      self.assertAlmostEqual(labels["fake_label"].eval(), 0.0)
-      self.assertAlmostEqual(features["label_weight"].eval(), 1.0)
-      self.assertAlmostEqual(features["fake_label_weight"].eval(), 0.0)
+      self.assertAlmostEqual(labels['label'].eval(), 0.8)
+      self.assertAlmostEqual(labels['fake_label'].eval(), 0.0)
+      self.assertAlmostEqual(features['label_weight'].eval(), 1.0)
+      self.assertAlmostEqual(features['fake_label_weight'].eval(), 0.0)
 
   def test_TFRecordInputWithTokenizer_rounded(self):
-    FLAGS.labels = "label"
+    FLAGS.labels = 'label'
     FLAGS.round_labels = True
     dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
         train_preprocess_fn=self.preprocessor)
@@ -163,8 +165,8 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
       features, labels = dataset_input._read_tf_example(self.ex_tensor)
       self.assertEqual(list(features[base_model.TOKENS_FEATURE_KEY].eval()),
                        [12, 13, 999])
-      self.assertEqual(labels["label"].eval(), 1.0)
-      self.assertEqual(features["label_weight"].eval(), 1.0)
+      self.assertEqual(labels['label'].eval(), 1.0)
+      self.assertEqual(features['label_weight'].eval(), 1.0)
 
-if __name__ == "__main__":
+if __name__ == '__main__':
   tf.test.main()

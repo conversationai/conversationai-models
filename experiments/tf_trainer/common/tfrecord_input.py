@@ -18,7 +18,11 @@ tf.app.flags.DEFINE_string('train_path', None,
 tf.app.flags.DEFINE_string('validate_path', None,
                            'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('labels', 'frac_neg',
-                           'Comma separated list of (float) label features.')
+                           'Comma separated list of label features.')
+tf.app.flags.DEFINE_string('label_dtypes', None,
+                           'Comma separated list of dtypes for labels. Each '
+                           'dtype must be float or int. If not provided '
+                           'assumes all labels are floats.')
 tf.app.flags.DEFINE_string('text_feature', 'comment_text',
                            'Name of feature containing text input.')
 tf.app.flags.DEFINE_boolean('round_labels', True,
@@ -30,6 +34,16 @@ tf.app.flags.DEFINE_integer('num_prefetch', 5,
 
 
 FLAGS = tf.app.flags.FLAGS
+
+DTYPE_MAPPING = {
+  'float': tf.float32,
+  'int': tf.int64
+}
+
+DTYPE_DEFAULT = {
+  'float': -1.0,
+  'int': -1
+}
 
 
 class TFRecordInput(dataset_input.DatasetInput):
@@ -44,6 +58,10 @@ class TFRecordInput(dataset_input.DatasetInput):
 
   def __init__(self) -> None:
     self._labels = FLAGS.labels.split(',')
+    if FLAGS.label_dtypes:
+      self._label_dtypes = FLAGS.label_dtypes.split(',')
+    else:
+      self._label_dtypes = ['float'] * len(self._labels)
     self._batch_size = FLAGS.batch_size
     self._num_prefetch = FLAGS.num_prefetch
     self._text_feature = FLAGS.text_feature
@@ -98,8 +116,8 @@ class TFRecordInput(dataset_input.DatasetInput):
     new_features = {k: v for k, v in features.items()}
     labels = {}
     for label in self._labels:
-      label_value = parsed[label]
-      # Missing weights are negative, find them and zero those features out.
+      label_value = tf.cast(parsed[label], dtype = tf.float32)
+      # Missing values are negative, find them and zero those features out.
       weight = tf.cast(tf.greater_equal(label_value, 0.0), dtype=tf.float32)
       if self._round_labels:
         label_value = tf.round(label_value)
@@ -119,8 +137,10 @@ class TFRecordInput(dataset_input.DatasetInput):
 
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
-    for label in self._labels:
-      keys_to_features[label] = tf.FixedLenFeature([], tf.float32, -1.0)
+    for label, dtype in zip(self._labels, self._label_dtypes):
+      keys_to_features[label] = tf.FixedLenFeature([],
+                                                   DTYPE_MAPPING[dtype],
+                                                   DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
@@ -185,8 +205,10 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     """
     keys_to_features = {}
     keys_to_features[self.text_feature()] = tf.FixedLenFeature([], tf.string)
-    for label in self._labels:
-      keys_to_features[label] = tf.FixedLenFeature([], tf.float32, -1.0)
+    for label, dtype in zip(self._labels, self._label_dtypes):
+      keys_to_features[label] = tf.FixedLenFeature([],
+                                                   DTYPE_MAPPING[dtype],
+                                                   DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
 
