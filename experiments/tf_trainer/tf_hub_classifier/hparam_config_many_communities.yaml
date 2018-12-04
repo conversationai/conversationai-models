@@ -1,0 +1,39 @@
+trainingInput:
+  pythonVersion: '3.5'
+  scaleTier: CUSTOM
+  masterType: standard
+  workerType: standard_gpu
+  parameterServerType: large_model
+  workerCount: 1
+  parameterServerCount: 1
+  hyperparameters:
+    goal: MAXIMIZE
+    hyperparameterMetricTag: auc/removed
+    maxTrials: 100
+    maxParallelTrials: 10
+    enableTrialEarlyStopping: FALSE
+    params:
+      - parameterName: learning_rate
+        type: DOUBLE
+        minValue: 0.000001
+        maxValue: 0.01
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: dropout_rate
+        type: DOUBLE
+        minValue: 0
+        maxValue: 1
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: batch_size
+        type: DISCRETE
+        discreteValues:
+        - 64
+        - 128
+        - 256
+      - parameterName: dense_units
+        type: CATEGORICAL
+        categoricalValues:
+        - '512,128,64'
+        - '128,64,64'
+        - '128,64'
+        - '512,64'
+        - '128,128,128,64'
