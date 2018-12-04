@@ -2,7 +2,7 @@
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
-MODEL_NAME="tf_gru_attention"
+MODEL_NAME="tf_cnn"
 
 if [ "$1" == "civil_comments" ]; then
     
