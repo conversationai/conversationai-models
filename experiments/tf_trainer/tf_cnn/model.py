@@ -76,8 +76,6 @@ class TFCNNModel(base_model.BaseModel):
     inputs = features[base_model.TOKENS_FEATURE_KEY]
     batch_size = tf.shape(inputs)[0]
 
-    logits = inputs
-
     # Conv
     X = inputs
     for filter_size in params.filter_sizes:
@@ -86,12 +84,16 @@ class TFCNNModel(base_model.BaseModel):
       X = layers.GlobalAveragePooling1D()(X)
     elif params.pooling_type == "max":
       X = layers.GlobalMaxPooling1D()(X)
+    else:
+      raise ValueError('Unrecognized pooling type parameter')
 
     # FC
+    logits = X
     for num_units in params.dense_units:
       logits = tf.layers.dense(
-          inputs=X, units=num_units, activation=tf.nn.relu)
+          inputs=logits, units=num_units, activation=tf.nn.relu)
       logits = tf.layers.dropout(logits, rate=params.dropout_rate)
+
     logits = tf.layers.dense(
         inputs=logits, units=len(self._target_labels), activation=None)
 
