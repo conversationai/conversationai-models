@@ -89,7 +89,8 @@ class TFRecordInput(dataset_input.DatasetInput):
     return self._input_fn_from_file(FLAGS.validate_path)
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
-    dataset = tf.data.TFRecordDataset(filepath)  # type: tf.data.TFRecordDataset
+    filenames_dataset = tf.data.Dataset.list_files(filepath)
+    dataset = tf.data.TFRecordDataset(filenames_dataset) # type: tf.data.TFRecordDataset
     parsed_dataset = dataset.map(
         self._read_tf_example,
         num_parallel_calls=multiprocessing.cpu_count())
