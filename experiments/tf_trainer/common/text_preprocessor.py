@@ -72,7 +72,7 @@ class TextPreprocessor(object):
       return np.asarray([
             self._word_to_idx.get(w, self._unknown_token)
             for w in words
-        ])
+        ], dtype=np.int64)
 
     def _preprocess_fn(text: types.Tensor) -> types.Tensor:
       '''Converts a text into a list of integers.
