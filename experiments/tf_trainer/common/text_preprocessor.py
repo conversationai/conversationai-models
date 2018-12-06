@@ -83,7 +83,8 @@ class TextPreprocessor(object):
       Returns:
         A 1-D int64 Tensor.
       '''
-      words = tf.py_func(_tokenize, [text], tf.int64)
+      words = tf.py_func(_tokenize, [text], tf.int64, stateful=False,
+                         name='PreprocessFn')
       return words
 
     return _preprocess_fn
