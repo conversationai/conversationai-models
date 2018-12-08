@@ -1,11 +1,12 @@
 trainingInput:
   pythonVersion: '3.5'
-  scaleTier: CUSTOM
-  masterType: standard
-  workerType: standard_p100
-  parameterServerType: large_model
-  workerCount: 1
-  parameterServerCount: 1
+  # scaleTier: CUSTOM
+  # masterType: standard
+  # workerType: standard_gpu
+  # parameterServerType: large_model
+  # workerCount: 1
+  # parameterServerCount: 1
+  scaleTier: BASIC_GPU
   hyperparameters:
     goal: MAXIMIZE
     hyperparameterMetricTag: auc/toxicity
@@ -26,9 +27,9 @@ trainingInput:
       - parameterName: batch_size
         type: DISCRETE
         discreteValues:
+        - 16
         - 32
         - 64
-        - 128
       - parameterName: gru_units
         type: CATEGORICAL
         categoricalValues:          
