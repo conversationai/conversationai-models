@@ -10,7 +10,7 @@ trainingInput:
   hyperparameters:
     goal: MAXIMIZE
     hyperparameterMetricTag: auc/removed
-    maxTrials: 100
+    maxTrials: 150
     maxParallelTrials: 10
     enableTrialEarlyStopping: FALSE
     params:
@@ -22,7 +22,7 @@ trainingInput:
       - parameterName: dropout_rate
         type: DOUBLE
         minValue: 0
-        maxValue: 1
+        maxValue: 0.7
         scaleType: UNIT_LINEAR_SCALE
       - parameterName: batch_size
         type: DISCRETE
