@@ -1,11 +1,5 @@
 trainingInput:
   pythonVersion: '3.5'
-  # scaleTier: CUSTOM
-  # masterType: standard
-  # workerType: standard_p100
-  # parameterServerType: large_model
-  # workerCount: 1
-  # parameterServerCount: 1
   scaleTier: BASIC_GPU
   hyperparameters:
     goal: MAXIMIZE
