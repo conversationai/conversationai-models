@@ -12,6 +12,7 @@ if [ "$1" == "civil_comments" ]; then
     eval_period=800
     eval_steps=50
     labels="toxicity"
+    label_dtypes="float"
 
 elif [ "$1" == "toxicity" ]; then
 
@@ -21,6 +22,7 @@ elif [ "$1" == "toxicity" ]; then
     eval_period=800
     eval_steps=50
     labels="frac_neg"
+    label_dtypes="float"
 
 elif [ "$1" == "many_communities" ]; then
 
@@ -30,6 +32,7 @@ elif [ "$1" == "many_communities" ]; then
     eval_period=800
     eval_steps=50
     labels="removed"
+    label_dtypes="int"
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
@@ -58,6 +61,7 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --eval_period=$eval_period \
     --eval_steps=$eval_steps \
     --labels=$labels \
+    --label_dtypes=$label_dtypes \
     --preprocess_in_tf=False
 
 echo "Model dir:"

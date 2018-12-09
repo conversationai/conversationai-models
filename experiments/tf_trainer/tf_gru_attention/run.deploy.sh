@@ -1,8 +1,16 @@
 #!/bin/bash
 # Deploys a saved model on Cloud MLE.
 
-# Edit these!
-MODEL_NAME=tf_gru_attention
+if [ "$1" == "civil_comments" ] || [ "$1" == "toxicity" ] || [ "$1" == "many_communities" ] ; then
+    
+    MODEL_NAME=tf_gru_attention_$1_glove
+
+else
+    echo "First positional arg must be one of civil_comments, toxicity, many_communities."
+    return;
+fi
+
+
 # By default, the model is the last one from the user.
 MODEL_SAVED_PATH=$(gsutil ls gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/ | tail -1)
 

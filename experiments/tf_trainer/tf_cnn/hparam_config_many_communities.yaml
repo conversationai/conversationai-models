@@ -1,16 +1,10 @@
 trainingInput:
   pythonVersion: '3.5'
-  # scaleTier: CUSTOM
-  # masterType: standard
-  # workerType: standard_gpu
-  # parameterServerType: large_model
-  # workerCount: 1
-  # parameterServerCount: 1
   scaleTier: BASIC_GPU
   hyperparameters:
     goal: MAXIMIZE
     hyperparameterMetricTag: auc/removed
-    maxTrials: 100
+    maxTrials: 150
     maxParallelTrials: 10
     enableTrialEarlyStopping: FALSE
     params:
@@ -22,7 +16,7 @@ trainingInput:
       - parameterName: dropout_rate
         type: DOUBLE
         minValue: 0
-        maxValue: 1
+        maxValue: 0.7
         scaleType: UNIT_LINEAR_SCALE
       - parameterName: batch_size
         type: DISCRETE
