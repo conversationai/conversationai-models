@@ -21,6 +21,8 @@ tf.app.flags.DEFINE_string(
     'model_spec',
     'https://tfhub.dev/google/universal-sentence-encoder/2',
     'The url of the TF Hub sentence encoding module to use.')
+tf.app.flags.DEFINE_bool('trainable', False,
+                         'What to pass for the TF Hub trainable parameter.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning. The length of the list
 # determines the number of layers, and the size of each layer.
@@ -53,7 +55,8 @@ class TFHubClassifierModel(base_model.BaseModel):
 
   def _model_fn(self, features, labels, mode, params, config):
     embedded_text_feature_column = hub.text_embedding_column(
-      key=base_model.TEXT_FEATURE_KEY, module_spec=FLAGS.model_spec)
+      key=base_model.TEXT_FEATURE_KEY, module_spec=FLAGS.model_spec,
+      trainable=FLAGS.trainable)
     inputs = tf.feature_column.input_layer(
         features, [embedded_text_feature_column])
 
