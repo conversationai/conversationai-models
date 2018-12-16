@@ -46,17 +46,22 @@ py_library(
     ],
     deps = [
         ":base_model",
+        ":token_embedding_index",
         ":types",
     ],
 )
 
-# TODO: add a test for the text preprocessor.
-# py_test(
-#   name = "text_preprocessor_test",
-#   srcs = ["text_preprocessor_test.py",],
-#   deps = [":text_preprocessor", ":types",],
-#   data = ["testdata/cats_and_dogs_onehot.vocab.txt",],
-# )
+py_test(
+    name = "text_preprocessor_test",
+    srcs = ["text_preprocessor_test.py"],
+    data = [
+        "//testdata:cats_and_dogs_onehot.vocab.txt",
+    ],
+    deps = [
+        ":text_preprocessor",
+        ":types",
+    ],
+)
 
 py_library(
     name = "base_model",
