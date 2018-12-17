@@ -88,7 +88,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     assert FLAGS.validate_path
     return self._input_fn_from_file(FLAGS.validate_path)
 
-  def _keys_to_features():
+  def _keys_to_features(self):
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
     for label, dtype in zip(self._labels, self._label_dtypes):
