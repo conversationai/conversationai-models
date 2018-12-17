@@ -7,7 +7,7 @@ if [ "$1" == "civil_comments" ] || [ "$1" == "toxicity" ] || [ "$1" == "many_com
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
-    return;
+    exit 1
 fi
 
 
