@@ -73,7 +73,9 @@ class TFCharCNNModel(base_model.BaseModel):
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
-    embedding = tf.truncated_normal([256, params.embedding_size])
+    embedding = tf.Variable(
+        tf.truncated_normal([256, params.embedding_size]),
+        name="char_embedding")
     texts = features[base_model.TEXT_FEATURE_KEY]
     batch_size = tf.shape(texts)[0]
     byte_ids = tf.reshape(
