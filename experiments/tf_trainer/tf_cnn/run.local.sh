@@ -25,7 +25,7 @@ elif [ "$1" == "many_communities" ]; then
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
-    return;
+    exit 1
 fi
 
 
