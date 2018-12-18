@@ -36,11 +36,11 @@ elif [ "$1" == "many_communities" ]; then
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
-    return;
+    exit 1
 fi
 
 
-MODEL_NAME_DATA=${MODEL_NAME}_$1_glove
+MODEL_NAME_DATA=${MODEL_NAME}_$1
 JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME_DATA}/${DATETIME}
 
 
