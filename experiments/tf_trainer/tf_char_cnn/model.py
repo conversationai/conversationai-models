@@ -13,29 +13,29 @@ FLAGS = tf.app.flags.FLAGS
 
 # Hyperparameters
 # TODO: Add validation
-tf.app.flags.DEFINE_float('learning_rate', 0.00001,
+tf.app.flags.DEFINE_float('learning_rate', 0.0001,
                           'The learning rate to use during training.')
-tf.app.flags.DEFINE_float('dropout_rate', 0.1,
+tf.app.flags.DEFINE_float('dropout_rate', 0.25,
                           'The dropout rate to use during training.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
 # TODO: add link to relevant public issue/bug/documentation?
 tf.app.flags.DEFINE_string(
-    'filter_sizes', '5',
+    'filter_sizes', '5,7,9,11',
     'Comma delimited string for the sizes of convolution filters.')
 tf.app.flags.DEFINE_integer(
-    'num_filters', 32,
+    'num_filters', 16,
     'Number of convolutional filters for every convolutional layer.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning.
 # TODO: add link to relevant public issue/bug/documentation?
 tf.app.flags.DEFINE_string(
-    'dense_units', '64',
+    'dense_units', '256,512,128',
     'Comma delimited string for the number of hidden units in the dense layer.')
 tf.app.flags.DEFINE_integer(
-    'embedding_size', 100,
+    'embedding_size', 32,
     'The number of dimensions in the character embedding.')
-tf.app.flags.DEFINE_string('pooling_type', 'average',
+tf.app.flags.DEFINE_string('pooling_type', 'max',
                            'Average or max pooling.')
 tf.app.flags.DEFINE_integer('string_len', 1500,
                             'The length to truncate or pad to.')
