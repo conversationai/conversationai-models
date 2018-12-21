@@ -10,6 +10,31 @@ from tensorflow.python.ops import array_ops
 
 FLAGS = tf.app.flags.FLAGS
 
+def create_text_serving_input_fn():
+
+  def serving_input_fn_tfrecords(text_feature_name):
+    serialized_example = tf.placeholder(
+        shape=[None],
+        dtype=tf.string,
+        name="input_example_tensor"
+    )
+    feature_spec = {
+        text_feature_name: tf.FixedLenFeature([], dtype=tf.string),
+        # key_name is defined in model_trainer.
+        FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
+                                           default_value=-1)
+    }
+
+    features = tf.parse_example(
+        serialized_example, feature_spec)
+
+    return tf.estimator.export.ServingInputReceiver(
+        features,
+        serialized_example)
+
+  return serving_input_fn_tfrecords
+
+
 def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name):
 
   def serving_input_fn_tfrecords():
