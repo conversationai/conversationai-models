@@ -10,9 +10,9 @@ from tensorflow.python.ops import array_ops
 
 FLAGS = tf.app.flags.FLAGS
 
-def create_text_serving_input_fn():
+def create_text_serving_input_fn(text_feature_name):
 
-  def serving_input_fn_tfrecords(text_feature_name):
+  def serving_input_fn_tfrecords():
     serialized_example = tf.placeholder(
         shape=[None],
         dtype=tf.string,
