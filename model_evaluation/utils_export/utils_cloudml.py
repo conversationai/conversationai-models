@@ -210,7 +210,6 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
     and example_key. It orders the results based on example_key and then adds
     them to df
     in a new column called 'model_col_name'.
-
   """
 
   prediction_file = os.path.join(prediction_file,
@@ -219,19 +218,38 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
     raise ValueError('Prediction file does not exist.'
                      ' You need to call prediction job and wait for completion.')
 
-  def load_predictions(pred_file):
+  def _load_predictions(pred_file):
     with file_io.FileIO(pred_file, 'r') as f:
       # prediction file needs to fit in memory.
-      predictions = [json.loads(line) for line in f]
+      try:
+        predictions = [json.loads(line) for line in f]
+      except:
+        predictions = []
     return predictions
 
-  predictions = load_predictions(prediction_file)
-  predictions = sorted(predictions, key=lambda x: x[example_key])
+  predictions = _load_predictions(prediction_file)
 
+  if not predictions:
+    raise ValueError(
+        'The prediction file returned by CMLE is empty.'
+        ' It might be due to a badly formatted tfrecord input file that can not be'
+        ' parsed by CMLE (wrong input signature given by a `Model` instance).'
+        ' Check the logs of your CMLE job for further details.')
+  if example_key not in predictions[0]:
+    raise ValueError(
+        "Predictions do not contain the 'example_key' field."
+        " Verify that your 'example_key' parameter (set to {})"
+        " matches the CMLE model signature.".format(example_key))
+  if prediction_name not in predictions[0]:
+    raise ValueError(
+        "Predictions do not contain the 'prediction_name' field."
+        " Verify that your 'prediction_name' parameter (set to {})"
+        " matches the CMLE model signature.".format(prediction_name))
   if len(predictions) != len(df):
     raise ValueError('The dataframe and the prediction file do not contain'
                      ' the same number of lines.')
 
+  predictions = sorted(predictions, key=lambda x: x[example_key])
   prediction_proba = [x[prediction_name][0] for x in predictions]
   df[model_col_name] = prediction_proba
 

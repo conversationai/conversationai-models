@@ -47,7 +47,7 @@ class Model(object):
                model_names,
                project_name,
                example_key='example_key'):
-    """Initializes a model.
+    """Initializes a model and defines its signature.
 
     Args:
       feature_keys_spec: spec of the tf_records input to the model.
@@ -56,13 +56,15 @@ class Model(object):
         Format should be $MODEL_NAME:$VERSION. If no version given, will take
           default version.
       project_name: name of the gcp project.
-      example_key: name of the example key expected by the model. This example
-        key will be created by the dataset function.
+      example_key: name of the example key expected by the model.
 
     Raises:
       ValueError: If example_key is included in the feature_spec
         of if feature_keys_spec does not match required format,
         or if we have more than CMLE_QUOTA_PREDICTION model_names.
+
+    Note: When used with `Dataset`, the dataframe returned by the input_fn
+      should not contain the `example_key`, as it will be later created by the API.
     """
 
     utils_tfrecords.is_valid_spec(feature_keys_spec)
