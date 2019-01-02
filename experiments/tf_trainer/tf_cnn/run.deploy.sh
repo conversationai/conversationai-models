@@ -3,7 +3,7 @@
 
 if [ "$1" == "civil_comments" ] || [ "$1" == "toxicity" ] || [ "$1" == "many_communities" ] ; then
     
-    MODEL_NAME=tf_gru_attention_$1_glove
+    MODEL_NAME=tf_cnn_$1_glove
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."

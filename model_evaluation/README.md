@@ -9,21 +9,21 @@ This directory contains utilities to use a model deployed on cloud MLE (in 'util
 Install library dependencies (it is optional, but recommended to install these
 in a [Virtual Environment](https://docs.python.org/3/tutorial/venv.html):
 
-    ```shell
-    # The python2 way to create and use virtual environment
-    # (optional, but recommended):
-    virtualenv .pyenv
-    source .pyenv/bin/activate
-    # Install dependencies
-    pip install -r requirements.txt
+```shell
+# The python2 way to create and use virtual environment
+# (optional, but recommended):
+virtualenv .pyenv
+source .pyenv/bin/activate
+# Install dependencies
+pip install -r requirements.txt
 
-    jupyter notebook
+jupyter notebook
 
-    # ... do stuff ...
+# ... do stuff ...
 
-    # Exit your virtual environment.
-    deactivate
-    ```
+# Exit your virtual environment.
+deactivate
+```
 
 ### Google Cloud Storage dependencies
 
@@ -59,18 +59,18 @@ This library will handle the following "overhead" tasks:
  * Parse prediction files and join results with the initial `DataFrame` based on `example_key`.
 
 
-```
-  input_fn = ... (returns pandas DataFrame).
-  dataset = Dataset(input_fn, dataset_dir)
+```python
+input_fn = ... (returns pandas DataFrame).
+dataset = Dataset(input_fn, dataset_dir)
 
-  dataset.load_data(10000)
+dataset.load_data(10000)
 
-  model = Model(...)
-  dataset.add_model_prediction_to_data(model)
-  OR
-  dataset.add_model_prediction_to_data(model, recompute=False)
+model = Model(...)
+dataset.add_model_prediction_to_data(model)
+OR
+dataset.add_model_prediction_to_data(model, recompute=False)
 
-  dataset.show_data()
+dataset.show_data()
 ```
 
 ### `Model`
@@ -83,7 +83,7 @@ Key parameters are:
  * what the model outputs are.
 
 Example:
-```
+```python
 model = Model(
     feature_keys_spec={'comment_text': EncodingFeatureSpec.LIST_STRING},
     prediction_keys='prediction_key',

@@ -1,0 +1,46 @@
+trainingInput:
+  pythonVersion: '3.5'
+  scaleTier: BASIC_GPU
+  hyperparameters:
+    goal: MAXIMIZE
+    hyperparameterMetricTag: auc/removed
+    maxTrials: 200
+    maxParallelTrials: 10
+    enableTrialEarlyStopping: FALSE
+    params:
+      - parameterName: learning_rate
+        type: DOUBLE
+        minValue: 0.000001
+        maxValue: 0.01
+        scaleType: UNIT_LOG_SCALE
+      - parameterName: dropout_rate
+        type: DOUBLE
+        minValue: 0
+        maxValue: 0.7
+        scaleType: UNIT_LINEAR_SCALE
+      - parameterName: batch_size
+        type: DISCRETE
+        discreteValues:
+        - 16
+        - 32
+        - 64
+      - parameterName: gru_units
+        type: CATEGORICAL
+        categoricalValues:         
+        - '128'
+        - '128,128'
+        - '64'
+        - '64,64'
+      - parameterName: attention_units
+        type: DISCRETE
+        discreteValues:
+        - 32
+        - 64
+        - 128
+      - parameterName: dense_units
+        type: CATEGORICAL
+        categoricalValues:
+        - '128'
+        - '128,128'
+        - '64'
+        - '64,64'

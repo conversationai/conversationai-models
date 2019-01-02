@@ -1,9 +1,8 @@
 #!/bin/bash
-# This script runs one training job on Cloud MLE.
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
 DATETIME=`date '+%Y%m%d_%H%M%S'`
-MODEL_NAME="tf_hub_classifier"
+MODEL_NAME="tf_char_cnn"
 
 if [ "$1" == "civil_comments" ]; then
     
@@ -58,5 +57,14 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --train_path=$train_path \
     --validate_path=$valid_path \
     --model_dir="${JOB_DIR}/model_dir" \
+    --is_embedding_trainable=False \
+    --train_steps=$train_steps \
+    --eval_period=$eval_period \
+    --eval_steps=$eval_steps \
     --labels=$labels \
-    --label_dtypes=$label_dtypes
+    --label_dtypes=$label_dtypes \
+    --preprocess_in_tf=False \
+    --batch_size=32
+
+echo "Model dir:"
+echo ${JOB_DIR}/model_dir
