@@ -25,6 +25,14 @@ from keras import models
 from tf_trainer.common import types
 from typing import Callable
 
+# The TF Example key associated with input features that consist of an
+# UTF-8 string, for models that use that as input.
+TEXT_FEATURE_KEY = 'text'
+
+# The TF Example key associated with a Tensor of int32s for models that
+# use tokens from a vocabulary as input.
+TOKENS_FEATURE_KEY = 'tokens'
+
 
 class BaseModel(abc.ABC):
   """Tentative interface for all model classes.

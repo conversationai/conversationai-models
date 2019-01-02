@@ -7,10 +7,11 @@ from __future__ import print_function
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import optimizers
+from tf_trainer.common import base_model
 from tf_trainer.common import base_keras_model
 import tensorflow as tf
 
-from typing import Set
+from typing import List
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -46,7 +47,7 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
 
   MAX_SEQUENCE_LENGTH = 300
 
-  def __init__(self, labels: Set[str], optimizer='adam') -> None:
+  def __init__(self, labels: List[str], optimizer='adam') -> None:
     self._labels = labels
 
   def hparams(self):
@@ -64,7 +65,7 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
     I = layers.Input(
         shape=(KerasCNNModel.MAX_SEQUENCE_LENGTH, 300),
         dtype='float32',
-        name='comment_text')
+        name=base_model.TOKENS_FEATURE_KEY)
 
     # Convolutional Layers
     X = I

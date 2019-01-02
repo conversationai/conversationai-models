@@ -25,9 +25,9 @@ tf.app.flags.DEFINE_string(
 
 class TFWordLabelEmbeddingModel(base_model.BaseModel):
 
-  def __init__(self, text_feature_name: str, target_label: str) -> None:
-    self._text_feature_name = text_feature_name
-    self._target_label = target_label
+  def __init__(self, target_label: str) -> None:
+    assert len(target_label) == 1  # Only single feature supported.
+    self._target_label = target_label[0]
 
   @staticmethod
   def hparams():
@@ -46,7 +46,7 @@ class TFWordLabelEmbeddingModel(base_model.BaseModel):
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
-    word_emb_seq = features[self._text_feature_name]
+    word_emb_seq = features[base_model.TOKENS_FEATURE_KEY]
 
     # Constants
 

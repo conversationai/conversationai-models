@@ -8,7 +8,34 @@ import tensorflow as tf
 from tensorflow.python.ops import array_ops
 
 
-def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name, key_name):
+FLAGS = tf.app.flags.FLAGS
+
+def create_text_serving_input_fn(text_feature_name):
+
+  def serving_input_fn_tfrecords():
+    serialized_example = tf.placeholder(
+        shape=[None],
+        dtype=tf.string,
+        name="input_example_tensor"
+    )
+    feature_spec = {
+        text_feature_name: tf.FixedLenFeature([], dtype=tf.string),
+        # key_name is defined in model_trainer.
+        FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
+                                           default_value=-1)
+    }
+
+    features = tf.parse_example(
+        serialized_example, feature_spec)
+
+    return tf.estimator.export.ServingInputReceiver(
+        features,
+        serialized_example)
+
+  return serving_input_fn_tfrecords
+
+
+def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name):
 
   def serving_input_fn_tfrecords():
 
@@ -19,7 +46,8 @@ def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name, key_n
     )
     feature_spec = {
         text_feature_name: tf.VarLenFeature(dtype=tf.string),
-        key_name: tf.FixedLenFeature([], dtype=tf.int64)
+        FLAGS.key_name: tf.FixedLenFeature([], dtype=tf.int64,
+                                           default_value=-1)
     }
 
     features = tf.parse_example(
@@ -43,5 +71,5 @@ def create_serving_input_fn(word_to_idx, unknown_token, text_feature_name, key_n
     return tf.estimator.export.ServingInputReceiver(
         features,
         serialized_example)
-  
+
   return serving_input_fn_tfrecords
