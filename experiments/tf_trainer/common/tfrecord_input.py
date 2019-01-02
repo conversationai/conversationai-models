@@ -27,7 +27,7 @@ tf.app.flags.DEFINE_string('text_feature', 'comment_text',
                            'Name of feature containing text input.')
 tf.app.flags.DEFINE_boolean('round_labels', True,
                             'Round label features to 0 or 1 if true.')
-tf.app.flags.DEFINE_integer('batch_size', 256,
+tf.app.flags.DEFINE_integer('batch_size', 32,
                             'Batch sizes to use when reading.')
 tf.app.flags.DEFINE_integer('num_prefetch', 5,
                             'Batch sizes to use when reading.')
