@@ -14,6 +14,9 @@ import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
 
+tf.app.flags.DEFINE_string('key_name', 'comment_key',
+                           'Name of a pass-thru integer id for batch scoring.')
+
 
 def main(argv):
   del argv  # unused
@@ -25,8 +28,9 @@ def main(argv):
   trainer.train_with_eval()
 
   serving_input_fn = serving_input.create_text_serving_input_fn(
-      text_feature_name=base_model.TEXT_FEATURE_KEY)
-  trainer.export(serving_input_fn)
+      text_feature_name=base_model.TEXT_FEATURE_KEY,
+      example_key_name=FLAGS.key_name)
+  trainer.export(serving_input_fn, FLAGS.key_name)
 
 
 if __name__ == "__main__":

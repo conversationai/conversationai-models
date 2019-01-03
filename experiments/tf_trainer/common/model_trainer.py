@@ -53,16 +53,12 @@ tf.app.flags.DEFINE_integer('n_export', 1,
                             'Number of models to export.'
                             'If =1, only the last one is saved.'
                             'If >1, we split the take n_export checkpoints.')
-tf.app.flags.DEFINE_string('key_name', 'comment_key',
-                           'Name of a pass-thru integer id for batch scoring.')
-
 tf.app.flags.DEFINE_integer("train_steps", 100000,
                             "The number of steps to train for.")
 tf.app.flags.DEFINE_integer("eval_period", 1000,
                             "The number of steps per eval period.")
 tf.app.flags.DEFINE_integer("eval_steps", None,
                             "Number of examples to eval for, default all.")
-
 
 
 tf.app.flags.mark_flag_as_required('model_dir')
@@ -224,10 +220,9 @@ class ModelTrainer(object):
         json.loads(os.environ.get('TF_CONFIG', '{}')).get('task', {}).get(
             'trial', ''))
 
-  def _add_estimator_key(self, estimator):
+  def _add_estimator_key(self, estimator, example_key_name):
     '''Adds a forward key to the model_fn of an estimator.'''
-    if FLAGS.key_name:
-      estimator = forward_features(estimator, FLAGS.key_name)
+    estimator = forward_features(estimator, example_key_name)
     return estimator
 
   def _get_list_checkpoint(self, n_export, model_dir):
@@ -264,14 +259,16 @@ class ModelTrainer(object):
     
     return checkpoints_to_export
 
-  def export(self, serving_input_fn):
+  def export(self, serving_input_fn, example_key_name=None):
     '''Export model as a .pb.'''
-    estimator_with_key = self._add_estimator_key(self._estimator)
+    estimator = self._estimator
+    if example_key_name:
+      estimator = self._add_estimator_key(self._estimator, example_key_name)
     
     checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export, self._model_dir())
     for checkpoint_path in checkpoints_to_export:
       version = checkpoint_path.split('-')[-1]
-      estimator_with_key.export_savedmodel(
+      estimator.export_savedmodel(
           export_dir_base=os.path.join(self._model_dir(), version),
           serving_input_receiver_fn=serving_input_fn,
           checkpoint_path=checkpoint_path)
