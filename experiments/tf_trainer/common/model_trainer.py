@@ -260,7 +260,21 @@ class ModelTrainer(object):
     return checkpoints_to_export
 
   def export(self, serving_input_fn, example_key_name=None):
-    '''Export model as a .pb.'''
+    '''Export model as a .pb.
+
+    Args:
+      serving_input_fn: An input function for inference graph.
+      example_key_name: Name of the example_key field (string).
+          If None, no example_key will be used.
+
+    Example keys are useful when doing batch predictions. Typically,
+      the predictions are done by a cluster of machines and the order of
+      the results is random. Here, we add a forward feature in the inference graph
+      (https://www.tensorflow.org/api_docs/python/tf/contrib/estimator/forward_features)
+      which will be used as an example unique identifier. In inference, the input
+      example includes an example_key field that is passed along by the estimator
+      and returned in the predictions.
+    '''
     estimator = self._estimator
     if example_key_name:
       estimator = self._add_estimator_key(self._estimator, example_key_name)
