@@ -18,7 +18,9 @@ unknown_id = 2
 
 vocab_size = 50001
 
-def _read_dataset(fn, review_max_sentences=30, sentence_max_length=30, epochs=1):
+
+def _read_dataset(fn, review_max_sentences=30, sentence_max_length=30,
+                  epochs=1):
   c = 0
   while 1:
     c += 1
@@ -40,15 +42,19 @@ def _read_dataset(fn, review_max_sentences=30, sentence_max_length=30, epochs=1)
       except EOFError:
         continue
 
+
 def read_trainset(epochs=1):
   return _read_dataset(trainset_fn, epochs=epochs)
+
 
 def read_devset(epochs=1):
   return _read_dataset(devset_fn, epochs=epochs)
 
+
 def read_vocab():
   with open(vocab_fn, 'rb') as f:
     return pickle.load(f)
+
 
 def read_labels():
   return {i: i for i in range(5)}

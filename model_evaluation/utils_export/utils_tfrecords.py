@@ -69,23 +69,27 @@ def is_valid_spec(spec):
               EncodingFeatureSpec.CONSTRUCTOR_PER_TYPE.keys()))
 
 
-def encode_pandas_to_tfrecords(df, feature_keys_spec, tf_records_path, example_key=None):
+def encode_pandas_to_tfrecords(df,
+                               feature_keys_spec,
+                               tf_records_path,
+                               example_key=None):
   """Write a pandas `DataFrame` to a tf_record.
 
   Args:
-    df: pandas `DataFrame`. It must include the fields that
-      are part of feature_key_spec.
+    df: pandas `DataFrame`. It must include the fields that are part of
+      feature_key_spec.
     feature_keys_spec: Dict of {name: type}, which describes the spec of the
       TF-records.
     tf_records_path: where to write the tf records.
-    example_key: key identifier of an example (string). This key
-      will be added to data automatically and should not be part of df.
-      If none, no example_key will be created.
+    example_key: key identifier of an example (string). This key will be added
+      to data automatically and should not be part of df. If none, no
+      example_key will be created.
 
   Raises:
     ValueError if feature_keys_spec does not follow a FeatureSpec format.
 
-  Note: TFRecords will have fields feature_keys_spec and `example_key`(optional).
+  Note: TFRecords will have fields feature_keys_spec and
+  `example_key`(optional).
   """
 
   is_valid_spec(feature_keys_spec)
@@ -99,7 +103,8 @@ def encode_pandas_to_tfrecords(df, feature_keys_spec, tf_records_path, example_k
     # Create a feature
     feature_dict = {}
     for feature in feature_keys_spec:
-      constructor = EncodingFeatureSpec.CONSTRUCTOR_PER_TYPE[feature_keys_spec[feature]]
+      constructor = EncodingFeatureSpec.CONSTRUCTOR_PER_TYPE[
+          feature_keys_spec[feature]]
       feature_dict[feature] = constructor(df[feature].iloc[i])
       if example_key:
         feature_dict[example_key] = _int64_feature(i)
@@ -117,16 +122,17 @@ def decode_tf_records_to_pandas(decoding_features_spec,
                                 random_filter_keep_rate=1.0,
                                 filter_fn=None):
   """Loads tf-records into a pandas dataframe.
-  
+
   Args:
-    decoding_features_spec: A dict mapping feature keys to FixedLenFeature values.
-      Spec of the tf-records.
+    decoding_features_spec: A dict mapping feature keys to FixedLenFeature
+      values. Spec of the tf-records.
     tf_records_path: path to the file
     max_n_examples: Maximum number of examples to extract.
-    random_filter_keep_rate: Probability for each line to be kept in training data.
-      For each line, we generate a random number x and keep it if x < random_filter_keep_rate.
-    filter_fn (optional): Function applied to an example.
-      If it returns False, the example will be discarded.
+    random_filter_keep_rate: Probability for each line to be kept in training
+      data. For each line, we generate a random number x and keep it if x <
+      random_filter_keep_rate.
+    filter_fn (optional): Function applied to an example. If it returns False,
+      the example will be discarded.
 
   Returns:
     A pandas `DataFrame`.
@@ -136,13 +142,12 @@ def decode_tf_records_to_pandas(decoding_features_spec,
     max_n_examples = float('inf')
 
   reader = tf.TFRecordReader()
-  filename_queue = tf.train.string_input_producer([tf_records_path], num_epochs=1)
+  filename_queue = tf.train.string_input_producer([tf_records_path],
+                                                  num_epochs=1)
 
   _, serialized_example = reader.read(filename_queue)
   read_data = tf.parse_single_example(
-      serialized=serialized_example,
-      features=decoding_features_spec
-      )
+      serialized=serialized_example, features=decoding_features_spec)
 
   sess = tf.InteractiveSession()
   sess.run(tf.global_variables_initializer())
@@ -165,7 +170,7 @@ def decode_tf_records_to_pandas(decoding_features_spec,
       count += 1
       if count >= max_n_examples:
         break
-      if not(count % 100000):
+      if not (count % 100000):
         logging.info('Loaded {} lines.'.format(count))
 
     try:
@@ -173,6 +178,6 @@ def decode_tf_records_to_pandas(decoding_features_spec,
     except tf.errors.OutOfRangeError:
       logging.info('End of file.')
       break
-    
+
   res = pd.DataFrame(d)
   return res

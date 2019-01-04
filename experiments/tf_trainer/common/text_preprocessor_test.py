@@ -21,6 +21,7 @@ from __future__ import print_function
 import tensorflow as tf
 from tf_trainer.common import text_preprocessor
 
+
 class TextPreprocessorTest(tf.test.TestCase):
 
   def test_Tokenize(self):

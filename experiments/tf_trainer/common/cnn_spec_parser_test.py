@@ -24,6 +24,7 @@ from tf_trainer.common.cnn_spec_parser import SequentialLayers
 from tf_trainer.common.cnn_spec_parser import ConcurrentFilters
 from tf_trainer.common.cnn_spec_parser import Filter
 
+
 class CnnSpecParserTest(tf.test.TestCase):
 
   def test_SequentialLayers(self):
@@ -33,11 +34,12 @@ class CnnSpecParserTest(tf.test.TestCase):
     spec = SequentialLayers(s)
     layer0 = spec.layers[0]
     self.assertEqual(len(layer0.filters), 2)
-    layer0filter0 = layer0.filters[0] # type: Filter
+    layer0filter0 = layer0.filters[0]  # type: Filter
     self.assertEqual(layer0filter0.size, 2)
     self.assertEqual(layer0filter0.stride, 2)
     self.assertEqual(layer0filter0.num_filters, 100)
     self.assertEqual(str(spec), s)
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
   tf.test.main()
