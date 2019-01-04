@@ -70,7 +70,12 @@ class KerasCNNModel(base_keras_model.BaseKerasModel):
     # Convolutional Layers
     X = I
     for filter_size in self.hparams().filter_sizes:
-        X = layers.Conv1D(self.hparams().num_filters, filter_size, activation='relu', padding='same')(X)
+      X = layers.Conv1D(
+          self.hparams().num_filters,
+          filter_size,
+          activation='relu',
+          padding='same')(
+              X)
     X = layers.GlobalAveragePooling1D()(X)
 
     # Dense

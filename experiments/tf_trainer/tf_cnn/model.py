@@ -32,12 +32,9 @@ tf.app.flags.DEFINE_integer(
 tf.app.flags.DEFINE_string(
     'dense_units', '128',
     'Comma delimited string for the number of hidden units in the dense layer.')
-tf.app.flags.DEFINE_integer(
-  'embedding_size', 300,
-  'The number of dimensions in the word embedding.')
-tf.app.flags.DEFINE_string(
-    'pooling_type', 'average',
-    'Average or max pooling.')
+tf.app.flags.DEFINE_integer('embedding_size', 300,
+                            'The number of dimensions in the word embedding.')
+tf.app.flags.DEFINE_string('pooling_type', 'average', 'Average or max pooling.')
 
 
 class TFCNNModel(base_model.BaseModel):
@@ -47,8 +44,7 @@ class TFCNNModel(base_model.BaseModel):
   sequences of word embeddings.
   """
 
-  def __init__(self,
-    target_labels: Set[str]) -> None:
+  def __init__(self, target_labels: Set[str]) -> None:
     self._target_labels = target_labels
 
   @staticmethod
@@ -79,10 +75,12 @@ class TFCNNModel(base_model.BaseModel):
     # Conv
     X = inputs
     for filter_size in params.filter_sizes:
-        X = layers.Conv1D(params.num_filters, filter_size, activation='relu', padding='same')(X)
-    if params.pooling_type == "average":
+      X = layers.Conv1D(
+          params.num_filters, filter_size, activation='relu', padding='same')(
+              X)
+    if params.pooling_type == 'average':
       X = layers.GlobalAveragePooling1D()(X)
-    elif params.pooling_type == "max":
+    elif params.pooling_type == 'max':
       X = layers.GlobalMaxPooling1D()(X)
     else:
       raise ValueError('Unrecognized pooling type parameter')

@@ -42,9 +42,7 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
   sequences of word embeddings.
   """
 
-  def __init__(self,
-               labels: List[str],
-               embedding_size: int,
+  def __init__(self, labels: List[str], embedding_size: int,
                optimizer='adam') -> None:
     self._labels = labels
     self._embedding_size = embedding_size
@@ -71,7 +69,8 @@ class KerasRNNModel(base_keras_model.BaseKerasModel):
       H = layers.Bidirectional(layers.GRU(num_units, return_sequences=True))(I)
 
     # Attention
-    last_gru_units = self.hparams().gru_units[-1] * 2  # x2 because bidirectional
+    last_gru_units = self.hparams(
+    ).gru_units[-1] * 2  # x2 because bidirectional
     A = layers.TimeDistributed(
         layers.Dense(self.hparams().attention_units, activation='relu'),
         input_shape=(None, last_gru_units))(

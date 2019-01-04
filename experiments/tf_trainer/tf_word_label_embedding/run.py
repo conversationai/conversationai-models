@@ -15,7 +15,6 @@ from tf_trainer.common import tfrecord_input
 from tf_trainer.common import types
 from tf_trainer.tf_word_label_embedding import model as tf_word_label_embedding
 
-
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('embeddings_path',
@@ -31,13 +30,11 @@ def main(argv):
   nltk.download('punkt')
   train_preprocess_fn = preprocessor.train_preprocess_fn(nltk.word_tokenize)
   dataset = tfrecord_input.TFRecordInputWithTokenizer(
-      train_preprocess_fn=train_preprocess_fn,
-      max_seq_len=5000)
+      train_preprocess_fn=train_preprocess_fn, max_seq_len=5000)
 
-  model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(
-      dataset.labels())
-  model = preprocessor.add_embedding_to_model(
-      model_tf, base_model.TOKENS_FEATURE_KEY)
+  model_tf = tf_word_label_embedding.TFWordLabelEmbeddingModel(dataset.labels())
+  model = preprocessor.add_embedding_to_model(model_tf,
+                                              base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval()
