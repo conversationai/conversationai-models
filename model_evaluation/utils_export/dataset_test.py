@@ -144,10 +144,10 @@ class TestEndPipeline(unittest.TestCase):
   test_version = str(int(time.time()))
 
   def setUp(self):
+
     def input_fn_test(max_n_examples):
-      return pd.DataFrame({
-          'comment_text': [['This', 'is', 'one']] * max_n_examples
-      })
+      return pd.DataFrame(
+          {'comment_text': [['This', 'is', 'one']] * max_n_examples})
 
     gcs_path_test = os.path.join('gs://kaggle-model-experiments/',
                                  getpass.getuser(), 'unittest', 'dataset_test',
@@ -171,7 +171,7 @@ class TestEndPipeline(unittest.TestCase):
   def testComputePredictions(self):
     try:
       self.dataset.add_model_prediction_to_data(self.model)
-    except ValueError :
+    except ValueError:
       self.fail('Dataset raised an exception unexpectedly!')
 
   def testLoadPredictions(self):

@@ -36,33 +36,33 @@ import re
 FLAGS = flags.FLAGS
 
 # TODO: Compute basic stats for text fields and labels.
-flags.DEFINE_string(
-  'text_fields_re', None,
-  'Matcher for names of the text fields.')
+flags.DEFINE_string('text_fields_re', None,
+                    'Matcher for names of the text fields.')
 flags.register_validator(
-  'text_fields_re', lambda value: isinstance(value, str) and re.compile(value),
-  message='--text_field_re must be a regexp string.')
+    'text_fields_re',
+    lambda value: isinstance(value, str) and re.compile(value),
+    message='--text_field_re must be a regexp string.')
 
-flags.DEFINE_string(
-  'label_fields_re', None,
-  'Matcher for names of the label fields.')
+flags.DEFINE_string('label_fields_re', None,
+                    'Matcher for names of the label fields.')
 flags.register_validator(
-  'label_fields_re', lambda value: isinstance(value, str) and re.compile(value),
-  message='--label_fields_re must be a regexp string.')
+    'label_fields_re',
+    lambda value: isinstance(value, str) and re.compile(value),
+    message='--label_fields_re must be a regexp string.')
 
-flags.DEFINE_string(
-  'input_jsonlines_path', None,
-  'Path to the JSON-lines input file.')
+flags.DEFINE_string('input_jsonlines_path', None,
+                    'Path to the JSON-lines input file.')
 flags.register_validator(
-  'input_jsonlines_path', lambda value: isinstance(value, str),
-  message='--input_jsonlines_path must be a string.')
+    'input_jsonlines_path',
+    lambda value: isinstance(value, str),
+    message='--input_jsonlines_path must be a string.')
 
-flags.DEFINE_string(
-  'output_tfrecord_path', None,
-  'Path where the output TFRecord should be written.')
+flags.DEFINE_string('output_tfrecord_path', None,
+                    'Path where the output TFRecord should be written.')
 flags.register_validator(
-  'output_tfrecord_path', lambda value: isinstance(value, str),
-  message='--output_tfrecord_path must be a string.')
+    'output_tfrecord_path',
+    lambda value: isinstance(value, str),
+    message='--output_tfrecord_path must be a string.')
 
 
 class MisingAllTextFieldsError(Exception):
@@ -70,10 +70,11 @@ class MisingAllTextFieldsError(Exception):
 
 
 class FieldsCounter():
+
   def __init__(self):
     self.counters = {}
 
-  def inc_field(self, field_name:str):
+  def inc_field(self, field_name: str):
     if field_name not in self.counters:
       self.counters[field_name] = 0
     self.counters[field_name] += 1
@@ -81,6 +82,7 @@ class FieldsCounter():
 
 def make_selected_output_row(row, line, counters):
   """Create an output row with just the fields matching --text_fields_re and
+
   --label_fields_re. If there is no matching field in the row for
   --text_fields_re then raise MisingAllTextFieldsError.
   """
@@ -98,9 +100,9 @@ def make_selected_output_row(row, line, counters):
       output_row[key] = value
   if not has_text_field:
     raise MisingAllTextFieldsError(
-      f'Error parsing file {input_jsonlines_path} at line: {line}.\n'
-      f'No field matched by --text_field_regexp="{FLAGS.text_fields_re}":\n'
-      f'  {json.dumps(row, sort_keys=True, indent=2)}')
+        f'Error parsing file {input_jsonlines_path} at line: {line}.\n'
+        f'No field matched by --text_field_regexp="{FLAGS.text_fields_re}":\n'
+        f'  {json.dumps(row, sort_keys=True, indent=2)}')
   return output_row
 
 
@@ -112,7 +114,8 @@ def itr_as_dict(input_jsonlines_path):
       line += 1
       yield make_selected_output_row(row, line, counters)
     logging.info(f'Complete.\nField Counts:\n'
-        f'{json.dumps(counters.counters, sort_keys=True, indent=2)}')
+                 f'{json.dumps(counters.counters, sort_keys=True, indent=2)}')
+
 
 def itr_as_tfrecord(input_jsonlines_path):
   for row in itr_as_dict(input_jsonlines_path):
@@ -120,7 +123,7 @@ def itr_as_tfrecord(input_jsonlines_path):
     for key, value in row.items():
       if isinstance(value, str):
         example.features.feature[key].bytes_list.value.append(
-          value.encode('utf-8', errors='replace'))
+            value.encode('utf-8', errors='replace'))
       elif isinstance(value, float) or isinstance(value, int):
         example.features.feature[key].float_list.value.append(value)
     yield example
@@ -139,4 +142,3 @@ def main(argv):
 
 if __name__ == '__main__':
   app.run(main)
-

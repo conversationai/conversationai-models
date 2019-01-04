@@ -42,24 +42,25 @@ from tensorflow.python.lib.io import file_io
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input as ds
 
-
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
-tf.app.flags.DEFINE_integer('n_export', 1,
-                            'Number of models to export.'
-                            'If =1, only the last one is saved.'
-                            'If >1, we split the take n_export checkpoints.')
-tf.app.flags.DEFINE_integer("train_steps", 100000,
-                            "The number of steps to train for.")
-tf.app.flags.DEFINE_integer("eval_period", 1000,
-                            "The number of steps per eval period.")
-tf.app.flags.DEFINE_integer("eval_steps", None,
-                            "Number of examples to eval for, default all.")
+tf.app.flags.DEFINE_integer(
+    'n_export', 1, 'Number of models to export.'
+    'If =1, only the last one is saved.'
+    'If >1, we split the take n_export checkpoints.')
+tf.app.flags.DEFINE_string('key_name', 'comment_key',
+                           'Name of a pass-thru integer id for batch scoring.')
 
+tf.app.flags.DEFINE_integer('train_steps', 100000,
+                            'The number of steps to train for.')
+tf.app.flags.DEFINE_integer('eval_period', 1000,
+                            'The number of steps per eval period.')
+tf.app.flags.DEFINE_integer('eval_steps', None,
+                            'Number of examples to eval for, default all.')
 
 tf.app.flags.mark_flag_as_required('model_dir')
 
@@ -69,6 +70,7 @@ tf.app.flags.mark_flag_as_required('model_dir')
 # the check at the end of 'new_model_fn' fails in the initial fn.
 def forward_features(estimator, keys, sparse_default_values=None):
   """Forward features to predictions dictionary.
+
   In some cases, user wants to see some of the features in estimators prediction
   output. As an example, consider a batch prediction service: The service simply
   runs inference on the users graph and returns the results. Keys are essential
@@ -93,6 +95,7 @@ def forward_features(estimator, keys, sparse_default_values=None):
       features to be converted to dense, to the default value to use. Only
       sparse features indicated in the dictionary are converted to dense and the
       provided default value is used.
+
   Returns:
       A new `tf.estimator.Estimator` which forwards features to predictions.
   Raises:
@@ -164,11 +167,13 @@ def forward_features(estimator, keys, sparse_default_values=None):
             'Type of features[{}] is {}.'.format(key, key, type(feature)))
       predictions[key] = feature
     spec = spec._replace(predictions=predictions)
-    if spec.export_outputs: # CHANGES HERE
+    if spec.export_outputs:  # CHANGES HERE
       outputs = spec.export_outputs['predict'].outputs
       outputs[key] = spec.predictions[key]
-      spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(outputs)
-      spec.export_outputs['serving_default'] = tf.estimator.export.PredictOutput(outputs)
+      spec.export_outputs['predict'] = tf.estimator.export.PredictOutput(
+          outputs)
+      spec.export_outputs[
+          'serving_default'] = tf.estimator.export.PredictOutput(outputs)
     return spec
 
   return estimator_lib.Estimator(
@@ -190,8 +195,11 @@ class ModelTrainer(object):
     """Train with periodic evaluation."""
     training_hooks = None
     if FLAGS.enable_profiling:
-      training_hooks = [tf.train.ProfilerHook(save_steps=10,
-          output_dir=os.path.join(self._model_dir(), 'profiler'))]
+      training_hooks = [
+          tf.train.ProfilerHook(
+              save_steps=10,
+              output_dir=os.path.join(self._model_dir(), 'profiler'))
+      ]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
@@ -221,7 +229,7 @@ class ModelTrainer(object):
             'trial', ''))
 
   def _add_estimator_key(self, estimator, example_key_name):
-    '''Adds a forward key to the model_fn of an estimator.'''
+    """Adds a forward key to the model_fn of an estimator."""
     estimator = forward_features(estimator, example_key_name)
     return estimator
 
@@ -236,8 +244,10 @@ class ModelTrainer(object):
       List of checkpoint path.
 
     If n_export==1, we take only the last checkpoint.
-    Otherwise, we consider the list of steps for each for which we have a checkpoint.
-    Then we choose n_export number of checkpoints such as their steps are as equidistant as possible.  
+    Otherwise, we consider the list of steps for each for which we have a
+    checkpoint.
+    Then we choose n_export number of checkpoints such as their steps are as
+    equidistant as possible.
     """
 
     checkpoints = file_io.get_matching_files(
@@ -248,19 +258,21 @@ class ModelTrainer(object):
     if n_export == 1:
       return [checkpoints[-1]]
 
-    # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2. 
+    # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
     # with a number of points of (n_export -1): because 1 point is set at the end.
     step = float(len(checkpoints) - 1) / (n_export - 1)
-    if step <= 1: # Fewer checkpoints available than the desired number.
+    if step <= 1:  # Fewer checkpoints available than the desired number.
       return checkpoints
-    
-    checkpoints_to_export = [checkpoints[int(i*step)] for i in range(n_export-1)]
+
+    checkpoints_to_export = [
+        checkpoints[int(i * step)] for i in range(n_export - 1)
+    ]
     checkpoints_to_export.append(checkpoints[-1])
-    
+
     return checkpoints_to_export
 
   def export(self, serving_input_fn, example_key_name=None):
-    '''Export model as a .pb.
+    """Export model as a .pb.
 
     Args:
       serving_input_fn: An input function for inference graph.
@@ -274,12 +286,14 @@ class ModelTrainer(object):
       which will be used as an example unique identifier. In inference, the input
       example includes an example_key field that is passed along by the estimator
       and returned in the predictions.
-    '''
+    """
     estimator = self._estimator
     if example_key_name:
       estimator = self._add_estimator_key(self._estimator, example_key_name)
     
-    checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export, self._model_dir())
+    checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
+                                                      self._model_dir())
+
     for checkpoint_path in checkpoints_to_export:
       version = checkpoint_path.split('-')[-1]
       estimator.export_savedmodel(

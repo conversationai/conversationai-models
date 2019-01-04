@@ -37,8 +37,8 @@ def main(argv):
 
   # TODO: Move embedding *into* Keras model.
   model_tf = tf_gru_attention.TFRNNModel(dataset.labels())
-  model = preprocessor.add_embedding_to_model(
-      model_tf, base_model.TOKENS_FEATURE_KEY)
+  model = preprocessor.add_embedding_to_model(model_tf,
+                                              base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval()

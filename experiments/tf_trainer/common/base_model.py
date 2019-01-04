@@ -48,8 +48,9 @@ class BaseModel(abc.ABC):
 
   def map(self, f: Callable[[tf.estimator.Estimator], tf.estimator.Estimator]
          ) -> 'BaseModel':
-    """
-    Allows models to be extended. e.g. adding preprocessing steps.
+    """Allows models to be extended. e.g.
+
+    adding preprocessing steps.
     """
 
     class Model(BaseModel):

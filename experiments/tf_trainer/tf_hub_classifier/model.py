@@ -18,8 +18,7 @@ tf.app.flags.DEFINE_float('learning_rate', 0.00003,
 tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
-    'model_spec',
-    'https://tfhub.dev/google/universal-sentence-encoder/2',
+    'model_spec', 'https://tfhub.dev/google/universal-sentence-encoder/2',
     'The url of the TF Hub sentence encoding module to use.')
 tf.app.flags.DEFINE_bool('trainable', False,
                          'What to pass for the TF Hub trainable parameter.')
@@ -28,13 +27,13 @@ tf.app.flags.DEFINE_bool('trainable', False,
 # determines the number of layers, and the size of each layer.
 tf.app.flags.DEFINE_string(
     'dense_units', '1024,1024,512',
-    'Comma delimited string for the number of hidden units in the dense layers.')
+    'Comma delimited string for the number of hidden units in the dense layers.'
+)
 
 
 class TFHubClassifierModel(base_model.BaseModel):
 
-  def __init__(self,
-    target_labels: List[str]) -> None:
+  def __init__(self, target_labels: List[str]) -> None:
     self._target_labels = target_labels
 
   @staticmethod
@@ -55,10 +54,11 @@ class TFHubClassifierModel(base_model.BaseModel):
 
   def _model_fn(self, features, labels, mode, params, config):
     embedded_text_feature_column = hub.text_embedding_column(
-      key=base_model.TEXT_FEATURE_KEY, module_spec=FLAGS.model_spec,
-      trainable=FLAGS.trainable)
-    inputs = tf.feature_column.input_layer(
-        features, [embedded_text_feature_column])
+        key=base_model.TEXT_FEATURE_KEY,
+        module_spec=FLAGS.model_spec,
+        trainable=FLAGS.trainable)
+    inputs = tf.feature_column.input_layer(features,
+                                           [embedded_text_feature_column])
 
     batch_size = tf.shape(inputs)[0]
 

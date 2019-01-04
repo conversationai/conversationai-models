@@ -31,13 +31,13 @@ tf.app.flags.DEFINE_string(
 
 
 def attend(inputs, attention_size, attention_depth=1):
-  '''Attention layer.'''
+  """Attention layer."""
 
-  sequence_length = tf.shape(inputs)[1] # dynamic
-  final_layer_size = inputs.shape[2] # static
+  sequence_length = tf.shape(inputs)[1]  # dynamic
+  final_layer_size = inputs.shape[2]  # static
 
   x = tf.reshape(inputs, [-1, final_layer_size])
-  for _ in range(attention_depth-1):
+  for _ in range(attention_depth - 1):
     x = tf.layers.dense(x, attention_size, activation=tf.nn.relu)
   x = tf.layers.dense(x, 1, activation=None)
   logits = tf.reshape(x, [-1, sequence_length, 1])
@@ -50,8 +50,7 @@ def attend(inputs, attention_size, attention_depth=1):
 
 class TFRNNModel(base_model.BaseModel):
 
-  def __init__(self, 
-    target_labels: Set[str]) -> None:
+  def __init__(self, target_labels: Set[str]) -> None:
     self._target_labels = target_labels
 
   @staticmethod
@@ -87,15 +86,11 @@ class TFRNNModel(base_model.BaseModel):
 
     # TODO: make bidirectional
     outputs, states = tf.nn.dynamic_rnn(
-        multi_rnn_cell,
-        inputs,
-        dtype=tf.float32)
+        multi_rnn_cell, inputs, dtype=tf.float32)
 
     # TODO: Handle sequence length in the attention layer (via a mask).
     #       Padded elements should not be part of the average.
-    logits, _ = attend(
-        inputs=outputs,
-        attention_size=params.attention_units)
+    logits, _ = attend(inputs=outputs, attention_size=params.attention_units)
 
     for num_units in params.dense_units:
       logits = tf.layers.dense(
