@@ -45,6 +45,7 @@ os.environ['GCS_READ_CACHE_MAX_SIZE_MB'] = '0'
 
 
 def create_input_fn_toxicity_performance(tokenizer, model_input_comment_field):
+  """Generates an input_fn to evaluate model performance on toxicity dataset."""
 
   TOXICITY_PERFORMANCE_DATASET = 'gs://kaggle-model-experiments/resources/toxicity_q42017_test.tfrecord'
   TOXICITY_DATA_LABEL = 'frac_neg' #Name of the label in the dataset
@@ -131,6 +132,7 @@ identity_terms_civil = [
 CIVIL_COMMENT_NAME = 'comment_text'
 
 def create_input_fn_civil_performance(tokenizer, model_input_comment_field):
+  """Generates an input_fn to evaluate model performance on civil dataset."""
 
   def input_fn_performance_civil(max_n_examples=None, random_filter_keep_rate=1.0):
       civil_df_raw = utils_tfrecords.decode_tf_records_to_pandas(
@@ -151,7 +153,7 @@ def create_input_fn_civil_performance(tokenizer, model_input_comment_field):
 
 
 def create_input_fn_civil_bias(tokenizer, model_input_comment_field):
-  """Generates a bias input_fn for civil comments.
+  """"Generates an input_fn to evaluate model bias on civil dataset.
 
   Construction of this database such as:
       We keep only examples that have identity labels (with rule: male >=0).
@@ -199,6 +201,7 @@ def create_input_fn_civil_bias(tokenizer, model_input_comment_field):
 
 
 def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
+  """Generates an input_fn to evaluate model bias on synthetic dataset."""
 
   def input_fn_bias(max_n_examples):
 
