@@ -47,7 +47,7 @@ os.environ['GCS_READ_CACHE_MAX_SIZE_MB'] = '0'
 def create_input_fn_toxicity_performance(tokenizer, model_input_comment_field):
   """Generates an input_fn to evaluate model performance on toxicity dataset."""
 
-  TOXICITY_PERFORMANCE_DATASET = 'gs://kaggle-model-experiments/resources/toxicity_q42017_test.tfrecord'
+  TOXICITY_PERFORMANCE_DATASET = 'gs://conversationai-models/resources/toxicity_data/toxicity_q42017_test.tfrecord'
   TOXICITY_DATA_LABEL = 'frac_neg' #Name of the label in the dataset
   TOXICITY_COMMENT_NAME = 'comment_text' #Name of the comment in the dataset
 
@@ -78,7 +78,7 @@ def create_input_fn_toxicity_performance(tokenizer, model_input_comment_field):
 #### CIVIL DATASET  ####
 #### #### #### #### ####
 
-CIVIL_COMMENTS_PATH = 'gs://kaggle-model-experiments/resources/civil_comments_data/train_eval_test/eval-00000-of-00003.tfrecord'
+CIVIL_COMMENTS_PATH = 'gs://conversationai-models/resources/civil_comments_data/train_eval_test/eval-00000-of-00003.tfrecord'
 THRESHOLD_BIAS_CIVIL = 0.5
 
 civil_comments_spec = {
