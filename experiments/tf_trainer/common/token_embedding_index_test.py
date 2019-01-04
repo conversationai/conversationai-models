@@ -22,6 +22,7 @@ import tensorflow as tf
 
 from tf_trainer.common.token_embedding_index import LoadTokenIdxEmbeddings
 
+
 class LoadTokenIdxEmbeddingsTest(tf.test.TestCase):
 
   def test_LoadTokenIdxEmbeddings(self):
@@ -37,5 +38,6 @@ class LoadTokenIdxEmbeddingsTest(tf.test.TestCase):
     # Note: padding embedding will be random, and is index 0. Also the unknown
     # token embedding will be random, and is index n+1; 7 in this case.
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
   tf.test.main()

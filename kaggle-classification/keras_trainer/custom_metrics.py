@@ -1,5 +1,4 @@
-"""Custom metrics used by Keras models.
-"""
+"""Custom metrics used by Keras models."""
 
 from __future__ import absolute_import
 from __future__ import division

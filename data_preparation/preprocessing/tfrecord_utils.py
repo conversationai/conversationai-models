@@ -42,16 +42,14 @@ class DecodeTFRecord(beam.DoFn):
     """Initialises a TF-Record decoder.
 
     Args:
-      feature_spec: Dictionary from feature names to one of
-          `FixedLenFeature`, `SparseFeature` or `VarLenFeature.
-          It contains all the features to parse (including optional ones).
+      feature_spec: Dictionary from feature names to one of `FixedLenFeature`,
+        `SparseFeature` or `VarLenFeature. It contains all the features to parse
+        (including optional ones).
       optional_field_names: list of optional fields.
-      rule_optional_fn: function that take the value of an optional field
-          and returns True if the value is indicative of a default value
-          (e.g. resulting from the default value of parsing FixedLenFeature).
-
-    Current code requires that all optional_field_names share the
-        rule_optional_fn.
+      rule_optional_fn: function that take the value of an optional field and
+        returns True if the value is indicative of a default value (e.g.
+        resulting from the default value of parsing FixedLenFeature).  Current
+        code requires that all optional_field_names share the rule_optional_fn.
     """
     self._schema = Schema(feature_spec)
     self._coder = coders.ExampleProtoCoder(self._schema)
@@ -73,9 +71,9 @@ class EncodeTFRecord(beam.DoFn):
     """Initialises a TF-Record encoder.
 
     Args:
-      feature_spec: Dictionary from feature names to one of
-          `FixedLenFeature`, `SparseFeature` or `VarLenFeature.
-          It contains all the features to parse (including optional ones).
+      feature_spec: Dictionary from feature names to one of `FixedLenFeature`,
+        `SparseFeature` or `VarLenFeature. It contains all the features to parse
+        (including optional ones).
       optional_field_names: list of optional fields.
     """
     self._feature_spec = feature_spec

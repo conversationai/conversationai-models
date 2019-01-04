@@ -58,8 +58,7 @@ def _parse_config(env, config_file_path):
 def main():
   """Configures pipeline and spawns preprocessing job."""
   args = _parse_arguments(sys.argv)
-  config = _parse_config(
-      'CLOUD' if args.cloud else 'LOCAL', 'config.ini')
+  config = _parse_config('CLOUD' if args.cloud else 'LOCAL', 'config.ini')
   options = {'project': str(config.get('project'))}
   if args.cloud:
     if not args.job_name:
@@ -83,8 +82,7 @@ def main():
   pipeline_options = beam.pipeline.PipelineOptions(flags=[], **options)
   _set_logging(config.get('log_level'))
   with beam.Pipeline(
-      str(config.get('runner')),
-      options=pipeline_options) as pipeline:
+      str(config.get('runner')), options=pipeline_options) as pipeline:
     preprocessing.run_artificial_bias(
         pipeline,
         train_input_data_path=args.input_data_path,
