@@ -15,8 +15,6 @@ from tf_trainer.common import tfrecord_input
 from tf_trainer.common import types
 from tf_trainer.tf_gru_attention import model as tf_gru_attention
 
-
-
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string("embeddings_path",
@@ -38,8 +36,8 @@ def main(argv):
 
   # TODO: Move embedding *into* Keras model.
   model_tf = tf_gru_attention.TFRNNModel(dataset.labels())
-  model = preprocessor.add_embedding_to_model(
-      model_tf, base_model.TOKENS_FEATURE_KEY)
+  model = preprocessor.add_embedding_to_model(model_tf,
+                                              base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval()
