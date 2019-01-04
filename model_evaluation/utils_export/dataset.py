@@ -280,15 +280,12 @@ class Dataset(object):
 
     if recompute_predictions:
       tf_record_input_path = self.get_path_input_tf()
-      self.convert_data_to_tf(
-          model.feature_keys_spec(),
-          model.example_key())
+      self.convert_data_to_tf(model.feature_keys_spec(), model.example_key())
       self.call_prediction(model)
       self.wait_predictions(model)
     else:
       logging.warning(
           'Using past predictions. '
-          'the data must match exactly (same number of lines and same order).'
-      )
+          'the data must match exactly (same number of lines and same order).')
 
     self.collect_prediction(model)

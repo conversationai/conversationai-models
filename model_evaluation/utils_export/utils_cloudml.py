@@ -215,8 +215,9 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
   prediction_file = os.path.join(prediction_file,
                                  'prediction.results-00000-of-00001')
   if not tf.gfile.Exists(prediction_file):
-    raise ValueError('Prediction file does not exist.'
-                     ' You need to call prediction job and wait for completion.')
+    raise ValueError(
+        'Prediction file does not exist.'
+        ' You need to call prediction job and wait for completion.')
 
   def _load_predictions(pred_file):
     with file_io.FileIO(pred_file, 'r') as f:

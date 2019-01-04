@@ -142,18 +142,18 @@ class ModelRunner():
       print('Mean {}: {}'.format(metric_name, np.mean(list(agg.values()))))
 
   def score_auc(self, data):
-    self.score_metric(data, 'ROC AUC',
-                      lambda l, p: metrics.roc_auc_score(l, p, average=None))
+    self.score_metric(
+        data, 'ROC AUC', lambda l, p: metrics.roc_auc_score(l, p, average=None))
 
   def score_precision(self, data):
     self.score_metric(
-        data, 'Precision',
-        lambda l, p: metrics.precision_score(l, (p > 0.5).astype(int)))
+        data, 'Precision', lambda l, p: metrics.precision_score(
+            l, (p > 0.5).astype(int)))
 
   def score_recall(self, data):
     self.score_metric(
-        data, 'Recall',
-        lambda l, p: metrics.recall_score(l, (p > 0.5).astype(int)))
+        data,
+        'Recall', lambda l, p: metrics.recall_score(l, (p > 0.5).astype(int)))
 
   def _prep_texts(self, texts):
     return pad_sequences(
@@ -191,8 +191,8 @@ class ModelRunner():
           word_idx = self.tokenizer.word_index[word]
           word_embedding = np.asarray(values[1:], dtype='float32')
           embeddings_matrix[word_idx] = word_embedding
-    embeddings_matrix[self.hparams.vocab_size -
-                      1] = embeddings_matrix.mean(axis=0)
+    embeddings_matrix[self.hparams.vocab_size - 1] = embeddings_matrix.mean(
+        axis=0)
     return embeddings_matrix
 
 
@@ -225,15 +225,14 @@ if __name__ == '__main__':
       '--comet_key',
       type=str,
       default=None,
-      help=
-      'Path to file containing comet.ml api key. Set to None to disable comet.ml.'
+      help='Path to file containing comet.ml api key. Set to None to disable comet.ml.'
   )
   parser.add_argument(
       '--comet_project_name',
       type=str,
       default=None,
-      help=
-      'Name of comet project that tracks results. Must be set if comet_key is.')
+      help='Name of comet project that tracks results. Must be set if comet_key is.'
+  )
   parser.add_argument(
       '--labels',
       default='toxic,severe_toxic,obscene,threat,insult,identity_hate',

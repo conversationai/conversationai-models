@@ -33,6 +33,7 @@ FLAGS = flags.FLAGS
 tf.app.flags.DEFINE_bool('is_embedding_trainable', False,
                          'Enable fine tuning of embeddings.')
 
+
 class TextPreprocessor(object):
   """Text Preprocessor TensorFlow Estimator Extension.
 
@@ -50,8 +51,8 @@ class TextPreprocessor(object):
       LoadTokenIdxEmbeddings(embeddings_path)  # type: Tuple[Dict[str, int], np.ndarray, int, int]
 
   def train_preprocess_fn(self,
-                         tokenizer: Callable[[str], List[str]],
-                         lowercase: Optional[bool] = True
+                          tokenizer: Callable[[str], List[str]],
+                          lowercase: Optional[bool] = True
                          ) -> Callable[[types.Tensor], types.Tensor]:
 
     def _tokenize(text: bytes) -> np.ndarray:
@@ -69,22 +70,21 @@ class TextPreprocessor(object):
       words = tokenizer(text.decode('utf-8'))
       if lowercase:
         words = [w.lower() for w in words]
-      return np.asarray([
-            self._word_to_idx.get(w, self._unknown_token)
-            for w in words
-        ], dtype=np.int64)
+      return np.asarray(
+          [self._word_to_idx.get(w, self._unknown_token) for w in words],
+          dtype=np.int64)
 
     def _preprocess_fn(text: types.Tensor) -> types.Tensor:
-      '''Converts a text into a list of integers.
+      """Converts a text into a list of integers.
 
       Args:
         text: a 0-D string Tensor.
 
       Returns:
         A 1-D int64 Tensor.
-      '''
-      words = tf.py_func(_tokenize, [text], tf.int64, stateful=False,
-                         name='PreprocessFn')
+      """
+      words = tf.py_func(
+          _tokenize, [text], tf.int64, stateful=False, name='PreprocessFn')
       return words
 
     return _preprocess_fn
@@ -122,7 +122,7 @@ class TextPreprocessor(object):
     old_params = estimator.params
 
     def add_init_fn_to_estimatorSpec(estimator_spec, init_fn):
-      '''Add a new init_fn to the scaffold part of estimator spec.'''
+      """Add a new init_fn to the scaffold part of estimator spec."""
 
       def new_init_fn(scaffold, sess):
         init_fn(scaffold, sess)
@@ -130,8 +130,7 @@ class TextPreprocessor(object):
           estimator_spec.scaffold.init_fn(scaffold, sess)
 
       scaffold = tf.train.Scaffold(
-          init_fn=new_init_fn,
-          copy_from_scaffold=estimator_spec.scaffold)
+          init_fn=new_init_fn, copy_from_scaffold=estimator_spec.scaffold)
       estimator_spec_with_scaffold = tf.estimator.EstimatorSpec(
           mode=estimator_spec.mode,
           predictions=estimator_spec.predictions,
@@ -143,8 +142,7 @@ class TextPreprocessor(object):
           training_hooks=estimator_spec.training_hooks,
           scaffold=scaffold,
           evaluation_hooks=estimator_spec.evaluation_hooks,
-          prediction_hooks=estimator_spec.prediction_hooks
-          )
+          prediction_hooks=estimator_spec.prediction_hooks)
       return estimator_spec_with_scaffold
 
     def new_model_fn(features, labels, mode, params, config):
@@ -162,10 +160,10 @@ class TextPreprocessor(object):
         labels = {k: tf.expand_dims(v, -1) for k, v in labels.items()}
 
       # TODO: Modify when embeddings are part of the model.
-      estimator_spec = old_model_fn(new_features, labels, mode=mode, config=config)
+      estimator_spec = old_model_fn(
+          new_features, labels, mode=mode, config=config)
       estimator_spec_with_scaffold = add_init_fn_to_estimatorSpec(
-          estimator_spec,
-          embedding_init_fn)
+          estimator_spec, embedding_init_fn)
 
       return estimator_spec_with_scaffold
 
@@ -182,11 +180,10 @@ class TextPreprocessor(object):
     """Get word embedding TF Variable."""
 
     embeddings = tf.get_variable(
-        "embeddings",
-        self._embeddings_matrix.shape,
-        trainable=trainable)
+        'embeddings', self._embeddings_matrix.shape, trainable=trainable)
 
     def init_fn(scaffold, sess):
-        sess.run(embeddings.initializer, {embeddings.initial_value: self._embeddings_matrix})
+      sess.run(embeddings.initializer,
+               {embeddings.initial_value: self._embeddings_matrix})
 
     return embeddings, init_fn

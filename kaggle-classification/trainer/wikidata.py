@@ -1,6 +1,4 @@
-"""
-Class to encapsulate training and test data.
-"""
+"""Class to encapsulate training and test data."""
 
 import numpy as np
 import pandas as pd
@@ -8,7 +6,9 @@ import tensorflow as tf
 import tflearn
 from sklearn.model_selection import train_test_split
 
-Y_CLASSES = ['toxic', 'severe_toxic','obscene','threat','insult','identity_hate']
+Y_CLASSES = [
+    'toxic', 'severe_toxic', 'obscene', 'threat', 'insult', 'identity_hate'
+]
 
 
 def ngrams(sentence, ngram_size):
@@ -24,20 +24,28 @@ def ngrams(sentence, ngram_size):
 
 class WikiData:
 
-  def __init__(self, data_path, y_class, max_document_length,
-               vocab_processor_path=None, test_mode=False, seed=None,
-               train_percent=None, char_ngrams=None, min_frequency=None):
-    """
-    Args:
+  def __init__(self,
+               data_path,
+               y_class,
+               max_document_length,
+               vocab_processor_path=None,
+               test_mode=False,
+               seed=None,
+               train_percent=None,
+               char_ngrams=None,
+               min_frequency=None):
+    """Args:
+
       * data_path (string): path to file containing train or test data
       * y_class (string): the class we're training or testing on
       * vocab_processor_path (string): if provided, the comment_text data will
-          be processed with the vocab processor at that location. If not, a new
-          vocab_processor will be created using the training data.
+      be processed with the vocab processor at that location. If not, a new
+      vocab_processor will be created using the training data.
       * test_mode (boolean): true if loading data just to test on, not training
-                             a model
+      a model
       * seed (integer): a random seed to use for data splitting
-      * train_percent (fload): the percent of data we should use for training data
+      * train_percent (fload): the percent of data we should use for training
+      data
     """
     data = self._load_csv(data_path)
 
@@ -61,7 +69,8 @@ class WikiData:
       # If test_mode is True and no vocab_processor_path is specified, then
       # return an error. We shouldn't train a VocabProcessor at test time.
       if vocab_processor_path is None:
-        tf.logging.error("Loading data in test_mode with no vocab_processor_path")
+        tf.logging.error(
+            'Loading data in test_mode with no vocab_processor_path')
         raise ValueError
 
       self.vocab_processor = self.load_vocab_processor(vocab_processor_path)
@@ -69,41 +78,43 @@ class WikiData:
     else:
       tokenizer_fn = None
       if char_ngrams:
-        tokenizer_fn=lambda iterator: (ngrams(x, char_ngrams) for x in iterator)
+        tokenizer_fn = lambda iterator: (
+            ngrams(x, char_ngrams) for x in iterator)
       self.vocab_processor = tflearn.data_utils.VocabularyProcessor(
-        max_document_length=max_document_length, min_frequency=min_frequency,
-        tokenizer_fn=tokenizer_fn)
-      self.x_train = np.array(list(self.vocab_processor.fit_transform(
-        self.x_train_text)))
+          max_document_length=max_document_length,
+          min_frequency=min_frequency,
+          tokenizer_fn=tokenizer_fn)
+      self.x_train = np.array(
+          list(self.vocab_processor.fit_transform(self.x_train_text)))
 
     # Apply the VocabularyProcessor to the test data
-    self.x_test = np.array(list(self.vocab_processor.transform(
-      self.x_test_text)))
+    self.x_test = np.array(
+        list(self.vocab_processor.transform(self.x_test_text)))
 
   def _load_vocab_processor(self, path):
     """Load a VocabularyProcessor from the provided path"""
     return tflearn.data_utils.VocabularyProcessor.restore(path)
 
   def _load_csv(self, path):
-    """
-    Reads CSV from specified location and returns the data as a Pandas Dataframe.
-    Will work with a Cloud Storage path, e.g. 'gs://<bucket>/<blob>' or a local
-    path. Assumes data can fit into memory.
+    """Reads CSV from specified location and returns the data as a Pandas Dataframe. Will work with a Cloud Storage path, e.g.
+
+    'gs://<bucket>/<blob>' or a local path.
+
+    Assumes data can fit into memory.
     """
     with tf.gfile.Open(path, 'rb') as fileobj:
-      df =  pd.read_csv(fileobj, encoding='utf-8')
+      df = pd.read_csv(fileobj, encoding='utf-8')
 
     return df
 
   def _split(self, data, train_percent, x_field, y_class, seed=None):
-    """
-    Split divides the Wikipedia data into test and train subsets.
+    """Split divides the Wikipedia data into test and train subsets.
 
     Args:
       * data (dataframe): a dataframe with data for 'comment_text' and y_class
       * train_percent (float): the fraction of data to use for training
       * x_field (string): attribute of the wiki data to use to train, e.g.
-                          'comment_text'
+        'comment_text'
       * y_class (string): attribute of the wiki data to predict, e.g. 'toxic'
       * seed (integer): a seed to use to split the data in a reproducible way
 
@@ -127,6 +138,6 @@ class WikiData:
     X = data[x_field]
     y = data[y_class]
     x_train, x_test, y_train, y_test = train_test_split(
-      X, y, test_size=1-train_percent, random_state=seed)
+        X, y, test_size=1 - train_percent, random_state=seed)
 
     return x_train, x_test, np.array(y_train), np.array(y_test)
