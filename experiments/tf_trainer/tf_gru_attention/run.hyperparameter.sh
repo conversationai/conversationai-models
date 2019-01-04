@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source "tf_trainer/common/dataset_config.sh"
-DATETIME=`date '+%Y%m%d_%H%M%S'`
+DATETIME=$(date '+%Y%m%d_%H%M%S')
 MODEL_NAME="tf_gru_attention"
 MODEL_NAME_DATA="${MODEL_NAME}_$1_glove"
 JOB_DIR="${MODEL_PARENT_DIR}/${USER}/${MODEL_NAME_DATA}/${DATETIME}"

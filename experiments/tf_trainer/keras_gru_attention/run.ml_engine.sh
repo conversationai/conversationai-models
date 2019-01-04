@@ -12,7 +12,7 @@
 # - For glove.6B, Run preprocess_in_tf=Falses (will force lowercasing).
 
 GCS_RESOURCES="gs://kaggle-model-experiments/resources"
-DATETIME=`date '+%Y%m%d_%H%M%S'`
+DATETIME=$(date '+%Y%m%d_%H%M%S')
 MODEL_NAME="keras_gru_attention"
 JOB_DIR=gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/${DATETIME}
 

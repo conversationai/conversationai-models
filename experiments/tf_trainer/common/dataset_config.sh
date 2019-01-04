@@ -26,6 +26,8 @@ elif [ "$1" == "many_communities" ]; then
     train_path="${GCS_RESOURCES}/transfer_learning_data/many_communities/20181105_train.tfrecord"
     valid_path="${GCS_RESOURCES}/transfer_learning_data/many_communities/20181105_validate.tfrecord"
     labels="removed"
+    # removed is a boolean variable cast as an int.
+    # 1 means that the comment was removed and 0 means it was not.
     label_dtypes="int"
     train_steps=100000
     eval_period=800
