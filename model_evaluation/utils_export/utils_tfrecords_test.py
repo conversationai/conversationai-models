@@ -64,15 +64,15 @@ class TestFeatureKeySpec(unittest.TestCase):
     feature_keys_spec = 'not_a_dict',
     with self.assertRaises(Exception) as context:
       utils_tfrecords.is_valid_spec(feature_keys_spec)
-      self.assertIn('Spec should be a dictionary instance.',
-                    str(context.exception))
+    self.assertIn('Spec should be a dictionary instance.',
+                  str(context.exception))
 
   def test_not_in_possible(self):
     feature_keys_spec = {'key': 'other_possibility'}
     with self.assertRaises(Exception) as context:
       utils_tfrecords.is_valid_spec(feature_keys_spec)
-      self.assertIn('Spec is badly defined. Authorized types are one of',
-                    str(context.exception))
+    self.assertIn('Spec is badly defined. Authorized types are one of',
+                  str(context.exception))
 
   def test_valid(self):
     try:
