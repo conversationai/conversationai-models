@@ -3,7 +3,7 @@
 
 if [ "$1" == "civil_comments" ] || [ "$1" == "toxicity" ] || [ "$1" == "many_communities" ] ; then
     
-    MODEL_NAME=tf_char_cnn_$_
+    MODEL_NAME=tf_char_cnn_$1
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
@@ -12,7 +12,7 @@ fi
 
 
 # By default, the model is the last one from the user.
-MODEL_SAVED_PATH=$(gsutil ls gs://kaggle-model-experiments/tf_trainer_runs/${USER}/${MODEL_NAME}/ | tail -1)
+MODEL_SAVED_PATH=$(gsutil ls gs://conversationai-models/tf_trainer_runs/${USER}/${MODEL_NAME}/ | tail -1)
 
 # Create a new model.
 # Will raise an error if the model already exists.

@@ -26,11 +26,11 @@ def main(argv):
   trainer.train_with_eval()
 
   serving_input_fn = serving_input.create_text_serving_input_fn(
-      text_feature_name=base_model.TEXT_FEATURE_KEY)
-  trainer.export(serving_input_fn)
+      text_feature_name=base_model.TEXT_FEATURE_KEY,
+      example_key_name=base_model.EXAMPLE_KEY)
+  trainer.export(serving_input_fn, base_model.EXAMPLE_KEY)
 
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run(main)
-

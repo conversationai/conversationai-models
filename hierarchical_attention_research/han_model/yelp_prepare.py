@@ -1,6 +1,6 @@
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("review_path")
+parser.add_argument('review_path')
 args = parser.parse_args()
 
 import os
@@ -15,10 +15,12 @@ from yelp import *
 
 en = spacy.load('en')
 
+
 def read_reviews():
   with open(args.review_path, 'rb') as f:
     for line in f:
       yield json.loads(line)
+
 
 def build_word_frequency_distribution():
   path = os.path.join(data_dir, 'word_freq.pickle')
@@ -43,6 +45,7 @@ def build_word_frequency_distribution():
       print('dump at {}'.format(i))
   return freq
 
+
 def build_vocabulary(lower=3, n=50000):
   try:
     with open(vocab_fn, 'rb') as vocab_file:
@@ -52,7 +55,7 @@ def build_vocabulary(lower=3, n=50000):
   except IOError:
     print('building vocabulary')
   freq = build_word_frequency_distribution()
-  top_words = list(sorted(freq.items(), key=lambda x: -x[1]))[:n-lower+1]
+  top_words = list(sorted(freq.items(), key=lambda x: -x[1]))[:n - lower + 1]
   vocab = {}
   i = lower
   for w, freq in top_words:
@@ -62,7 +65,9 @@ def build_vocabulary(lower=3, n=50000):
     pickle.dump(vocab, vocab_file)
   return vocab
 
+
 UNKNOWN = 2
+
 
 def make_data(split_points=(0.8, 0.94)):
   train_ratio, dev_ratio = split_points
@@ -92,6 +97,7 @@ def make_data(split_points=(0.8, 0.94)):
   train_f.close()
   dev_f.close()
   test_f.close()
+
 
 if __name__ == '__main__':
   make_data()
