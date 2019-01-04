@@ -30,7 +30,6 @@ import tensorflow as tf
 from tensorflow.python.lib.io import file_io
 from tensorflow.python.platform import tf_logging as logging
 
-
 # Maximum number of version that can be created concurrently.
 CLOUD_ML_VERSION_CREATE_QUOTA = 10
 
@@ -39,7 +38,7 @@ def get_list_models_to_export(parent_model_dir):
   """Gets the paths of all models that are in parent_model_dir."""
   _list = []
   for subdirectory, _, files in tf.gfile.Walk(parent_model_dir):
-    if 'saved_model.pb' in files: # Indicator of a saved model.
+    if 'saved_model.pb' in files:  # Indicator of a saved model.
       _list.append(subdirectory)
   return _list
 
@@ -49,8 +48,7 @@ def check_model_exists(project_name, model_name):
   ml = discovery.build('ml', 'v1')
 
   model_id = 'projects/{}/models/{}'.format(project_name, model_name)
-  request = ml.projects().models().get(
-      name=model_id)
+  request = ml.projects().models().get(name=model_id)
   try:
     response = request.execute()
     return True
@@ -64,15 +62,12 @@ def create_model(project_name, model_name):
 
   request_dict = {'name': model_name}
   project_id = 'projects/{}'.format(project_name)
-  request = ml.projects().models().create(
-      parent=project_id,
-      body=request_dict)
+  request = ml.projects().models().create(parent=project_id, body=request_dict)
   try:
     response = request.execute()
   except errors.HttpError as err:
-    raise ValueError(
-        'There was an error creating the model.' +
-        ' Check the details: {}'.format(err._get_reason()))
+    raise ValueError('There was an error creating the model.' +
+                     ' Check the details: {}'.format(err._get_reason()))
 
 
 def create_version(project_name, model_name, version_name, model_dir):
@@ -83,11 +78,10 @@ def create_version(project_name, model_name, version_name, model_dir):
       'name': version_name,
       'deploymentUri': model_dir,
       'runtimeVersion': '1.10'
-      }
+  }
   model_id = 'projects/{}/models/{}'.format(project_name, model_name)
   request = ml.projects().models().versions().create(
-      parent=model_id,
-      body=request_dict)
+      parent=model_id, body=request_dict)
 
   try:
     response = request.execute()
@@ -95,9 +89,8 @@ def create_version(project_name, model_name, version_name, model_dir):
     return operation_id
 
   except errors.HttpError as err:
-    raise ValueError(
-        'There was an error creating the version.' +
-        ' Check the details:'.format(err._get_reason()))
+    raise ValueError('There was an error creating the version.' +
+                     ' Check the details:'.format(err._get_reason()))
 
 
 def check_version_deployed(operation_id):
@@ -111,13 +104,12 @@ def check_version_deployed(operation_id):
     response = None
     time.sleep(0.3)
     try:
-        response = request.execute()
-        done = response.get('done', False)
+      response = request.execute()
+      done = response.get('done', False)
     except errors.HttpError as err:
-        raise ValueError(
-        'There was an error getting the operation.' +
-        ' Check the details: {}'.format(err._get_reason()))
-        done = True
+      raise ValueError('There was an error getting the operation.' +
+                       ' Check the details: {}'.format(err._get_reason()))
+      done = True
 
 
 def deploy_model_version(project_name, model_name, version_name, model_dir):
@@ -125,40 +117,42 @@ def deploy_model_version(project_name, model_name, version_name, model_dir):
 
   Args:
     project_name: Name of a CMLE project.
-    model_name: Name of the model to deploy.
-      If it does not exist yet, the model will be created.
+    model_name: Name of the model to deploy. If it does not exist yet, the model
+      will be created.
     version_name: Version of the model on CMLE.
     Model_dir: Where to find the exported model.
   """
 
   if not check_model_exists(project_name, model_name):
     create_model(project_name, model_name)
-  operation_id = create_version(project_name, model_name, version_name, model_dir)
+  operation_id = create_version(project_name, model_name, version_name,
+                                model_dir)
   return operation_id
 
 
 def _get_version_name(model_dir):
-  return  'v_{}'.format(os.path.basename(os.path.dirname(model_dir)))
+  return 'v_{}'.format(os.path.basename(os.path.dirname(model_dir)))
 
 
 def deploy_all_models(parent_dir, project_name, model_name):
   """Finds and deploys all models present in the directory.
-  
+
   Args:
     parent_dir: Directory to explore.
     project_name: Name of the project.
-    model_name: Name of the model.
-      All the model found in the parent_dir will be 
+    model_name: Name of the model. All the model found in the parent_dir will be
       saved within the same main model.
   """
 
   list_models = get_list_models_to_export(parent_dir)
-  logging.info('Exploration finished: {} models detected.'.format(len(list_models)))
+  logging.info('Exploration finished: {} models detected.'.format(
+      len(list_models)))
 
   num_epochs = int(len(list_models) / CLOUD_ML_VERSION_CREATE_QUOTA)
 
   for i in range(0, num_epochs + 1):
-    indices = range(i * CLOUD_ML_VERSION_CREATE_QUOTA, (i+1) * CLOUD_ML_VERSION_CREATE_QUOTA)
+    indices = range(i * CLOUD_ML_VERSION_CREATE_QUOTA,
+                    (i + 1) * CLOUD_ML_VERSION_CREATE_QUOTA)
     operation_id_list = []
     for j in indices:
       if j >= len(list_models):
@@ -168,8 +162,7 @@ def deploy_all_models(parent_dir, project_name, model_name):
           project_name=project_name,
           model_name=model_name,
           version_name=version_name,
-          model_dir=list_models[j]
-          )
+          model_dir=list_models[j])
       operation_id_list.append(operation_id)
 
     logging.info('Waiting for versions to be deployed...')
@@ -185,11 +178,10 @@ if __name__ == '__main__':
   parser.add_argument(
       '--parent_dir',
       help='Name of the parent model directory.',
-      default='gs://kaggle-model-experiments/tf_trainer_runs/fprost/tf_gru_attention/20180917_161053/model_dir/')
+      default='gs://kaggle-model-experiments/tf_trainer_runs/fprost/tf_gru_attention/20180917_161053/model_dir/'
+  )
   parser.add_argument(
-      '--project_name',
-      help='Name of GCP project.',
-      default='wikidetox')
+      '--project_name', help='Name of GCP project.', default='wikidetox')
   parser.add_argument(
       '--model_name',
       help='Name of the model on CMLE.',

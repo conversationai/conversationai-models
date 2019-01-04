@@ -6,9 +6,9 @@ parser.add_argument('--mode', default='train', choices=['train', 'eval'])
 parser.add_argument('--checkpoint-frequency', type=int, default=100)
 parser.add_argument('--eval-frequency', type=int, default=10000)
 parser.add_argument('--batch-size', type=int, default=30)
-parser.add_argument("--device", default="/cpu:0")
-parser.add_argument("--max-grad-norm", type=float, default=5.0)
-parser.add_argument("--lr", type=float, default=0.001)
+parser.add_argument('--device', default='/cpu:0')
+parser.add_argument('--max-grad-norm', type=float, default=5.0)
+parser.add_argument('--lr', type=float, default=0.001)
 args = parser.parse_args()
 
 import importlib
@@ -41,13 +41,13 @@ checkpoint_path = os.path.join(checkpoint_dir, checkpoint_name)
 # @TODO: move calculation into `task file`
 trainset = task.read_trainset(epochs=1)
 class_weights = pd.Series(Counter([l for _, l in trainset]))
-class_weights = 1/(class_weights/class_weights.mean())
+class_weights = 1 / (class_weights / class_weights.mean())
 class_weights = class_weights.to_dict()
 
 vocab = task.read_vocab()
 labels = task.read_labels()
 
-classes = max(labels.values())+1
+classes = max(labels.values()) + 1
 vocab_size = task.vocab_size
 
 labels_rev = {int(v): k for k, v in labels.items()}
@@ -70,7 +70,7 @@ def HAN_model_1(session, restore_only=False):
   is_training = tf.placeholder(dtype=tf.bool, name='is_training')
 
   def bn_cell():
-    return BNLSTMCell(80, is_training) # h-h batchnorm LSTMCell
+    return BNLSTMCell(80, is_training)  # h-h batchnorm LSTMCell
 
   # cell = GRUCell(30)
   fw_word_cell = MultiRNNCell([bn_cell() for _ in range(NUM_RNN_LAYERS)])
@@ -98,23 +98,30 @@ def HAN_model_1(session, restore_only=False):
   saver = tf.train.Saver(tf.global_variables())
   checkpoint = tf.train.get_checkpoint_state(checkpoint_dir)
   if checkpoint:
-    print("Reading model parameters from %s" % checkpoint.model_checkpoint_path)
+    print('Reading model parameters from %s' % checkpoint.model_checkpoint_path)
     saver.restore(session, checkpoint.model_checkpoint_path)
   elif restore_only:
-    raise FileNotFoundError("Cannot restore model")
+    raise FileNotFoundError('Cannot restore model')
   else:
-    print("Created model with fresh parameters")
+    print('Created model with fresh parameters')
     session.run(tf.global_variables_initializer())
   # tf.get_default_graph().finalize()
   return model, saver
 
+
 model_fn = HAN_model_1
 
+
 def decode(ex):
-  print('text: ' + '\n'.join([' '.join([vocab_rev.get(wid, '<?>') for wid in sent]) for sent in ex[0]]))
+  print('text: ' + '\n'.join(
+      [' '.join([vocab_rev.get(wid, '<?>')
+                 for wid in sent])
+       for sent in ex[0]]))
   print('label: ', labels_rev[ex[1]])
 
+
 print('data loaded')
+
 
 def batch_iterator(dataset, batch_size, max_epochs):
   for i in range(max_epochs):
@@ -136,9 +143,15 @@ def ev(session, model, dataset):
   for x, y in tqdm(batch_iterator(dataset, args.batch_size, 1)):
     examples.extend(x)
     labels.extend(y)
-    predictions.extend(session.run(model.prediction, model.get_feed_data(x, is_training=False)))
+    predictions.extend(
+        session.run(model.prediction, model.get_feed_data(x,
+                                                          is_training=False)))
 
-  df = pd.DataFrame({'predictions': predictions, 'labels': labels, 'examples': examples})
+  df = pd.DataFrame({
+      'predictions': predictions,
+      'labels': labels,
+      'examples': examples
+  })
   return df
 
 
@@ -160,7 +173,8 @@ def train():
 
   with tf.Session(config=config) as s:
     model, saver = model_fn(s)
-    summary_writer = tf.summary.FileWriter(tflog_dir, graph=tf.get_default_graph())
+    summary_writer = tf.summary.FileWriter(
+        tflog_dir, graph=tf.get_default_graph())
 
     # Format: tensorflow/contrib/tensorboard/plugins/projector/projector_config.proto
     # pconf = projector.ProjectorConfig()
@@ -176,7 +190,8 @@ def train():
 
     # Saves a configuration file that TensorBoard will read during startup.
 
-    for i, (x, y) in enumerate(batch_iterator(task.read_trainset(epochs=3), args.batch_size, 300)):
+    for i, (x, y) in enumerate(
+        batch_iterator(task.read_trainset(epochs=3), args.batch_size, 300)):
       fd = model.get_feed_data(x, y, class_weights=class_weights)
 
       # import IPython
@@ -196,7 +211,8 @@ def train():
       # projector.visualize_embeddings(summary_writer, pconf)
 
       if step % 1 == 0:
-        print('step %s, loss=%s, accuracy=%s, t=%s, inputs=%s' % (step, loss, accuracy, round(td, 2), fd[model.inputs].shape))
+        print('step %s, loss=%s, accuracy=%s, t=%s, inputs=%s' %
+              (step, loss, accuracy, round(td, 2), fd[model.inputs].shape))
       if step != 0 and step % args.checkpoint_frequency == 0:
         print('checkpoint & graph meta')
         saver.save(s, checkpoint_path, global_step=step)
@@ -204,13 +220,16 @@ def train():
       if step != 0 and step % args.eval_frequency == 0:
         print('evaluation at step %s' % i)
         dev_df = ev(s, model, task.read_devset(epochs=1))
-        print('dev accuracy: %.2f' % (dev_df['predictions'] == dev_df['labels']).mean())
+        print('dev accuracy: %.2f' %
+              (dev_df['predictions'] == dev_df['labels']).mean())
+
 
 def main():
   if args.mode == 'train':
     train()
   elif args.mode == 'eval':
     evaluate(task.read_devset(epochs=1))
+
 
 if __name__ == '__main__':
   main()

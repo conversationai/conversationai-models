@@ -35,8 +35,7 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_integer(
     'embedding_size', 32,
     'The number of dimensions in the character embedding.')
-tf.app.flags.DEFINE_string('pooling_type', 'max',
-                           'Average or max pooling.')
+tf.app.flags.DEFINE_string('pooling_type', 'max', 'Average or max pooling.')
 tf.app.flags.DEFINE_integer('string_len', 1500,
                             'The length to truncate or pad to.')
 
@@ -75,7 +74,7 @@ class TFCharCNNModel(base_model.BaseModel):
   def _model_fn(self, features, labels, mode, params, config):
     embedding = tf.Variable(
         tf.truncated_normal([256, params.embedding_size]),
-        name="char_embedding")
+        name='char_embedding')
     texts = features[base_model.TEXT_FEATURE_KEY]
     batch_size = tf.shape(texts)[0]
     byte_ids = tf.reshape(
