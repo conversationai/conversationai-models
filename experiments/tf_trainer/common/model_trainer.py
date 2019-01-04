@@ -228,10 +228,9 @@ class ModelTrainer(object):
         json.loads(os.environ.get('TF_CONFIG', '{}')).get('task', {}).get(
             'trial', ''))
 
-  def _add_estimator_key(self, estimator):
+  def _add_estimator_key(self, estimator, example_key_name):
     """Adds a forward key to the model_fn of an estimator."""
-    if FLAGS.key_name:
-      estimator = forward_features(estimator, FLAGS.key_name)
+    estimator = forward_features(estimator, example_key_name)
     return estimator
 
   def _get_list_checkpoint(self, n_export, model_dir):
@@ -272,15 +271,32 @@ class ModelTrainer(object):
 
     return checkpoints_to_export
 
-  def export(self, serving_input_fn):
-    """Export model as a .pb."""
-    estimator_with_key = self._add_estimator_key(self._estimator)
+  def export(self, serving_input_fn, example_key_name=None):
+    """Export model as a .pb.
 
+    Args:
+      serving_input_fn: An input function for inference graph.
+      example_key_name: Name of the example_key field (string).
+          If None, no example_key will be used.
+
+    Example keys are useful when doing batch predictions. Typically,
+      the predictions are done by a cluster of machines and the order of
+      the results is random. Here, we add a forward feature in the inference graph
+      (https://www.tensorflow.org/api_docs/python/tf/contrib/estimator/forward_features)
+      which will be used as an example unique identifier. In inference, the input
+      example includes an example_key field that is passed along by the estimator
+      and returned in the predictions.
+    """
+    estimator = self._estimator
+    if example_key_name:
+      estimator = self._add_estimator_key(self._estimator, example_key_name)
+    
     checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
                                                       self._model_dir())
+
     for checkpoint_path in checkpoints_to_export:
       version = checkpoint_path.split('-')[-1]
-      estimator_with_key.export_savedmodel(
+      estimator.export_savedmodel(
           export_dir_base=os.path.join(self._model_dir(), version),
           serving_input_receiver_fn=serving_input_fn,
           checkpoint_path=checkpoint_path)

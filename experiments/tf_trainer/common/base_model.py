@@ -33,6 +33,11 @@ TEXT_FEATURE_KEY = 'text'
 # use tokens from a vocabulary as input.
 TOKENS_FEATURE_KEY = 'tokens'
 
+# The TF Example key associated with examples in inference that consist of
+# an int64 integer. It is a unique identifier of the TF Example and is passed
+# along by the estimator and returned in the predictions (forward_features).
+EXAMPLE_KEY = 'comment_key'
+
 
 class BaseModel(abc.ABC):
   """Tentative interface for all model classes.

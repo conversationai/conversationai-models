@@ -15,6 +15,7 @@ from tf_trainer.common import tfrecord_input
 from tf_trainer.common import types
 from tf_trainer.tf_gru_attention import model as tf_gru_attention
 
+
 FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string("embeddings_path",
@@ -45,8 +46,9 @@ def main(argv):
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
-      text_feature_name=base_model.TOKENS_FEATURE_KEY)
-  trainer.export(serving_input_fn)
+      text_feature_name=base_model.TOKENS_FEATURE_KEY,
+      example_key_name=base_model.EXAMPLE_KEY)
+  trainer.export(serving_input_fn, base_model.EXAMPLE_KEY)
 
 
 if __name__ == "__main__":
