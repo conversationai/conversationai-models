@@ -20,8 +20,6 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string("embeddings_path",
                            "local_data/glove.6B/glove.6B.100d.txt",
                            "Path to the embeddings file.")
-tf.app.flags.DEFINE_string('key_name', 'comment_key',
-                           'Name of a pass-thru integer id for batch scoring.')
 
 
 def main(argv):
@@ -48,8 +46,8 @@ def main(argv):
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
       text_feature_name=base_model.TOKENS_FEATURE_KEY,
-      example_key_name=FLAGS.key_name)
-  trainer.export(serving_input_fn, FLAGS.key_name)
+      example_key_name=base_model.EXAMPLE_KEY)
+  trainer.export(serving_input_fn, base_model.EXAMPLE_KEY)
 
 
 if __name__ == "__main__":
