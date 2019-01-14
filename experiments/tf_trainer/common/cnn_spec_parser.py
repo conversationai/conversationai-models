@@ -33,12 +33,10 @@ embedding size, and the other dimension of the computed CNN matrix will be
 import re
 from typing import List
 
-
 layers_split_regexp = re.compile(r'\s*:\s*')
 filters_split_regexp = re.compile(r'\s*,\s*')
-filter_regexp = re.compile(
-  r'\(\s*(?P<size>\d+)\s*/\s*(?P<stride>\d+)\s*'
-  r'\-\>\s*(?P<num_filters>\d+)\s*\)')
+filter_regexp = re.compile(r'\(\s*(?P<size>\d+)\s*/\s*(?P<stride>\d+)\s*'
+                           r'\-\>\s*(?P<num_filters>\d+)\s*\)')
 
 
 class FilterParseError(Exception):
@@ -51,17 +49,16 @@ class Filter(object):
   filter = '(size / stride -> num_filters)'
   """
 
-  def __init__(self, str:str) -> None:
+  def __init__(self, str: str) -> None:
     m = filter_regexp.match(str)
     if m is None:
       raise FilterParseError('Bad filter definition for: %s' % str)
-    self.num_filters = int(m.group('num_filters')) # type "int"
-    self.size = int(m.group('size')) # type "int"
-    self.stride = int(m.group('stride')) # type "int"
+    self.num_filters = int(m.group('num_filters'))  # type "int"
+    self.size = int(m.group('size'))  # type "int"
+    self.stride = int(m.group('stride'))  # type "int"
 
   def __str__(self) -> str:
-    return (
-        '(%d / %d -> %d)' % (self.size, self.stride, self.num_filters))
+    return ('(%d / %d -> %d)' % (self.size, self.stride, self.num_filters))
 
 
 class ConcurrentFilters(object):
@@ -69,7 +66,8 @@ class ConcurrentFilters(object):
 
   filters = filter, filters
   """
-  def __init__(self, str:str) -> None:
+
+  def __init__(self, str: str) -> None:
     filter_spec_strs = filters_split_regexp.split(str)
     self.filters = [Filter(s) for s in filter_spec_strs]
 
@@ -79,11 +77,14 @@ class ConcurrentFilters(object):
 
 class SequentialLayers(object):
   """A sequence of CNN layers
+
   layers = filters : layers
   """
-  def __init__(self, str:str) -> None:
+
+  def __init__(self, str: str) -> None:
     layer_spec_strs = layers_split_regexp.split(str)
-    self.layers = [ConcurrentFilters(s) for s in layer_spec_strs]  # type: List[ConcurrentFilters]
+    self.layers = [ConcurrentFilters(s) for s in layer_spec_strs
+                  ]  # type: List[ConcurrentFilters]
 
   def __str__(self) -> str:
     return ' : '.join([str(f) for f in self.layers])

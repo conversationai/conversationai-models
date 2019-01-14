@@ -47,7 +47,7 @@ class Model(object):
                model_names,
                project_name,
                example_key='example_key'):
-    """Initializes a model.
+    """Initializes a model and defines its signature.
 
     Args:
       feature_keys_spec: spec of the tf_records input to the model.
@@ -56,13 +56,15 @@ class Model(object):
         Format should be $MODEL_NAME:$VERSION. If no version given, will take
           default version.
       project_name: name of the gcp project.
-      example_key: name of the example key expected by the model. This example
-        key will be created by the dataset function.
+      example_key: name of the example key expected by the model.
 
     Raises:
       ValueError: If example_key is included in the feature_spec
         of if feature_keys_spec does not match required format,
         or if we have more than CMLE_QUOTA_PREDICTION model_names.
+
+    Note: When used with `Dataset`, the dataframe returned by the input_fn
+      should not contain the `example_key`, as it will be later created by the API.
     """
 
     utils_tfrecords.is_valid_spec(feature_keys_spec)
@@ -278,15 +280,12 @@ class Dataset(object):
 
     if recompute_predictions:
       tf_record_input_path = self.get_path_input_tf()
-      self.convert_data_to_tf(
-          model.feature_keys_spec(),
-          model.example_key())
+      self.convert_data_to_tf(model.feature_keys_spec(), model.example_key())
       self.call_prediction(model)
       self.wait_predictions(model)
     else:
       logging.warning(
           'Using past predictions. '
-          'the data must match exactly (same number of lines and same order).'
-      )
+          'the data must match exactly (same number of lines and same order).')
 
     self.collect_prediction(model)

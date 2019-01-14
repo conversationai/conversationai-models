@@ -45,20 +45,30 @@ class CNNWithAttention(base_model.BaseModel):
         self.hparams.embedding_dim,
         weights=[self.embeddings_matrix],
         input_length=self.hparams.sequence_length,
-        trainable=self.hparams.train_embedding)(I)
+        trainable=self.hparams.train_embedding)(
+            I)
     C = []
     A = []
     P = []
     for i, size in enumerate(self.hparams.filter_sizes):
-        C.append(Conv1D(self.hparams.num_filters[i], size, activation='relu', padding='same')(E))
-        A.append(Dense(self.hparams.attention_intermediate_size, activation = 'relu')(C[i]))
-        A[i] = Dense(1, use_bias=False)(A[i])
-        # Permute trick to apply softmax to second to last layer.
-        A[i] = Permute((2,1))(A[i])
-        A[i] = Activation('softmax')(A[i])
-        A[i] = Permute((2,1))(A[i])
-        P.append(Multiply()([A[i], C[i]]))
-        P[i] = AveragePooling1D(self.hparams.sequence_length, padding='same')(P[i])
+      C.append(
+          Conv1D(
+              self.hparams.num_filters[i],
+              size,
+              activation='relu',
+              padding='same')(E))
+      A.append(
+          Dense(self.hparams.attention_intermediate_size,
+                activation='relu')(C[i]))
+      A[i] = Dense(1, use_bias=False)(A[i])
+      # Permute trick to apply softmax to second to last layer.
+      A[i] = Permute((2, 1))(A[i])
+      A[i] = Activation('softmax')(A[i])
+      A[i] = Permute((2, 1))(A[i])
+      P.append(Multiply()([A[i], C[i]]))
+      P[i] = AveragePooling1D(
+          self.hparams.sequence_length, padding='same')(
+              P[i])
     X = Concatenate(axis=-1)(P)
     X = Flatten()(X)
     X = Dropout(self.hparams.dropout_rate)(X)
@@ -67,8 +77,9 @@ class CNNWithAttention(base_model.BaseModel):
     Output = Dense(self.num_labels, activation='sigmoid', name='outputs')(X)
 
     model = Model(inputs=I, outputs=Output)
-    model.compile(optimizer='rmsprop',
-                  loss='binary_crossentropy',
-                  metrics=['accuracy', auc_roc])
+    model.compile(
+        optimizer='rmsprop',
+        loss='binary_crossentropy',
+        metrics=['accuracy', auc_roc])
     print(model.summary())
     return model

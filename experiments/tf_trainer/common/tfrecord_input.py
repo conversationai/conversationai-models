@@ -80,6 +80,14 @@ class TFRecordInput(dataset_input.DatasetInput):
     assert FLAGS.validate_path
     return self._input_fn_from_file(FLAGS.validate_path)
 
+  def _keys_to_features(self):
+    keys_to_features = {}
+    keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
+    for label, dtype in zip(self._labels, self._label_dtypes):
+      keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
+                                                   DTYPE_DEFAULT[dtype])
+    return keys_to_features
+
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
     filenames_dataset = tf.data.Dataset.list_files(filepath)
     dataset = tf.data.TFRecordDataset(
@@ -127,14 +135,8 @@ class TFRecordInput(dataset_input.DatasetInput):
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
-
-    keys_to_features = {}
-    keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
-    for label, dtype in zip(self._labels, self._label_dtypes):
-      keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
-                                                   DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
-        record, keys_to_features)  # type: Dict[str, types.Tensor]
+        record, self._keys_to_features())  # type: Dict[str, types.Tensor]
 
     features = {base_model.TEXT_FEATURE_KEY: parsed[self._text_feature]}
     return self._process_labels(features, parsed)
@@ -196,13 +198,8 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
-    keys_to_features = {}
-    keys_to_features[self.text_feature()] = tf.FixedLenFeature([], tf.string)
-    for label, dtype in zip(self._labels, self._label_dtypes):
-      keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
-                                                   DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
-        record, keys_to_features)  # type: Dict[str, types.Tensor]
+        record, self._keys_to_features())  # type: Dict[str, types.Tensor]
 
     text = parsed[self.text_feature()]
     tokens = self._train_preprocess_fn(text)

@@ -36,8 +36,8 @@ def main(argv):
 
   # TODO: Move embedding *into* Keras model.
   model_tf = tf_cnn.TFCNNModel(dataset.labels())
-  model = preprocessor.add_embedding_to_model(
-      model_tf, base_model.TOKENS_FEATURE_KEY)
+  model = preprocessor.add_embedding_to_model(model_tf,
+                                              base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval()
@@ -45,11 +45,11 @@ def main(argv):
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
-      text_feature_name=base_model.TOKENS_FEATURE_KEY)
-  trainer.export(serving_input_fn)
+      text_feature_name=base_model.TOKENS_FEATURE_KEY,
+      example_key_name=base_model.EXAMPLE_KEY)
+  trainer.export(serving_input_fn, base_model.EXAMPLE_KEY)
 
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)
   tf.app.run(main)
-
