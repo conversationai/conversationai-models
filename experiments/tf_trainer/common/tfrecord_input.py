@@ -12,17 +12,16 @@ from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
 
-
 tf.app.flags.DEFINE_string('train_path', None,
                            'Path to the training data TFRecord file.')
 tf.app.flags.DEFINE_string('validate_path', None,
                            'Path to the validation data TFRecord file.')
 tf.app.flags.DEFINE_string('labels', 'frac_neg',
                            'Comma separated list of label features.')
-tf.app.flags.DEFINE_string('label_dtypes', None,
-                           'Comma separated list of dtypes for labels. Each '
-                           'dtype must be float or int. If not provided '
-                           'assumes all labels are floats.')
+tf.app.flags.DEFINE_string(
+    'label_dtypes', None, 'Comma separated list of dtypes for labels. Each '
+    'dtype must be float or int. If not provided '
+    'assumes all labels are floats.')
 tf.app.flags.DEFINE_string('text_feature', 'comment_text',
                            'Name of feature containing text input.')
 tf.app.flags.DEFINE_boolean('round_labels', True,
@@ -32,18 +31,11 @@ tf.app.flags.DEFINE_integer('batch_size', 256,
 tf.app.flags.DEFINE_integer('num_prefetch', 5,
                             'Batch sizes to use when reading.')
 
-
 FLAGS = tf.app.flags.FLAGS
 
-DTYPE_MAPPING = {
-  'float': tf.float32,
-  'int': tf.int64
-}
+DTYPE_MAPPING = {'float': tf.float32, 'int': tf.int64}
 
-DTYPE_DEFAULT = {
-  'float': -1.0,
-  'int': -1
-}
+DTYPE_DEFAULT = {'float': -1.0, 'int': -1}
 
 
 class TFRecordInput(dataset_input.DatasetInput):
@@ -90,15 +82,15 @@ class TFRecordInput(dataset_input.DatasetInput):
 
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
     filenames_dataset = tf.data.Dataset.list_files(filepath)
-    dataset = tf.data.TFRecordDataset(filenames_dataset) # type: tf.data.TFRecordDataset
+    dataset = tf.data.TFRecordDataset(
+        filenames_dataset)  # type: tf.data.TFRecordDataset
     parsed_dataset = dataset.map(
-        self._read_tf_example,
-        num_parallel_calls=multiprocessing.cpu_count())
+        self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
     return parsed_dataset.batch(self._batch_size).prefetch(self._num_prefetch)
 
   def _process_labels(self, features, parsed):
     """Applies rounding and computes weights tied to feature presence.
-    
+
     For all of the expected labels, if the value is negative, this
     indicates a missing feature from the input. A corresponding
     label name, suffixed by '_weight' will be added to the features
@@ -117,7 +109,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     new_features = {k: v for k, v in features.items()}
     labels = {}
     for label in self._labels:
-      label_value = tf.cast(parsed[label], dtype = tf.float32)
+      label_value = tf.cast(parsed[label], dtype=tf.float32)
       # Missing values are negative, find them and zero those features out.
       weight = tf.cast(tf.greater_equal(label_value, 0.0), dtype=tf.float32)
       if self._round_labels:
@@ -139,8 +131,7 @@ class TFRecordInput(dataset_input.DatasetInput):
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
     for label, dtype in zip(self._labels, self._label_dtypes):
-      keys_to_features[label] = tf.FixedLenFeature([],
-                                                   DTYPE_MAPPING[dtype],
+      keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
                                                    DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
@@ -171,12 +162,13 @@ class TFRecordInputWithTokenizer(TFRecordInput):
   def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
 
     filenames_dataset = tf.data.Dataset.list_files(filepath)
-    dataset = tf.data.TFRecordDataset(filenames_dataset) # type: tf.data.TFRecordDataset
+    dataset = tf.data.TFRecordDataset(
+        filenames_dataset)  # type: tf.data.TFRecordDataset
 
     parsed_dataset = dataset.map(
         self._read_tf_example, num_parallel_calls=multiprocessing.cpu_count())
-    parsed_dataset = parsed_dataset.filter(
-        lambda x, _: tf.less(x['sequence_length'], self._max_seq_len))
+    parsed_dataset = parsed_dataset.filter(lambda x, _: tf.less(
+        x['sequence_length'], self._max_seq_len))
 
     feature_shapes = {
         base_model.TOKENS_FEATURE_KEY: [None],
@@ -207,8 +199,7 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     keys_to_features = {}
     keys_to_features[self.text_feature()] = tf.FixedLenFeature([], tf.string)
     for label, dtype in zip(self._labels, self._label_dtypes):
-      keys_to_features[label] = tf.FixedLenFeature([],
-                                                   DTYPE_MAPPING[dtype],
+      keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
                                                    DTYPE_DEFAULT[dtype])
     parsed = tf.parse_single_example(
         record, keys_to_features)  # type: Dict[str, types.Tensor]
