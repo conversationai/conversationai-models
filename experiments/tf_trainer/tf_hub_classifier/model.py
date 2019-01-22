@@ -18,7 +18,8 @@ tf.app.flags.DEFINE_float('learning_rate', 0.00003,
 tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
-    'model_spec', 'https://tfhub.dev/google/universal-sentence-encoder/2',
+    'model_spec',
+    'gs://conversationai-models/resources/tfhub/kona-universal-encoder-2/1fb57c3ffe1a38479233ee9853ddd7a8ac8a8c47',
     'The url of the TF Hub sentence encoding module to use.')
 tf.app.flags.DEFINE_bool('trainable', False,
                          'What to pass for the TF Hub trainable parameter.')
