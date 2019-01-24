@@ -1,24 +1,12 @@
-"""TODO(jjtan): DO NOT SUBMIT without one-line documentation for episodic_tfrecord_input.
-
-TODO(jjtan): DO NOT SUBMIT without a detailed description of
-episodic_tfrecord_input.
-"""
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import tensorflow as tf
 from pathlib import Path
 
-import functools
 import os
 import random
 
-from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
-from typing import List, Dict
+from typing import List, Dict, Tuple
 
 tf.app.flags.DEFINE_string('train_path', None,
                            'Path to the training data TFRecord file.')
@@ -34,26 +22,21 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
     self.train_dir = train_dir
     self.validate_dir = validate_dir
 
-  def initialize(self, session) -> None:
-    session.run(self.episode_batches_itr.initializer, {})
-
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
-    domains = self._get_domains(self.train_dir)
-    num_domains = len(domains)
-    texts = tf.stack([domain['text'] for domain in domains])
-    labels = tf.stack([domain['label'] for domain in domains])
-    randomized_idxs = tf.data.Dataset.range(num_domains).shuffle(
-        buffer_size=128)
-    episodes = randomized_idxs.map(lambda idx: (texts[idx], labels[idx]))
-    episode_batches = episodes.batch(4)
-    self.episode_batches_itr = episode_batches.make_initializable_iterator()
+    all_episodes = self._get_randomized_episodes(self.train_dir)
+    all_texts = [ep[0] for ep in all_episodes]
+    all_domains = [ep[1] for ep in all_episodes]
+    all_labels = [ep[2] for ep in all_episodes]
+    ds = tf.data.Dataset.from_tensor_slices((all_texts, all_domains,
+                                             all_labels))
+    self.episode_batches_itr = ds.make_one_shot_iterator()
     return self.episode_batches_itr.get_next()
 
   def validate_input_fn(self) -> types.FeatureAndLabelTensors:
     pass
 
-  def _get_domains(self, directory: str) -> List[tf.data.Dataset]:
-    """Retrieves an iterator of domain specific datasets.
+  def _get_randomized_episodes(self, directory: str):
+    """Retrieves a list of domain specific datasets.
 
     Given a directory of TFRecord files, each holding data for a given domain,
     with file name "[domain].tfrecord", returns an iterator of datasets, each
@@ -61,17 +44,17 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
     """
 
     tfrecord_files = tf.gfile.Glob(os.path.join(directory, '*.tfrecord'))
-    domain_datasets = []
-    for tfrecord_file in tfrecord_files:
-      domain_datasets.append(self._dataset_from_tfrecord_file(tfrecord_file))
+    episodes = []
+    for file_no, tfrecord_file in enumerate(tfrecord_files):
+      print(f'PROCESSING FILE {file_no}: {tfrecord_file}')
+      episodes.append(self._dataset_from_tfrecord_file(tfrecord_file))
+    random.shuffle(episodes)
+    return episodes
 
-    # Make episodes of size 32.
-    return [
-        ds.batch(32).make_one_shot_iterator().get_next()
-        for ds in domain_datasets
-    ]
-
-  def _dataset_from_tfrecord_file(self, tfrecord_file: str) -> tf.data.Dataset:
+  def _dataset_from_tfrecord_file(
+      self,
+      tfrecord_file: str) -> Tuple[List[tf.Tensor], List[str], List[tf.Tensor]]:
+    # The domain happens to be the stem for this dataset.
     domain = Path(tfrecord_file).stem
 
     def _read_tf_example(record):
@@ -87,5 +70,11 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
           'label': parsed['label'],
       }
 
-    return tf.data.TFRecordDataset(tfrecord_file).shuffle(
-        buffer_size=128).map(_read_tf_example).repeat()
+    examples = list(tf.python_io.tf_record_iterator(tfrecord_file))
+    random.shuffle(examples)
+
+    datapoints = [_read_tf_example(example) for example in examples]
+    texts = [dp['text'] for dp in datapoints]
+    domains = [dp['domain'] for dp in datapoints]
+    labels = [dp['label'] for dp in datapoints]
+    return (texts, domains, labels)
