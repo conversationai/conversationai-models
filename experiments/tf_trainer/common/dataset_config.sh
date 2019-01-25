@@ -9,18 +9,12 @@ if [ "$1" == "civil_comments" ]; then
     valid_path="${GCS_RESOURCES}/civil_comments_data/train_eval_test/eval-*.tfrecord"
     labels="toxicity"
     label_dtypes="float"
-    train_steps=24000
-    eval_period=800
-    eval_steps=50
 
 elif [ "$1" == "toxicity" ]; then
     train_path="${GCS_RESOURCES}/toxicity_data/toxicity_q42017_train.tfrecord"
     valid_path="${GCS_RESOURCES}/toxicity_data/toxicity_q42017_validate.tfrecord"
     labels="frac_neg"
     label_dtypes="float"
-    train_steps=24000
-    eval_period=800
-    eval_steps=50
 
 elif [ "$1" == "many_communities" ]; then
     train_path="${GCS_RESOURCES}/transfer_learning_data/many_communities/20181105_train.tfrecord"
@@ -29,9 +23,6 @@ elif [ "$1" == "many_communities" ]; then
     # removed is a boolean variable cast as an int.
     # 1 means that the comment was removed and 0 means it was not.
     label_dtypes="int"
-    train_steps=100000
-    eval_period=800
-    eval_steps=50
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
