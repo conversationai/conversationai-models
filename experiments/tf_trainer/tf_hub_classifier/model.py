@@ -19,9 +19,9 @@ tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
     'model_spec',
-    'gs://conversationai-models/resources/tfhub/kona-universal-encoder-2/1fb57c3ffe1a38479233ee9853ddd7a8ac8a8c47',
+    'https://tfhub.dev/google/universal-sentence-encoder-large/3'
     'The url of the TF Hub sentence encoding module to use.')
-tf.app.flags.DEFINE_bool('trainable', False,
+tf.app.flags.DEFINE_bool('trainable', True,
                          'What to pass for the TF Hub trainable parameter.')
 # This would normally just be a multi_integer, but we use string due to
 # constraints with ML Engine hyperparameter tuning. The length of the list

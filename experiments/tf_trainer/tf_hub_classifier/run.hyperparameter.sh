@@ -24,7 +24,9 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --eval_steps=$eval_steps \
     --labels=$labels \
     --label_dtypes=$label_dtypes \
-    --preprocess_in_tf=False
+    --preprocess_in_tf=False \
+    --model_spec="gs://conversationai-models/resources/tfhub/universal-sentence-encoder-large-3/96e8f1d3d4d90ce86b2db128249eb8143a91db73"
+
 
 echo "Model dir:"
 echo ${JOB_DIR}/model_dir

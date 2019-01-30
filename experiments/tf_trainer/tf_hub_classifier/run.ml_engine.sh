@@ -64,4 +64,6 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --dense_units=$dense_units \
     --train_steps=$train_steps \
     --eval_period=$eval_period \
-    --eval_steps=$eval_steps   
+    --eval_steps=$eval_steps \
+    --model_spec="gs://conversationai-models/resources/tfhub/universal-sentence-encoder-large-3/96e8f1d3d4d90ce86b2db128249eb8143a91db73"
+
