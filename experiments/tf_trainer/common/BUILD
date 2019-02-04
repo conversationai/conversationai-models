@@ -124,3 +124,12 @@ py_library(
         ":data_input",
     ],
 )
+
+py_test(
+    name = "episodic_tfrecord_input_test",
+    srcs = ["episodic_tfrecord_input_test.py"],
+    deps = [
+        ":episodic_tfrecord_input",
+        ":types",
+    ],
+)
