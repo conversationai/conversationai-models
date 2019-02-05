@@ -80,7 +80,10 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
     for file_no, tfrecord_file in enumerate(tfrecord_files[:200]):
       tf.logging.info(f'PROCESSING FILE {file_no}: {tfrecord_file}')
       episodes.append(self._dataset_from_tfrecord_file(tfrecord_file))
-    random.shuffle(episodes)
+
+    tf.logging.info('Shuffling episodes')
+    random.shuffle(episodes)  # In place shuffle.
+
     return episodes
 
   def _dataset_from_tfrecord_file(self, tfrecord_file: str) -> EpisodeData:
