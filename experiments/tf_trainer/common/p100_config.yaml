@@ -1,0 +1,8 @@
+trainingInput:
+  pythonVersion: '3.5'
+  scaleTier: CUSTOM
+  masterType: standard_p100
+  workerType: standard_p100
+  parameterServerType: large_model
+  workerCount: 1
+  parameterServerCount: 1
