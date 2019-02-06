@@ -77,7 +77,7 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
 
     tfrecord_files = tf.gfile.Glob(os.path.join(directory, '*.tfrecord'))
     episodes = []
-    for file_no, tfrecord_file in enumerate(tfrecord_files[:200]):
+    for file_no, tfrecord_file in enumerate(tfrecord_files):
       tf.logging.info(f'PROCESSING FILE {file_no}: {tfrecord_file}')
       episodes.append(self._dataset_from_tfrecord_file(tfrecord_file))
 
