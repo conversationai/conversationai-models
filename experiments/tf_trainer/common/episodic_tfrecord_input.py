@@ -17,12 +17,13 @@
 import tensorflow as tf
 from pathlib import Path
 
+import collections
 import os
 import random
 
 from tf_trainer.common import dataset_input
 from tf_trainer.common import types
-from typing import List, Dict, Tuple, NamedTuple, Union
+from typing import List, Dict, Tuple, Union
 
 tf.app.flags.DEFINE_string('train_path', None,
                            'Path to the training data TFRecord file.')
@@ -34,17 +35,10 @@ tf.app.flags.DEFINE_string('episode_size', None,
 Text = Union[tf.Tensor, str]
 Label = Union[tf.Tensor, float]
 
-
-class TextDomainLabel(NamedTuple):
-  text: Text
-  domain: str
-  label: Label
-
-
-class EpisodeData(NamedTuple):
-  texts: List[Text]
-  domains: List[str]
-  labels: List[Label]
+TextDomainLabel = collections.namedtuple('TextDomainLabel',
+                                         ['text', 'domain', 'label'])
+EpisodeData = collections.namedtuple('EpisodeData',
+                                     ['texts', 'domains', 'labels'])
 
 
 class EpisodicTFRecordInput(dataset_input.DatasetInput):
@@ -78,7 +72,7 @@ class EpisodicTFRecordInput(dataset_input.DatasetInput):
     tfrecord_files = tf.gfile.Glob(os.path.join(directory, '*.tfrecord'))
     episodes = []
     for file_no, tfrecord_file in enumerate(tfrecord_files):
-      tf.logging.info(f'PROCESSING FILE {file_no}: {tfrecord_file}')
+      tf.logging.info('PROCESSING FILE {}: {}'.format(file_no, tfrecord_file))
       episodes.append(self._dataset_from_tfrecord_file(tfrecord_file))
 
     tf.logging.info('Shuffling episodes')
