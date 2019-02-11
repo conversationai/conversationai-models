@@ -21,8 +21,9 @@ protobuf==3.6.0
 PyYAML==4.2b1
 requests==2.20.0
 scipy==1.1.0
+sentencepiece==0.1.8
 six==1.11.0
-tensorboard==1.8.0
+tensorboard==1.10.0
 tensorflow==1.10.0
 tensorflow-hub==0.1.1
 termcolor==1.1.0
