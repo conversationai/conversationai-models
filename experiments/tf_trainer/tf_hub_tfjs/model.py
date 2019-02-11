@@ -13,7 +13,7 @@ FLAGS = tf.app.flags.FLAGS
 
 # Hyperparameters
 # TODO: Add validation
-tf.app.flags.DEFINE_float('learning_rate', 0.000129,
+tf.app.flags.DEFINE_float('learning_rate', 0.00005,
                           'The learning rate to use during training.')
 tf.app.flags.DEFINE_float('dropout_rate', 0.38925,
                           'The dropout rate to use during training.')

@@ -64,6 +64,9 @@ def main(argv):
   trainer = model_trainer.ModelTrainer(dataset, model)
   trainer.train_with_eval()
 
+  values = tf.placeholder(tf.int64, shape=[None])
+  indices = tf.placeholder(tf.int64, shape=[None, 2])
+  dense_shape = tf.placeholder(tf.int64, shape=[None])
   serving_input_fn = tf.estimator.export.build_raw_serving_input_receiver_fn({
     'values': values,
     'indices': indices,
