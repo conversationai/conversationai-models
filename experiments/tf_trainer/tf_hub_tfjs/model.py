@@ -13,13 +13,13 @@ FLAGS = tf.app.flags.FLAGS
 
 # Hyperparameters
 # TODO: Add validation
-tf.app.flags.DEFINE_float('learning_rate', 0.00003,
+tf.app.flags.DEFINE_float('learning_rate', 0.00005,
                           'The learning rate to use during training.')
-tf.app.flags.DEFINE_float('dropout_rate', 0.15,
+tf.app.flags.DEFINE_float('dropout_rate', 0.38925,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
     'model_spec',
-    'https://tfhub.dev/google/universal-sentence-encoder-large/3',
+    'https://tfhub.dev/google/universal-sentence-encoder-lite/2',
     'The url of the TF Hub sentence encoding module to use.')
 tf.app.flags.DEFINE_bool('trainable', True,
                          'What to pass for the TF Hub trainable parameter.')
@@ -27,7 +27,7 @@ tf.app.flags.DEFINE_bool('trainable', True,
 # constraints with ML Engine hyperparameter tuning. The length of the list
 # determines the number of layers, and the size of each layer.
 tf.app.flags.DEFINE_string(
-    'dense_units', '1024,1024,512',
+    'dense_units', '512,128,64',
     'Comma delimited string for the number of hidden units in the dense layers.'
 )
 
@@ -54,16 +54,12 @@ class TFHubClassifierModel(base_model.BaseModel):
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
-    embedded_text_feature_column = hub.text_embedding_column(
-        key=base_model.TEXT_FEATURE_KEY,
-        module_spec=FLAGS.model_spec,
-        trainable=FLAGS.trainable)
-    inputs = tf.feature_column.input_layer(features,
-                                           [embedded_text_feature_column])
-
-    batch_size = tf.shape(inputs)[0]
-
-    logits = inputs
+    module = hub.Module(FLAGS.model_spec, trainable=True)
+    logits = module(
+      inputs=dict(
+      values=features['values'],
+      indices=features['indices'],
+      dense_shape=features['dense_shape']))
     for num_units in params.dense_units:
       logits = tf.layers.dense(
           inputs=logits, units=num_units, activation=tf.nn.relu)
