@@ -49,9 +49,10 @@ tf.app.flags.DEFINE_string('model_dir', None,
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
 tf.app.flags.DEFINE_integer(
-    'n_export', 1, 'Number of models to export.'
-    'If =1, only the last one is saved.'
-    'If >1, we split the take n_export checkpoints.')
+    'n_export', -1, 'Number of models to export.'
+    'If =-1, only the best checkpoint is saved/exported.'
+    'If =1, only the last checkpoint is saved/exported.'
+    'If >1, we save/export `n_export` evenly-spaced checkpoints.')
 tf.app.flags.DEFINE_string('key_name', 'comment_key',
                            'Name of a pass-thru integer id for batch scoring.')
 
@@ -192,28 +193,33 @@ class ModelTrainer(object):
     self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self):
-    """Train with periodic evaluation."""
+    """Train with periodic evaluation.
+    """
     training_hooks = None
     if FLAGS.enable_profiling:
       training_hooks = [
           tf.train.ProfilerHook(
               save_steps=10,
-              output_dir=os.path.join(self._model_dir(), 'profiler'))
+              output_dir=os.path.join(self._model_dir(), 'profiler')),
       ]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
         max_steps=FLAGS.train_steps,
         hooks=training_hooks)
+
     eval_spec = tf.estimator.EvalSpec(
         input_fn=self._dataset.validate_input_fn,
         steps=FLAGS.eval_steps,
         throttle_secs=1)
+
     self._estimator._config = self._estimator.config.replace(
         save_checkpoints_steps=FLAGS.eval_period)
-    if FLAGS.n_export > 1:
+
+    if FLAGS.n_export > 1 or FLAGS.n_export == -1:
       self._estimator._config = self._estimator.config.replace(
           keep_checkpoint_max=None)
+
     tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
 
   def _model_dir(self):
@@ -257,6 +263,8 @@ class ModelTrainer(object):
 
     if n_export == 1:
       return [checkpoints[-1]]
+    elif n_export == -1:
+      return checkpoints
 
     # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
     # with a number of points of (n_export -1): because 1 point is set at the end.
@@ -271,13 +279,38 @@ class ModelTrainer(object):
 
     return checkpoints_to_export
 
-  def export(self, serving_input_fn, example_key_name=None):
+
+  def _export_checkpoint(self, estimator, checkpoint_path, serving_input_fn):
+    """Export the checkpoint at checkpoint_path.
+
+    Args:
+      estimator: The estimator with which to export.
+      checkpoint_path: Checkpoint to export.
+      serving_input_fn: An input function for inference graph.
+    """
+    version = checkpoint_path.split('-')[-1]
+    estimator.export_savedmodel(
+        export_dir_base=os.path.join(self._model_dir(), version),
+        serving_input_receiver_fn=serving_input_fn,
+        checkpoint_path=checkpoint_path)
+
+
+  def export(self,
+    serving_input_fn,
+    example_key_name=None,
+    metrics_key=None,
+    is_first_metric_better_fn=lambda x, y: x > y):
     """Export model as a .pb.
 
     Args:
       serving_input_fn: An input function for inference graph.
       example_key_name: Name of the example_key field (string).
           If None, no example_key will be used.
+      metrics_key: The metric by which to determine the best checkpoint to save.
+      is_first_metric_better_fn: Comparison function to find best metric. Takes
+          in as arguments two numbers, returns true if first is better than
+          second. Default function says larger is better. Default value works for
+          AUC: higher is better.
 
     Example keys are useful when doing batch predictions. Typically,
       the predictions are done by a cluster of machines and the order of
@@ -287,16 +320,42 @@ class ModelTrainer(object):
       example includes an example_key field that is passed along by the estimator
       and returned in the predictions.
     """
+    if not metrics_key and FLAGS.n_export == -1:
+      raise ValueError(
+        'Must provide value for `metrics_key` when exporting best checkpoint.')
+
     estimator = self._estimator
     if example_key_name:
       estimator = self._add_estimator_key(self._estimator, example_key_name)
-    
+
     checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
                                                       self._model_dir())
+    
+    # For finding the best checkpoint.
+    best_metric = -1.0
+    best_checkpoint_path = None
 
     for checkpoint_path in checkpoints_to_export:
-      version = checkpoint_path.split('-')[-1]
-      estimator.export_savedmodel(
-          export_dir_base=os.path.join(self._model_dir(), version),
-          serving_input_receiver_fn=serving_input_fn,
-          checkpoint_path=checkpoint_path)
+      # If we are exporting the best checkpoint, see if the current checkpoint
+      # is the best.
+      if FLAGS.n_export == -1:
+        metrics = self._estimator.evaluate(self._dataset.validate_input_fn,
+          steps=FLAGS.eval_steps, checkpoint_path=checkpoint_path)
+        if metrics_key not in metrics:
+          print("Metric key %s not found in metrics, using loss as metric key." %
+            metrics_key)
+          metrics_key = "loss"
+          # Want the checkpoint with the lowest loss
+          is_first_metric_better_fn = lambda x, y: x < y
+
+        metric = metrics[metrics_key]
+        if is_first_metric_better_fn(metric, best_metric):
+          best_metric = metric
+          best_checkpoint_path = checkpoint_path
+      else:
+        # Otherwise, export the current checkpoint right away.
+        self._export_checkpoint(estimator, checkpoint_path, serving_input_fn)
+
+    # If we are exporting the best checkpoint, do so once we've found the best one.
+    if best_checkpoint_path:
+      self._export_checkpoint(estimator, best_checkpoint_path, serving_input_fn)
