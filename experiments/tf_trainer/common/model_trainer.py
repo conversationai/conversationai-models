@@ -239,23 +239,112 @@ class ModelTrainer(object):
     estimator = forward_features(estimator, example_key_name)
     return estimator
 
-  def _get_list_checkpoint(self, n_export, model_dir):
+
+  def _get_best_step_from_event_file(self, event_file, metrics_key,
+    is_first_metric_better_fn):
+    """Find, in `event_file`, the step corresponding to the best metric.
+
+    Args:
+      event_file: The event file where to find the metrics.
+      metrics_key: The metric by which to determine the best checkpoint to save.
+      is_first_metric_better_fn: Comparison function to find best metric. Takes
+          in as arguments two numbers, returns true if first is better than
+          second. Default function says larger is better. Default value works for
+          AUC: higher is better.
+    
+    Returns:
+      Best step (int).
+    """
+    best_metric = None
+    best_step = None
+    for e in tf.train.summary_iterator(event_file):
+      for v in e.summary.value:
+        if v.tag == metrics_key:
+          metric = v.simple_value
+          if not best_step or is_first_metric_better_fn(metric, best_metric):
+            best_metric = metric
+            best_step = e.step
+    return best_step
+
+
+  def _get_best_checkpoint(self, checkpoints, metrics_key,
+    is_first_metric_better_fn):
+    """Find the best checkpoint, according to `metrics_key`.
+
+    Args:
+      checkpoints: List of model checkpoints.
+      metrics_key: The metric by which to determine the best checkpoint to save.
+      is_first_metric_better_fn: Comparison function to find best metric. Takes
+          in as arguments two numbers, returns true if first is better than
+          second. Default function says larger is better. Default value works for
+          AUC: higher is better.
+
+    Returns:
+      Best checkpoint path.
+    """
+    eval_event_dir = self._estimator.eval_dir()
+
+    event_files = file_io.list_directory(eval_event_dir)
+    if not event_files:
+      raise ValueError('No event files found in directory %s.' % eval_event_dir)
+    if len(event_files) > 1:
+      print('Multiple event files found in dir %s. Using last one.' % eval_event_dir)
+    
+    event_file = os.path.join(eval_event_dir, event_files[-1])
+
+    # Use the best step to find the best checkpoint.
+    best_step = self._get_best_step_from_event_file(event_file, metrics_key,
+      is_first_metric_better_fn)
+    
+    # If we couldn't find metrics_key in the event file, try again using loss.
+    if best_step is None:
+      print("Metrics key %s not found in metrics, using 'loss' as metric key." %
+            metrics_key)
+      metrics_key = "loss"
+      # Want the checkpoint with the lowest loss
+      is_first_metric_better_fn = lambda x, y: x < y
+
+      best_step = self._get_best_step_from_event_file(event_file, metrics_key,
+        is_first_metric_better_fn)
+
+    if best_step is None:
+      raise ValueError("Couldn't find 'loss' metric in event file %s." % event_file)
+
+    best_checkpoint_path = None
+    for checkpoint_path in checkpoints:
+      version = int(checkpoint_path.split('-')[-1])
+      if version == best_step:
+        best_checkpoint_path = checkpoint_path
+
+    if not best_checkpoint_path:
+      raise ValueError("Couldn't find checkpoint for best_step = %d." % best_step)
+
+    return best_checkpoint_path
+
+
+  def _get_list_checkpoint(self, n_export, model_dir, metrics_key,
+    is_first_metric_better_fn):
     """Get the checkpoints that we want to export.
 
     Args:
       n_export: Number of models to export.
       model_dir: Directory containing the checkpoints.
+      metrics_key: The metric by which to determine the best checkpoint to save.
+      is_first_metric_better_fn: Comparison function to find best metric. Takes
+          in as arguments two numbers, returns true if first is better than
+          second. Default function says larger is better. Default value works for
+          AUC: higher is better.
 
     Returns:
-      List of checkpoint path.
+      List of checkpoint paths to export.
 
     If n_export==1, we take only the last checkpoint.
+    If n_expost==-1, we take the best checkpoint, according to `metrics_key` and
+      `is_first_metric_better_fn`. The remaining checkpoints are deleted.
     Otherwise, we consider the list of steps for each for which we have a
-    checkpoint.
-    Then we choose n_export number of checkpoints such as their steps are as
-    equidistant as possible.
+    checkpoint. Then we choose n_export number of checkpoints such that their
+    steps are as equidistant as possible.
     """
-
     checkpoints = file_io.get_matching_files(
         os.path.join(model_dir, 'model.ckpt-*.index'))
     checkpoints = [x.replace('.index', '') for x in checkpoints]
@@ -264,7 +353,13 @@ class ModelTrainer(object):
     if n_export == 1:
       return [checkpoints[-1]]
     elif n_export == -1:
-      return checkpoints
+      # If we want only the best checkpoint, delete the others.
+      best_ckpt = self._get_best_checkpoint(checkpoints, metrics_key,
+        is_first_metric_better_fn)
+      remaining_ckpts = set(checkpoints) - set([best_ckpt])
+      for ckpt in remaining_ckpts:
+        tf.train.remove_checkpoint(ckpt)
+      return [best_ckpt]
 
     # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
     # with a number of points of (n_export -1): because 1 point is set at the end.
@@ -280,21 +375,6 @@ class ModelTrainer(object):
     return checkpoints_to_export
 
 
-  def _export_checkpoint(self, estimator, checkpoint_path, serving_input_fn):
-    """Export the checkpoint at checkpoint_path.
-
-    Args:
-      estimator: The estimator with which to export.
-      checkpoint_path: Checkpoint to export.
-      serving_input_fn: An input function for inference graph.
-    """
-    version = checkpoint_path.split('-')[-1]
-    estimator.export_savedmodel(
-        export_dir_base=os.path.join(self._model_dir(), version),
-        serving_input_receiver_fn=serving_input_fn,
-        checkpoint_path=checkpoint_path)
-
-
   def export(self,
     serving_input_fn,
     example_key_name=None,
@@ -308,7 +388,7 @@ class ModelTrainer(object):
           If None, no example_key will be used.
       metrics_key: The metric by which to determine the best checkpoint to save.
       is_first_metric_better_fn: Comparison function to find best metric. Takes
-          in as arguments two numbers, returns true if first is better than
+          in as arguments 3 numbers, returns true if first is better than
           second. Default function says larger is better. Default value works for
           AUC: higher is better.
 
@@ -329,33 +409,12 @@ class ModelTrainer(object):
       estimator = self._add_estimator_key(self._estimator, example_key_name)
 
     checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
-                                                      self._model_dir())
-    
-    # For finding the best checkpoint.
-    best_metric = -1.0
-    best_checkpoint_path = None
-
+                                                      self._model_dir(),
+                                                      metrics_key,
+                                                      is_first_metric_better_fn)
     for checkpoint_path in checkpoints_to_export:
-      # If we are exporting the best checkpoint, see if the current checkpoint
-      # is the best.
-      if FLAGS.n_export == -1:
-        metrics = self._estimator.evaluate(self._dataset.validate_input_fn,
-          steps=FLAGS.eval_steps, checkpoint_path=checkpoint_path)
-        if metrics_key not in metrics:
-          print("Metric key %s not found in metrics, using loss as metric key." %
-            metrics_key)
-          metrics_key = "loss"
-          # Want the checkpoint with the lowest loss
-          is_first_metric_better_fn = lambda x, y: x < y
-
-        metric = metrics[metrics_key]
-        if is_first_metric_better_fn(metric, best_metric):
-          best_metric = metric
-          best_checkpoint_path = checkpoint_path
-      else:
-        # Otherwise, export the current checkpoint right away.
-        self._export_checkpoint(estimator, checkpoint_path, serving_input_fn)
-
-    # If we are exporting the best checkpoint, do so once we've found the best one.
-    if best_checkpoint_path:
-      self._export_checkpoint(estimator, best_checkpoint_path, serving_input_fn)
+      version = checkpoint_path.split('-')[-1]
+      estimator.export_savedmodel(
+        export_dir_base=os.path.join(self._model_dir(), version),
+        serving_input_receiver_fn=serving_input_fn,
+        checkpoint_path=checkpoint_path)
