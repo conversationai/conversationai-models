@@ -41,14 +41,15 @@ def main(argv):
                                               base_model.TOKENS_FEATURE_KEY)
 
   trainer = model_trainer.ModelTrainer(dataset, model)
-  trainer.train_with_eval()
 
   serving_input_fn = serving_input.create_serving_input_fn(
       word_to_idx=preprocessor._word_to_idx,
       unknown_token=preprocessor._unknown_token,
       text_feature_name=base_model.TOKENS_FEATURE_KEY,
       example_key_name=base_model.EXAMPLE_KEY)
-  trainer.export(serving_input_fn, base_model.EXAMPLE_KEY)
+
+  trainer.train_with_eval(serving_input_fn, base_model.EXAMPLE_KEY)
+  trainer.export(serving_input_fn)
 
 
 if __name__ == "__main__":

@@ -62,7 +62,6 @@ def main(argv):
   model = tf_hub_classifier.TFHubClassifierModel(dataset.labels())
 
   trainer = model_trainer.ModelTrainer(dataset, model)
-  trainer.train_with_eval()
 
   values = tf.placeholder(tf.int64, shape=[None])
   indices = tf.placeholder(tf.int64, shape=[None, 2])
@@ -72,7 +71,8 @@ def main(argv):
     'indices': indices,
     'dense_shape': dense_shape
   })
-  trainer.export(serving_input_fn, None)
+  trainer.train_with_eval(serving_input_fn)
+  trainer.export(serving_input_fn)
 
 
 if __name__ == "__main__":
