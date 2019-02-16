@@ -63,7 +63,7 @@ class TFRecordInputTest(tf.test.TestCase):
       np.testing.assert_almost_equal(labels['label'].eval(), 0.8)
       np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
       self.assertCountEqual(list(labels), ['label'])
-      self.assertCountEqual(list(features), ['text', 'label_weight'])
+      self.assertCountEqual(list(features), ['text', 'label_weight', base_model.EXAMPLE_KEY])
 
   def test_TFRecordInput_default_values(self):
     FLAGS.labels = 'label,fake_label,int_label'
@@ -92,6 +92,14 @@ class TFRecordInputTest(tf.test.TestCase):
                        b'Hi there Bob')
       np.testing.assert_almost_equal(labels['label'].eval(), 1.0)
       np.testing.assert_almost_equal(features['label_weight'].eval(), 1.0)
+
+  def test_TFRecordInput_example_key(self):
+    FLAGS.labels = 'label'
+    dataset_input = tfrecord_input.TFRecordInput()
+
+    with self.test_session():
+      features, labels = dataset_input._read_tf_example(self.ex_tensor)
+      self.assertEqual(features[base_model.EXAMPLE_KEY].eval(), -1.0)
 
 
 class TFRecordInputWithTokenizerTest(tf.test.TestCase):
@@ -171,6 +179,15 @@ class TFRecordInputWithTokenizerTest(tf.test.TestCase):
           list(features[base_model.TOKENS_FEATURE_KEY].eval()), [12, 13, 999])
       self.assertEqual(labels['label'].eval(), 1.0)
       self.assertEqual(features['label_weight'].eval(), 1.0)
+
+  def test_TFRecordInputWithTokenizer_example_key(self):
+    FLAGS.labels = 'label'
+    dataset_input = tfrecord_input.TFRecordInputWithTokenizer(
+        train_preprocess_fn=self.preprocessor)
+
+    with self.test_session() as s:
+      features, labels = dataset_input._read_tf_example(self.ex_tensor)
+      self.assertEqual(features[base_model.EXAMPLE_KEY].eval(), -1.0)
 
 
 if __name__ == '__main__':

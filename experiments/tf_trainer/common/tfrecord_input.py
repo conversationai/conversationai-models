@@ -83,12 +83,16 @@ class TFRecordInput(dataset_input.DatasetInput):
   def _keys_to_features(self):
     keys_to_features = {}
     keys_to_features[self._text_feature] = tf.FixedLenFeature([], tf.string)
+    # need example_key during eval
+    keys_to_features[base_model.EXAMPLE_KEY] = tf.FixedLenFeature(
+      [], dtype=tf.int64, default_value=-1)
     for label, dtype in zip(self._labels, self._label_dtypes):
       keys_to_features[label] = tf.FixedLenFeature([], DTYPE_MAPPING[dtype],
                                                    DTYPE_DEFAULT[dtype])
     return keys_to_features
 
-  def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
+  def _input_fn_from_file(self,
+                          filepath: str) -> types.FeatureAndLabelTensors:
     filenames_dataset = tf.data.Dataset.list_files(filepath)
     dataset = tf.data.TFRecordDataset(
         filenames_dataset)  # type: tf.data.TFRecordDataset
@@ -126,19 +130,25 @@ class TFRecordInput(dataset_input.DatasetInput):
       labels[label] = tf.multiply(label_value, weight)
     return new_features, labels
 
+
   def _read_tf_example(
       self,
-      record: tf.Tensor,
+      record: tf.Tensor
   ) -> types.FeatureAndLabelTensors:
     """Parses TF Example protobuf into a text feature and labels.
 
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
+    # type: Dict[str, types.Tensor]
     parsed = tf.parse_single_example(
-        record, self._keys_to_features())  # type: Dict[str, types.Tensor]
+        record, self._keys_to_features()) 
 
-    features = {base_model.TEXT_FEATURE_KEY: parsed[self._text_feature]}
+    features = {
+      base_model.TEXT_FEATURE_KEY: parsed[self._text_feature],
+      base_model.EXAMPLE_KEY: parsed[base_model.EXAMPLE_KEY],
+    }
+
     return self._process_labels(features, parsed)
 
 
@@ -161,8 +171,8 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     self._train_preprocess_fn = train_preprocess_fn
     self._max_seq_len = max_seq_len
 
-  def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
-
+  def _input_fn_from_file(self,
+                          filepath: str) -> types.FeatureAndLabelTensors:
     filenames_dataset = tf.data.Dataset.list_files(filepath)
     dataset = tf.data.TFRecordDataset(
         filenames_dataset)  # type: tf.data.TFRecordDataset
@@ -174,7 +184,8 @@ class TFRecordInputWithTokenizer(TFRecordInput):
 
     feature_shapes = {
         base_model.TOKENS_FEATURE_KEY: [None],
-        'sequence_length': []
+        'sequence_length': [],
+        base_model.EXAMPLE_KEY: []
     }
     for label in self._labels:
       feature_shapes[label + '_weight'] = []
@@ -191,20 +202,23 @@ class TFRecordInputWithTokenizer(TFRecordInput):
 
   def _read_tf_example(
       self,
-      record: tf.Tensor,
+      record: tf.Tensor
   ) -> types.FeatureAndLabelTensors:
     """Parses TF Example protobuf into a text feature and labels.
 
     The input TF Example has a text feature as a singleton list with the full
     comment as the single element.
     """
-    parsed = tf.parse_single_example(
-        record, self._keys_to_features())  # type: Dict[str, types.Tensor]
+    # type: Dict[str, types.Tensor]
+    parsed = tf.parse_single_example(record,
+      self._keys_to_features())
 
     text = parsed[self.text_feature()]
     tokens = self._train_preprocess_fn(text)
     features = {
         base_model.TOKENS_FEATURE_KEY: tokens,
         'sequence_length': tf.shape(tokens)[0],
+        base_model.EXAMPLE_KEY: parsed[base_model.EXAMPLE_KEY],
     }
+
     return self._process_labels(features, parsed)
