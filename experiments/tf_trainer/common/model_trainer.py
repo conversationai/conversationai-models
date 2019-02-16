@@ -49,9 +49,10 @@ tf.app.flags.DEFINE_string('model_dir', None,
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
 tf.app.flags.DEFINE_integer(
-    'n_export', 1, 'Number of models to export.'
-    'If =1, only the last one is saved.'
-    'If >1, we split the take n_export checkpoints.')
+    'n_export', -1, 'Number of models to export.'
+    'If =-1, only the best checkpoint (wrt eval loss) is exported.'
+    'If =1, only the last checkpoint is exported.'
+    'If >1, we export `n_export` evenly-spaced checkpoints.')
 tf.app.flags.DEFINE_string('key_name', 'comment_key',
                            'Name of a pass-thru integer id for batch scoring.')
 
@@ -191,29 +192,62 @@ class ModelTrainer(object):
     self._model = model
     self._estimator = model.estimator(self._model_dir())
 
-  def train_with_eval(self):
-    """Train with periodic evaluation."""
+  def train_with_eval(self,
+                      serving_input_receiver_fn=None,
+                      example_key_name=None):
+    """Train with periodic evaluation.
+
+    Args:
+      serving_input_receiver_fn: Input serving function.
+      example_key_name: Name for example_key feature (needed for eval).
+    """
+    if example_key_name:
+      self._estimator = self._add_estimator_key(self._estimator, example_key_name)
+      self._example_key_name = example_key_name
+
     training_hooks = None
     if FLAGS.enable_profiling:
       training_hooks = [
           tf.train.ProfilerHook(
               save_steps=10,
-              output_dir=os.path.join(self._model_dir(), 'profiler'))
+              output_dir=os.path.join(self._model_dir(), 'profiler')),
       ]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
         max_steps=FLAGS.train_steps,
         hooks=training_hooks)
+
+    exporter = None
+    if FLAGS.n_export == -1:
+      if not serving_input_receiver_fn:
+        raise ValueError(
+          'If exporting best model, must pass valid `serving_input_receiver_fn`.')
+      exporter = tf.estimator.BestExporter(
+        name="best_exporter",
+        serving_input_receiver_fn=serving_input_receiver_fn,
+        exports_to_keep=1)
+    elif FLAGS.n_export == 1:
+      if not serving_input_receiver_fn:
+        raise ValueError(
+          'If exporting final model, must pass valid `serving_input_receiver_fn`.')
+      exporter = tf.estimator.FinalExporter(
+        name="final_exporter",
+        serving_input_receiver_fn=serving_input_receiver_fn)
+
     eval_spec = tf.estimator.EvalSpec(
         input_fn=self._dataset.validate_input_fn,
         steps=FLAGS.eval_steps,
+        exporters=exporter,
         throttle_secs=1)
+
     self._estimator._config = self._estimator.config.replace(
         save_checkpoints_steps=FLAGS.eval_period)
-    if FLAGS.n_export > 1:
+
+    if FLAGS.n_export == -1 or FLAGS.n_export > 1:
       self._estimator._config = self._estimator.config.replace(
           keep_checkpoint_max=None)
+
     tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
 
   def _model_dir(self):
@@ -241,22 +275,16 @@ class ModelTrainer(object):
       model_dir: Directory containing the checkpoints.
 
     Returns:
-      List of checkpoint path.
+      List of checkpoint paths to export.
 
-    If n_export==1, we take only the last checkpoint.
-    Otherwise, we consider the list of steps for each for which we have a
-    checkpoint.
-    Then we choose n_export number of checkpoints such as their steps are as
-    equidistant as possible.
+    n_export > 1. Consider the list of steps for each for which we have a
+    checkpoint. Then we choose n_export number of checkpoints such that their
+    steps are as equidistant as possible.
     """
-
     checkpoints = file_io.get_matching_files(
         os.path.join(model_dir, 'model.ckpt-*.index'))
     checkpoints = [x.replace('.index', '') for x in checkpoints]
     checkpoints = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))
-
-    if n_export == 1:
-      return [checkpoints[-1]]
 
     # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
     # with a number of points of (n_export -1): because 1 point is set at the end.
@@ -271,7 +299,8 @@ class ModelTrainer(object):
 
     return checkpoints_to_export
 
-  def export(self, serving_input_fn, example_key_name=None):
+
+  def export(self, serving_input_fn, example_key_name=None,):
     """Export model as a .pb.
 
     Args:
@@ -287,16 +316,29 @@ class ModelTrainer(object):
       example includes an example_key field that is passed along by the estimator
       and returned in the predictions.
     """
+    if FLAGS.n_export == -1:
+      print('Best model was already exported in train_with_eval(), skipping export().')
+      return
+    elif FLAGS.n_export == 1:
+      print('Final model was already exported in train_with_eval(), skipping export().')
+      return
+
     estimator = self._estimator
+
+    # Add example key only if we haven't added this example key already.
     if example_key_name:
-      estimator = self._add_estimator_key(self._estimator, example_key_name)
+      if example_key_name != self._example_key_name:
+        estimator = self._add_estimator_key(self._estimator, example_key_name)
+      else:
+        print("Already added example key %s to estimator." % example_key_name)
     
     checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
-                                                      self._model_dir())
-
+                                                      self._model_dir(),
+                                                      metrics_key,
+                                                      is_first_metric_better_fn)
     for checkpoint_path in checkpoints_to_export:
       version = checkpoint_path.split('-')[-1]
       estimator.export_savedmodel(
-          export_dir_base=os.path.join(self._model_dir(), version),
-          serving_input_receiver_fn=serving_input_fn,
-          checkpoint_path=checkpoint_path)
+        export_dir_base=os.path.join(self._model_dir(), version),
+        serving_input_receiver_fn=serving_input_fn,
+        checkpoint_path=checkpoint_path)
