@@ -50,9 +50,9 @@ tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
 tf.app.flags.DEFINE_integer(
     'n_export', -1, 'Number of models to export.'
-    'If =-1, only the best checkpoint is saved/exported.'
-    'If =1, only the last checkpoint is saved/exported.'
-    'If >1, we save/export `n_export` evenly-spaced checkpoints.')
+    'If =-1, only the best checkpoint (wrt specified eval metric) is exported.'
+    'If =1, only the last checkpoint is exported.'
+    'If >1, we export `n_export` evenly-spaced checkpoints.')
 tf.app.flags.DEFINE_string('key_name', 'comment_key',
                            'Name of a pass-thru integer id for batch scoring.')
 
@@ -240,7 +240,9 @@ class ModelTrainer(object):
     return estimator
 
 
-  def _get_best_step_from_event_file(self, event_file, metrics_key,
+  def _get_best_step_from_event_file(self,
+    event_file,
+    metrics_key,
     is_first_metric_better_fn):
     """Find, in `event_file`, the step corresponding to the best metric.
 
@@ -255,6 +257,8 @@ class ModelTrainer(object):
     Returns:
       Best step (int).
     """
+    if not metrics_key:
+      return None
     best_metric = None
     best_step = None
     for e in tf.train.summary_iterator(event_file):
@@ -267,7 +271,9 @@ class ModelTrainer(object):
     return best_step
 
 
-  def _get_best_checkpoint(self, checkpoints, metrics_key,
+  def _get_best_checkpoint(self,
+    checkpoints,
+    metrics_key,
     is_first_metric_better_fn):
     """Find the best checkpoint, according to `metrics_key`.
 
@@ -322,7 +328,10 @@ class ModelTrainer(object):
     return best_checkpoint_path
 
 
-  def _get_list_checkpoint(self, n_export, model_dir, metrics_key,
+  def _get_list_checkpoint(self,
+    n_export,
+    model_dir,
+    metrics_key,
     is_first_metric_better_fn):
     """Get the checkpoints that we want to export.
 
@@ -392,6 +401,9 @@ class ModelTrainer(object):
           second. Default function says larger is better. Default value works for
           AUC: higher is better.
 
+      NOTE: if using a different metrics_key than AUC, make sure `is_first_metric_better_fn`
+        is updated accordingly.
+
     Example keys are useful when doing batch predictions. Typically,
       the predictions are done by a cluster of machines and the order of
       the results is random. Here, we add a forward feature in the inference graph
@@ -400,9 +412,14 @@ class ModelTrainer(object):
       example includes an example_key field that is passed along by the estimator
       and returned in the predictions.
     """
-    if not metrics_key and FLAGS.n_export == -1:
-      raise ValueError(
-        'Must provide value for `metrics_key` when exporting best checkpoint.')
+    if FLAGS.n_export == -1:
+      if not is_first_metric_better_fn:
+        raise ValueError('Must provide valid `is_first_metric_better_fn` '
+          'when exporting best checkpoint.')
+      if not metrics_key:
+        print('No value provided for `metrics_key`. Using loss.')
+        metrics_key = 'loss'
+        is_first_metric_better_fn = lambda x, y: x < y
 
     estimator = self._estimator
     if example_key_name:
