@@ -333,7 +333,7 @@ class ModelTrainer(object):
     model_dir,
     metrics_key,
     is_first_metric_better_fn):
-    """Get the checkpoints that we want to export.
+    """Get the checkpoints that we want to export, as well as the ones to clean up.
 
     Args:
       n_export: Number of models to export.
@@ -345,7 +345,9 @@ class ModelTrainer(object):
           AUC: higher is better.
 
     Returns:
-      List of checkpoint paths to export.
+      Tuple of:
+        List of checkpoint paths to export,
+        Set of checkpoint paths to delete.
 
     If n_export==1, we take only the last checkpoint.
     If n_export==-1, we take the best checkpoint, according to `metrics_key` and
@@ -354,41 +356,48 @@ class ModelTrainer(object):
     checkpoint. Then we choose n_export number of checkpoints such that their
     steps are as equidistant as possible.
     """
-    checkpoints = file_io.get_matching_files(
+    all_checkpoints = file_io.get_matching_files(
         os.path.join(model_dir, 'model.ckpt-*.index'))
-    checkpoints = [x.replace('.index', '') for x in checkpoints]
-    checkpoints = sorted(checkpoints, key=lambda x: int(x.split('-')[-1]))
+
+    if not all_checkpoints:
+      raise ValueError('No checkpoint files found matching model.ckpt-*.index.')
+
+    all_checkpoints = [x.replace('.index', '') for x in all_checkpoints]
+    all_checkpoints = sorted(all_checkpoints, key=lambda x: int(x.split('-')[-1]))
+
+    # Keep track of the checkpoints to export, and the ones to delete.
+    checkpoints_to_export = None
+    checkpoints_to_delete = None
 
     if n_export == 1:
-      return [checkpoints[-1]]
+      checkpoints_to_export = [all_checkpoints[-1]]
     elif n_export == -1:
-      # If we want only the best checkpoint, delete the others.
-      best_ckpt = self._get_best_checkpoint(checkpoints, metrics_key,
-                                            is_first_metric_better_fn)
-      remaining_ckpts = set(checkpoints) - set([best_ckpt])
-      for ckpt in remaining_ckpts:
-        tf.train.remove_checkpoint(ckpt)
-      return [best_ckpt]
+      checkpoints_to_export = [self._get_best_checkpoint(all_checkpoints, metrics_key,
+                                                         is_first_metric_better_fn)]
+    elif n_export > 1:
+      # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
+      # with a number of points of (n_export -1): because 1 point is set at the end.
+      step = float(len(all_checkpoints) - 1) / (n_export - 1)
+      if step <= 1:  # Fewer checkpoints available than the desired number.
+        return all_checkpoints, None
 
-    # We want to cover a distance of (len(checkpoints) - 1): for 3 points, we have a distance of 2.
-    # with a number of points of (n_export -1): because 1 point is set at the end.
-    step = float(len(checkpoints) - 1) / (n_export - 1)
-    if step <= 1:  # Fewer checkpoints available than the desired number.
-      return checkpoints
+      checkpoints_to_export = [
+          all_checkpoints[int(i * step)] for i in range(n_export - 1)
+      ]
+      checkpoints_to_export.append(all_checkpoints[-1])
 
-    checkpoints_to_export = [
-        checkpoints[int(i * step)] for i in range(n_export - 1)
-    ]
-    checkpoints_to_export.append(checkpoints[-1])
+    if checkpoints_to_export:
+      checkpoints_to_delete = set(all_checkpoints) - set(checkpoints_to_export)
 
-    return checkpoints_to_export
+    return checkpoints_to_export, checkpoints_to_delete
 
 
   def export(self,
     serving_input_fn,
     example_key_name=None,
     metrics_key=None,
-    is_first_metric_better_fn=lambda x, y: x > y):
+    is_first_metric_better_fn=lambda x, y: x > y,
+    delete_unexported_checkpoints=True):
     """Export model as a .pb.
 
     Args:
@@ -400,6 +409,9 @@ class ModelTrainer(object):
           in as arguments 3 numbers, returns true if first is better than
           second. Default function says larger is better. Default value works for
           AUC: higher is better.
+      delete_unexported_checkpoints: Boolean flag indicating whether or not to delete
+        the checkpoints that aren't exported. If False then all model checkpoints are
+        retained.
 
       NOTE: if using a different metrics_key than AUC, make sure `is_first_metric_better_fn`
         is updated accordingly.
@@ -425,13 +437,19 @@ class ModelTrainer(object):
     if example_key_name:
       estimator = self._add_estimator_key(self._estimator, example_key_name)
 
-    checkpoints_to_export = self._get_list_checkpoint(FLAGS.n_export,
-                                                      self._model_dir(),
-                                                      metrics_key,
-                                                      is_first_metric_better_fn)
-    for checkpoint_path in checkpoints_to_export:
-      version = checkpoint_path.split('-')[-1]
-      estimator.export_savedmodel(
-        export_dir_base=os.path.join(self._model_dir(), version),
-        serving_input_receiver_fn=serving_input_fn,
-        checkpoint_path=checkpoint_path)
+    checkpoints_to_export, checkpoints_to_delete = self._get_list_checkpoint(
+      FLAGS.n_export, self._model_dir(), metrics_key, is_first_metric_better_fn)
+
+    # Delete the checkpoints we don't want.
+    if checkpoints_to_delete and delete_unexported_checkpoints:
+      for ckpt in checkpoints_to_delete:
+        tf.train.remove_checkpoint(ckpt)
+
+    # Export the desired checkpoints.
+    if checkpoints_to_export:
+      for checkpoint_path in checkpoints_to_export:
+        version = checkpoint_path.split('-')[-1]
+        estimator.export_savedmodel(
+          export_dir_base=os.path.join(self._model_dir(), version),
+          serving_input_receiver_fn=serving_input_fn,
+          checkpoint_path=checkpoint_path)
