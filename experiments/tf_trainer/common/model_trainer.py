@@ -348,7 +348,7 @@ class ModelTrainer(object):
       List of checkpoint paths to export.
 
     If n_export==1, we take only the last checkpoint.
-    If n_expost==-1, we take the best checkpoint, according to `metrics_key` and
+    If n_export==-1, we take the best checkpoint, according to `metrics_key` and
       `is_first_metric_better_fn`. The remaining checkpoints are deleted.
     Otherwise, we consider the list of steps for each for which we have a
     checkpoint. Then we choose n_export number of checkpoints such that their
@@ -364,7 +364,7 @@ class ModelTrainer(object):
     elif n_export == -1:
       # If we want only the best checkpoint, delete the others.
       best_ckpt = self._get_best_checkpoint(checkpoints, metrics_key,
-        is_first_metric_better_fn)
+                                            is_first_metric_better_fn)
       remaining_ckpts = set(checkpoints) - set([best_ckpt])
       for ckpt in remaining_ckpts:
         tf.train.remove_checkpoint(ckpt)
