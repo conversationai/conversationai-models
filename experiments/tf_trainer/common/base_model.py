@@ -21,7 +21,6 @@ from __future__ import print_function
 import abc
 import tensorflow as tf
 
-from keras import models
 from tf_trainer.common import types
 from typing import Callable
 
