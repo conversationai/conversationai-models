@@ -242,7 +242,7 @@ class Dataset(object):
       job_ids.append(job_id)
     model.set_job_ids_prediction(job_ids)
 
-  def collect_prediction(self, model):
+  def collect_prediction(self, model, class_names):
     """Collects the predictions of CMLE jobs and adds it to dataframe."""
 
     for model_name in model.model_names():
@@ -252,7 +252,8 @@ class Dataset(object):
           prediction_file=tf_record_prediction,
           model_col_name=model_name,
           prediction_name=model.prediction_keys(),
-          example_key=model.example_key())
+          example_key=model.example_key(),
+          class_names=class_names)
 
   def wait_predictions(self, model):
     """Loops until the prediction jobs of the model completed."""
@@ -265,7 +266,7 @@ class Dataset(object):
     for job_id in model.job_ids_prediction():
       utils_cloudml.check_job_over(model.project_name(), job_id)
 
-  def add_model_prediction_to_data(self, model, recompute_predictions=True):
+  def add_model_prediction_to_data(self, model, recompute_predictions=True, class_names = None):
     """Computes the prediction of the model and adds it to dataframe.
 
     Args:
@@ -274,6 +275,8 @@ class Dataset(object):
         job) or if we load past prediction files. If use past predictions (when
         False), the data must match exactly (same  number of lines and in same
         order).
+      class_names (optional): If the model is a multiclass model, you can specify class names.
+          The model will then return a logit value per class instead of a single value.
     """
 
     self.check_compatibility(model)
@@ -288,4 +291,4 @@ class Dataset(object):
           'Using past predictions. '
           'the data must match exactly (same number of lines and same order).')
 
-    self.collect_prediction(model)
+    self.collect_prediction(model, class_names)

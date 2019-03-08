@@ -275,3 +275,63 @@ def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
     return res
 
   return input_fn_bias
+
+#### #### #### #### #### ####
+####  BIASBIOS DATASET   ####
+#### #### #### #### #### ####
+
+BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190220165938/eval-00000-of-00003.tfrecord'
+
+comments_spec = {
+    'comment_text':
+        tf.FixedLenFeature([], dtype=tf.string),
+    'gender':
+        tf.FixedLenFeature([], dtype=tf.string),
+    'title':
+        tf.FixedLenFeature([], dtype=tf.int64)
+}
+
+identity_terms = [
+    'gender'
+]
+
+COMMENT_NAME = 'comment_text'
+LABEL_NAME = 'title'
+
+
+def create_input_fn_biasbios(tokenizer, model_input_comment_field):
+  """"Generates an input_fn to evaluate model bias on civil dataset.
+
+  Construction of this database such as:
+      We keep only examples that have identity labels (with rule: male >=0).
+      We apply the 'threshold_bias_civil' for each identity field.
+      We select x% of the "background", i.e. examples that are 0 for each
+      identify.
+
+  Indeed, as the background is dominant, we want to reduce the size of the test
+  set.
+  """
+
+  def filter_fn_biasbios(example, background_filter_keep_rate=1.0):
+    return (random.random() < background_filter_keep_rate)
+
+  def input_fn_biasbios(max_n_examples=None, random_filter_keep_rate=1.0):
+    df_raw = utils_tfrecords.decode_tf_records_to_pandas(
+        comments_spec,
+        BIASBIOS_PATH,
+        max_n_examples=max_n_examples,
+        filter_fn=filter_fn_biasbios,
+    )
+    df_raw[COMMENT_NAME] = list(
+        map(tokenizer, df_raw[COMMENT_NAME]))
+    #for _term in identity_terms:
+    #  df_raw[_term] = list(df_raw[_term])
+    #df_raw[LABEL_NAME] = list(df_raw[LABEL_NAME])
+    df_raw = df_raw.rename(columns={
+        COMMENT_NAME: model_input_comment_field,
+        LABEL_NAME: 'label'
+    })
+    res = df_raw.copy(deep=True)
+    return res
+
+  return input_fn_biasbios
