@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow_hub as hub
+import tf_sentencepiece
 from tf_trainer.common import base_model
 from typing import List
 
