@@ -25,8 +25,8 @@ elif [ "$1" == "many_communities" ]; then
     label_dtypes="int"
 
 elif [ "$1" == "toxicity_es" ]; then
-    train_path="${GCS_RESOURCES}/es_toxicity_data/train_data*.tfrecords"
-    valid_path="${GCS_RESOURCES}/es_toxicity_data/dev_data*.tfrecords"
+    train_path="${GCS_RESOURCES}/polylang_data/train_es_data*.tfrecords"
+    valid_path="${GCS_RESOURCES}/polylang_data/dev_es_data*.tfrecords"
     labels="frac_neg,frac_very_neg,identity_hate,insult,obscene,threat"
 
 else
