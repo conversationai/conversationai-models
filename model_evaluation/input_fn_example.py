@@ -280,7 +280,9 @@ def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
 ####  BIASBIOS DATASET   ####
 #### #### #### #### #### ####
 
-BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190220165938/eval-00000-of-00003.tfrecord'
+BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815/test-00000-of-00003.tfrecord'
+#BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815/test-*.tfrecord'
+
 
 comments_spec = {
     'comment_text':
