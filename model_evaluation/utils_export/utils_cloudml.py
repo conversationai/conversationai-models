@@ -159,15 +159,9 @@ def _make_batch_job_body(project_name,
 def check_job_over(project_name, job_name):
   """Sleeps until the batch job is over."""
 
-  #TODO(nthain): Why did we use this?
-  #clean_project_name = re.sub(r'\W+', '_', project_name)
-  clean_project_name = project_name
-
   ml = discovery.build('ml', 'v1')
   request = ml.projects().jobs().get(
-      name='projects/{}/jobs/{}'.format(clean_project_name, job_name))
-  #print('DEBUG OUTPUT: request name')
-  #print('projects/{}/jobs/{}'.format(clean_project_name, job_name))
+      name='projects/{}/jobs/{}'.format(project_name, job_name))
   job_completed = False
   k = 0
   start_time = datetime.datetime.now()

@@ -302,15 +302,6 @@ LABEL_NAME = 'title'
 
 def create_input_fn_biasbios(tokenizer, model_input_comment_field):
   """"Generates an input_fn to evaluate model bias on biasbios dataset.
-
-  Construction of this database such as:
-      We keep only examples that have identity labels (with rule: male >=0).
-      We apply the 'threshold_bias_civil' for each identity field.
-      We select x% of the "background", i.e. examples that are 0 for each
-      identify.
-
-  Indeed, as the background is dominant, we want to reduce the size of the test
-  set.
   """
 
   def filter_fn_biasbios(example, background_filter_keep_rate=1.0):
@@ -402,15 +393,6 @@ LABEL_NAME = 'title'
 
 def create_input_fn_scrubbed_biasbios(tokenizer, model_input_comment_field):
   """"Generates an input_fn to evaluate model bias on scrubbed biasbios dataset.
-
-  Construction of this database such as:
-      We keep only examples that have identity labels (with rule: male >=0).
-      We apply the 'threshold_bias_civil' for each identity field.
-      We select x% of the "background", i.e. examples that are 0 for each
-      identify.
-
-  Indeed, as the background is dominant, we want to reduce the size of the test
-  set.
   """
 
   def filter_fn_biasbios(example, background_filter_keep_rate=1.0):
