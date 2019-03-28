@@ -159,12 +159,9 @@ def _make_batch_job_body(project_name,
 def check_job_over(project_name, job_name):
   """Sleeps until the batch job is over."""
 
-  clean_project_name = re.sub(r'\W+', '_', project_name)
-
   ml = discovery.build('ml', 'v1')
   request = ml.projects().jobs().get(
-      name='projects/{}/jobs/{}'.format(clean_project_name, job_name))
-
+      name='projects/{}/jobs/{}'.format(project_name, job_name))
   job_completed = False
   k = 0
   start_time = datetime.datetime.now()
@@ -185,7 +182,7 @@ def check_job_over(project_name, job_name):
 
 
 def add_model_predictions_to_df(df, prediction_file, model_col_name,
-                                prediction_name, example_key):
+                                prediction_name, example_key, class_names):
   """Loads the prediction files and adds the model scores to a DataFrame.
 
   Args:
@@ -195,7 +192,8 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
     model_col_name: Column name of the prediction values in df (added column).
     prediction_name: Name of the column to retrieve from CMLE predictions.
     example_key: key identifier of an example.
-
+    class_names: If the model is a multiclass model, you can specify class names.
+          The model will then return a logit value per class instead of a single value.
   Returns:
     df: a pandas ` DataFrame` with an added column named 'column_name_of_model'
       containing the prediction values.
@@ -251,7 +249,11 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
                      ' the same number of lines.')
 
   predictions = sorted(predictions, key=lambda x: x[example_key])
-  prediction_proba = [x[prediction_name][0] for x in predictions]
-  df[model_col_name] = prediction_proba
+  if class_names is None:
+      prediction_proba = [x[prediction_name][0] for x in predictions]
+      df[model_col_name] = prediction_proba
+  else:
+      for i, class_name in enumerate(class_names):
+            df['{}_{}'.format(model_col_name,class_name)] = [x[prediction_name][i] for x in predictions]
 
   return df

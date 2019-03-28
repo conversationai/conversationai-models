@@ -275,3 +275,98 @@ def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
     return res
 
   return input_fn_bias
+
+#### #### #### #### #### ####
+####  BIASBIOS DATASET   ####
+#### #### #### #### #### ####
+
+BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815/test-00000-of-00003.tfrecord'
+SCRUBBED_BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815_scrubbed/test-00000-of-00003.tfrecord'
+
+comments_spec = {
+    'comment_text':
+        tf.FixedLenFeature([], dtype=tf.string),
+    'gender':
+        tf.FixedLenFeature([], dtype=tf.string),
+    'title':
+        tf.FixedLenFeature([], dtype=tf.int64)
+}
+
+identity_terms = [
+    'gender'
+]
+
+COMMENT_NAME = 'comment_text'
+LABEL_NAME = 'title'
+
+
+def create_input_fn_biasbios(tokenizer, model_input_comment_field, scrubbed=False):
+  """"Generates an input_fn to evaluate model bias on biasbios dataset.
+  """
+
+  def filter_fn_biasbios(example, background_filter_keep_rate=1.0):
+    return (random.random() < background_filter_keep_rate)
+
+  def input_fn_biasbios(max_n_examples=None, random_filter_keep_rate=1.0):
+    if scrubbed:
+      path = SCRUBBED_BIASBIOS_PATH
+    else:
+      path = BIASBIOS_PATH
+    df_raw = utils_tfrecords.decode_tf_records_to_pandas(
+        comments_spec,
+        path,
+        max_n_examples=max_n_examples,
+        filter_fn=filter_fn_biasbios,
+    )
+    df_raw[COMMENT_NAME] = list(
+        map(tokenizer, df_raw[COMMENT_NAME]))
+    #for _term in identity_terms:
+    #  df_raw[_term] = list(df_raw[_term])
+    #df_raw[LABEL_NAME] = list(df_raw[LABEL_NAME])
+    df_raw = df_raw.rename(columns={
+        COMMENT_NAME: model_input_comment_field,
+        LABEL_NAME: 'label'
+    })
+    res = df_raw.copy(deep=True)
+    return res
+
+  return input_fn_biasbios
+
+#### #### #### #### #### ####
+####  SYNTHETIC DATASET  ####
+#### #### #### #### #### ####
+
+
+def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
+  """Generates an input_fn to evaluate model bias on synthetic dataset."""
+
+  def input_fn_bias(max_n_examples):
+
+    # Loading it from it the unintended_ml_bias github.
+    entire_test_bias_df = pd.read_csv(
+        pkg_resources.resource_stream('unintended_ml_bias',
+                                      'eval_datasets/bias_madlibs_77k.csv'))
+    entire_test_bias_df['raw_text'] = entire_test_bias_df['Text']
+    entire_test_bias_df['label'] = entire_test_bias_df['Label']
+    entire_test_bias_df['label'] = list(
+        map(lambda x: x == 'BAD', entire_test_bias_df['label']))
+    entire_test_bias_df = entire_test_bias_df[['raw_text', 'label']].copy()
+    identity_terms_synthetic = [
+        line.strip() for line in pkg_resources.resource_stream(
+            'unintended_ml_bias', 'bias_madlibs_data/adjectives_people.txt')
+    ]
+    model_bias_analysis.add_subgroup_columns_from_text(
+        entire_test_bias_df, 'raw_text', identity_terms_synthetic)
+
+    # Add preprocessing
+    entire_test_bias_df['text'] = list(
+        map(tokenizer, entire_test_bias_df['raw_text']))
+    if max_n_examples:
+      res = entire_test_bias_df.sample(n=max_n_examples, random_state=2018)
+    else:
+      res = entire_test_bias_df
+    res = res.copy(deep=True)
+    res = res.rename(columns={'raw_text': model_input_comment_field})
+    return res
+
+  return input_fn_bias
