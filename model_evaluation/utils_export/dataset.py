@@ -266,7 +266,7 @@ class Dataset(object):
     for job_id in model.job_ids_prediction():
       utils_cloudml.check_job_over(model.project_name(), job_id)
 
-  def add_model_prediction_to_data(self, model, recompute_predictions=True, class_names = None):
+  def add_model_prediction_to_data(self, model, recompute_predictions=True, class_names=None):
     """Computes the prediction of the model and adds it to dataframe.
 
     Args:

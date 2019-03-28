@@ -32,11 +32,14 @@ tf.app.flags.DEFINE_integer('dataset_size', 100000,
 FLAGS = tf.app.flags.FLAGS
 
 
-def get_input_fn(test_data):
+def get_input_fn(test_data, tokenizer, model_input_comment_field):
   if test_data == 'biasbios':
-    return input_fn_example.create_input_fn_biasbios
+    return input_fn_example.create_input_fn_biasbios(tokenizer,
+                                                     model_input_comment_field)
   elif test_data == 'scrubbed_biasbios':
-    return input_fn_example.create_input_fn_scrubbed_biasbios
+    return input_fn_example.create_input_fn_biasbios(tokenizer,
+                                                     model_input_comment_field,
+                                                     scrubbed=True)
   else:
     raise ValueError('Dataset not currently supported.')
 
@@ -92,7 +95,7 @@ def score_data(model_names,
       model_names=model_names,
       project_name=project_name)
 
-  input_fn = get_input_fn(test_data)(
+  input_fn = get_input_fn(test_data,
     tokenizer,
     model_input_comment_field=text_feature_name,
     )
