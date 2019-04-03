@@ -22,7 +22,7 @@ import random
 import tensorflow as tf
 
 import input_fn_example
-from utils_export.dataset import Dataset, Model, CMLE_QUOTA_PREDICTION
+from utils_export.dataset import Dataset, Model
 from utils_export import utils_cloudml
 from utils_export import utils_tfrecords
 
@@ -59,6 +59,7 @@ def get_input_fn(test_data, tokenizer, model_input_comment_field):
   else:
     raise ValueError('Dataset not currently supported.')
 
+
 def tokenizer(text, lowercase=True):
   """Converts text to a list of words.
 
@@ -74,7 +75,6 @@ def tokenizer(text, lowercase=True):
   if lowercase:
     words = [w.lower() for w in words]
   return words
-
 
 
 def score_data(model_names,
@@ -111,7 +111,7 @@ def score_data(model_names,
       'gs://conversationai-models/',
       getpass.getuser(),
       'tfrecords',
-      'performance_dataset_dir')
+      'performance_dataset_dir_3')
 
   dataset = Dataset(input_fn, performance_dataset_dir)
   random.seed(2018) # Need to set seed before loading data to be able to reload same data in the future
