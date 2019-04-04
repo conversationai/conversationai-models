@@ -6,7 +6,7 @@ from __future__ import print_function
 
 import multiprocessing
 import tensorflow as tf
-from typing import Callable, List
+from typing import Callable, List, Dict, Tuple
 
 from tf_trainer.common import base_model
 from tf_trainer.common import dataset_input
@@ -28,8 +28,10 @@ tf.app.flags.DEFINE_boolean('round_labels', True,
                             'Round label features to 0 or 1 if true.')
 tf.app.flags.DEFINE_integer('batch_size', 256,
                             'Batch sizes to use when reading.')
-tf.app.flags.DEFINE_integer('num_prefetch', 5,
-                            'Batch sizes to use when reading.')
+tf.app.flags.DEFINE_integer(
+  'num_prefetch', 5,
+  'An optimization parameter for the number of elements to prefetch. See: '
+  'https://www.tensorflow.org/api_docs/python/tf/data/Dataset#prefetch')
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -70,7 +72,8 @@ class TFRecordInput(dataset_input.DatasetInput):
   def train_input_fn(self) -> types.FeatureAndLabelTensors:
     """input_fn for TF Estimators for training set.
 
-    Automatically repeats over input data forever.
+    Automatically repeats over input data forever. We define epoc limits in the
+    model trainer.
     """
     assert FLAGS.train_path
     return self._input_fn_from_file(FLAGS.train_path).repeat()
@@ -88,7 +91,7 @@ class TFRecordInput(dataset_input.DatasetInput):
                                                    DTYPE_DEFAULT[dtype])
     return keys_to_features
 
-  def _input_fn_from_file(self, filepath: str) -> types.FeatureAndLabelTensors:
+  def _input_fn_from_file(self, filepath: str) -> tf.data.TFRecordDataset:
     filenames_dataset = tf.data.Dataset.list_files(filepath)
     dataset = tf.data.TFRecordDataset(
         filenames_dataset)  # type: tf.data.TFRecordDataset
@@ -179,7 +182,9 @@ class TFRecordInputWithTokenizer(TFRecordInput):
     for label in self._labels:
       feature_shapes[label + '_weight'] = []
 
-    padded_shapes = (feature_shapes, {label: [] for label in self._labels})
+    padded_shapes = (
+      feature_shapes,
+      {label: [] for label in self._labels})  # type: Tuple[Dict, Dict]
     parsed_dataset = parsed_dataset.apply(
         tf.contrib.data.bucket_by_sequence_length(
             element_length_func=lambda x, _: x['sequence_length'],
