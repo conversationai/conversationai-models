@@ -30,9 +30,9 @@ class DatasetInput(abc.ABC):
   """
 
   @abc.abstractmethod
-  def train_input_fn(self) -> types.FeatureAndLabelTensors:
+  def train_input_fn(self) -> types.EstimatorInput:
     pass
 
   @abc.abstractmethod
-  def validate_input_fn(self) -> types.FeatureAndLabelTensors:
+  def validate_input_fn(self) -> types.EstimatorInput:
     pass
