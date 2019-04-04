@@ -69,16 +69,16 @@ class TFRecordInput(dataset_input.DatasetInput):
     """Name of the feature containing the input text from examples."""
     return self._text_feature
 
-  def train_input_fn(self) -> types.FeatureAndLabelTensors:
+  def train_input_fn(self) -> tf.data.TFRecordDataset:
     """input_fn for TF Estimators for training set.
 
-    Automatically repeats over input data forever. We define epoc limits in the
+    Automatically repeats over input data forever. We define epoch limits in the
     model trainer.
     """
     assert FLAGS.train_path
     return self._input_fn_from_file(FLAGS.train_path).repeat()
 
-  def validate_input_fn(self) -> types.FeatureAndLabelTensors:
+  def validate_input_fn(self) -> tf.data.TFRecordDataset:
     """input_fn for TF Estimators for validation set."""
     assert FLAGS.validate_path
     return self._input_fn_from_file(FLAGS.validate_path)
