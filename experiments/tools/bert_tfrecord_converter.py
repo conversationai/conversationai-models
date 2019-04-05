@@ -38,7 +38,7 @@ tf.app.flags.DEFINE_string('text_key', 'comment_text',
 tf.app.flags.DEFINE_string('label_key', 'toxicity',
                            'tf.Example key for label field in input TFRecord.')
 tf.app.flags.DEFINE_string('bert_url', 'https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1', 'TF Hub URL for BERT Model')
-tf.app.flags.DEFINE_integer('max_sequence_length', 256,
+tf.app.flags.DEFINE_integer('max_sequence_length', 128,
                             'Maximum sequence length of tokenized comment.')
 
 FLAGS = tf.app.flags.FLAGS
