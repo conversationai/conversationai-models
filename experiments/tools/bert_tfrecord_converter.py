@@ -33,6 +33,10 @@ tf.app.flags.DEFINE_string('output_data_path', None,
                            'Path to write the output TFRecord files.')
 tf.app.flags.DEFINE_string('filenames', None,
                            'Comma separated list of filenames.')
+tf.app.flags.DEFINE_string('text_key', 'comment_text',
+                           'tf.Example key for text field in input TFRecord.')
+tf.app.flags.DEFINE_string('label_key', 'toxicity',
+                           'tf.Example key for label field in input TFRecord.')
 tf.app.flags.DEFINE_string('bert_url', 'https://tfhub.dev/google/bert_uncased_L-12_H-768_A-12/1', 'TF Hub URL for BERT Model')
 tf.app.flags.DEFINE_integer('max_sequence_length', 256,
                             'Maximum sequence length of tokenized comment.')
@@ -40,8 +44,8 @@ tf.app.flags.DEFINE_integer('max_sequence_length', 256,
 FLAGS = tf.app.flags.FLAGS
 
 def create_int_feature(values):
-      f = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
-      return f
+  f = tf.train.Feature(int64_list=tf.train.Int64List(value=list(values)))
+  return f
 
 def create_tokenizer_from_hub_module(url):
   """Get the vocab file and casing info from the Hub module."""
@@ -60,6 +64,8 @@ def convert_tfrecord_for_bert(filenames,
                               input_data_path,
                               output_data_path,
                               bert_tfhub_url,
+                              text_key,
+                              label_key,
                               max_seq_length):
   """Converts input TFRecords into the format expected by the BERT model."""
   tokenizer = create_tokenizer_from_hub_module(bert_tfhub_url)
@@ -77,7 +83,7 @@ def convert_tfrecord_for_bert(filenames,
       text = example.features.feature[text_key].bytes_list.value[0]
       label = example.features.feature[label_key].float_list.value[0]
       label = round(label)
-      ex = run_classifier.InputExample(guid=None, # Globally unique ID for bookkeeping, unused in this example
+      ex = run_classifier.InputExample(guid=None, # Globally unique ID for bookkeeping
                                       text_a = text, 
                                       text_b = None, 
                                       label = label)
@@ -103,4 +109,6 @@ if __name__ == '__main__':
                             FLAGS.input_data_path,
                             FLAGS.output_data_path,
                             FLAGS.bert_url,
+                            FLAGS.text_key,
+                            FLAGS.label_key,
                             FLAGS.max_sequence_length)
