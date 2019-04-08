@@ -41,7 +41,7 @@ flags.DEFINE_string('text_fields_re', None,
 flags.register_validator(
     'text_fields_re',
     lambda value: isinstance(value, str) and re.compile(value),
-    message='--text_field_re must be a regexp string.')
+    message='--text_fields_re must be a regexp string.')
 
 flags.DEFINE_string('label_fields_re', None,
                     'Matcher for names of the label fields.')
