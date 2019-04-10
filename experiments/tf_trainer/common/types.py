@@ -27,3 +27,6 @@ Tensor = Union[tf.Tensor, tf.SparseTensor]
 TensorDict = Dict[str, Tensor]
 TensorOrTensorDict = Union[tf.Tensor, TensorDict]
 FeatureAndLabelTensors = Tuple[TensorOrTensorDict, TensorOrTensorDict]
+
+# See: https://www.tensorflow.org/api_docs/python/tf/estimator/TrainSpec
+EstimatorInput = Union[FeatureAndLabelTensors, tf.data.Dataset]
