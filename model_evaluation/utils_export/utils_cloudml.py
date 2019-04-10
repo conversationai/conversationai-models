@@ -240,7 +240,6 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
         " Verify that your 'example_key' parameter (set to {})"
         " matches the CMLE model signature.".format(example_key))
   if prediction_name not in predictions[0]:
-    print (predictions[0])
     raise ValueError(
         "Predictions do not contain the 'prediction_name' field."
         " Verify that your 'prediction_name' parameter (set to {})"
@@ -251,7 +250,7 @@ def add_model_predictions_to_df(df, prediction_file, model_col_name,
 
   predictions = sorted(predictions, key=lambda x: x[example_key])
   if class_names is None:
-      prediction_proba = [x[prediction_name] for x in predictions]
+      prediction_proba = [x[prediction_name][0] for x in predictions]
       df[model_col_name] = prediction_proba
   else:
       for i, class_name in enumerate(class_names):
