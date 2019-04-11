@@ -60,8 +60,7 @@ class Model(object):
 
     Raises:
       ValueError: If example_key is included in the feature_spec
-        of if feature_keys_spec does not match required format,
-        or if we have more than CMLE_QUOTA_PREDICTION model_names.
+        of if feature_keys_spec does not match required format.
 
     Note: When used with `Dataset`, the dataframe returned by the input_fn
       should not contain the `example_key`, as it will be later created by the API.
@@ -71,10 +70,6 @@ class Model(object):
     if example_key in feature_keys_spec:
       raise ValueError('example_key should not be part of input_data.'
                        'It will be created when writing to tf-records')
-    if len(model_names) > CMLE_QUOTA_PREDICTION:
-      raise ValueError('Model should not contain more than {} versions.'
-                       ' If you need more, split the version into two'
-                       ' different models.'.format(CMLE_QUOTA_PREDICTION))
     self._model_name = model_names
     self._feature_keys_spec = feature_keys_spec
     self._prediction_keys = prediction_keys
@@ -221,6 +216,11 @@ class Dataset(object):
     if not tf.gfile.Exists(path_input_tf):
       raise ValueError('Dataset does not have input_tf_records yet.'
                        ' You need to run `convert_data_to_tf` first.')
+    
+    if len(model.model_names()) > CMLE_QUOTA_PREDICTION:
+      raise ValueError('Model should not contain more than {} versions.'
+                       ' If you need more, split the version into two'
+                       ' different models.'.format(CMLE_QUOTA_PREDICTION))
 
     job_ids = []
     for model_name_full in model.model_names():
@@ -266,7 +266,7 @@ class Dataset(object):
     for job_id in model.job_ids_prediction():
       utils_cloudml.check_job_over(model.project_name(), job_id)
 
-  def add_model_prediction_to_data(self, model, recompute_predictions=True, class_names = None):
+  def add_model_prediction_to_data(self, model, recompute_predictions=True, class_names=None):
     """Computes the prediction of the model and adds it to dataframe.
 
     Args:
@@ -278,14 +278,32 @@ class Dataset(object):
       class_names (optional): If the model is a multiclass model, you can specify class names.
           The model will then return a logit value per class instead of a single value.
     """
+    def _compute_predictions_less_than_quota(self, model, need_to_convert_data=True):
+      """Runs predictions for a model that has less than $QUOTA versions."""
+      if need_to_convert_data:
+        self.convert_data_to_tf(model.feature_keys_spec(), model.example_key())
+      self.call_prediction(model)
+      self.wait_predictions(model)
 
     self.check_compatibility(model)
 
     if recompute_predictions:
-      tf_record_input_path = self.get_path_input_tf()
-      self.convert_data_to_tf(model.feature_keys_spec(), model.example_key())
-      self.call_prediction(model)
-      self.wait_predictions(model)
+
+      num_epochs = int(len(model.model_names()) / CMLE_QUOTA_PREDICTION)
+      for i in range(0, num_epochs + 1):
+        logging.info('Doing batch {}/{}'.format(i, num_epochs))
+        min_index = i*CMLE_QUOTA_PREDICTION
+        max_index = min((i + 1) * CMLE_QUOTA_PREDICTION, len(model.model_names()))
+        sub_model_names = model.model_names()[min_index:max_index]
+        sub_model = Model(
+          model.feature_keys_spec(),
+          model.prediction_keys(),
+          sub_model_names,
+          model.project_name(),
+          model.example_key())
+        need_to_convert_data = (i == 0)
+        _compute_predictions_less_than_quota(self, sub_model, need_to_convert_data)
+
     else:
       logging.warning(
           'Using past predictions. '

@@ -1,3 +1,19 @@
+# Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+"""Convenience script to score some data with CMLE models."""
+
 import getpass
 import nltk
 import os
@@ -32,13 +48,17 @@ tf.app.flags.DEFINE_integer('dataset_size', 100000,
 FLAGS = tf.app.flags.FLAGS
 
 
-def get_input_fn(test_data):
+def get_input_fn(test_data, tokenizer, model_input_comment_field):
   if test_data == 'biasbios':
-    return input_fn_example.create_input_fn_biasbios
+    return input_fn_example.create_input_fn_biasbios(tokenizer,
+                                                     model_input_comment_field)
   elif test_data == 'scrubbed_biasbios':
-    return input_fn_example.create_input_fn_scrubbed_biasbios
+    return input_fn_example.create_input_fn_biasbios(tokenizer,
+                                                     model_input_comment_field,
+                                                     scrubbed=True)
   else:
     raise ValueError('Dataset not currently supported.')
+
 
 def tokenizer(text, lowercase=True):
   """Converts text to a list of words.
@@ -55,7 +75,6 @@ def tokenizer(text, lowercase=True):
   if lowercase:
     words = [w.lower() for w in words]
   return words
-
 
 
 def score_data(model_names,
@@ -83,35 +102,39 @@ def score_data(model_names,
   os.environ['GCS_READ_CACHE_MAX_SIZE_MB'] = '0' #Faster to access GCS file + https://github.com/tensorflow/tensorflow/issues/15530
   nltk.download('punkt')
 
+  # Load data.
+  input_fn = get_input_fn(test_data,
+    tokenizer,
+    model_input_comment_field=text_feature_name,
+    )
+  performance_dataset_dir = os.path.join(
+      'gs://conversationai-models/',
+      getpass.getuser(),
+      'tfrecords',
+      'performance_dataset_dir_3')
+
+  dataset = Dataset(input_fn, performance_dataset_dir)
+  random.seed(2018) # Need to set seed before loading data to be able to reload same data in the future
+
+  # Define and call model.
   model_input_spec = {
       text_feature_name: utils_tfrecords.EncodingFeatureSpec.LIST_STRING} #library will use this automatically
+  dataset.load_data(dataset_size, random_filter_keep_rate=0.5)
   model = Model(
       feature_keys_spec=model_input_spec,
       prediction_keys=prediction_name,
       example_key=sentence_key,
       model_names=model_names,
       project_name=project_name)
-
-  input_fn = get_input_fn(test_data)(
-    tokenizer,
-    model_input_comment_field=text_feature_name,
-    )
-
-  # Pattern for path of tf_records
-  performance_dataset_dir = os.path.join(
-      'gs://conversationai-models/',
-      getpass.getuser(),
-      'tfrecords',
-      'performance_dataset_dir')
-
-  dataset = Dataset(input_fn, performance_dataset_dir)
-  random.seed(2018) # Need to set seed before loading data to be able to reload same data in the future
-  dataset.load_data(dataset_size, random_filter_keep_rate=0.5)
   dataset.add_model_prediction_to_data(model, recompute_predictions=True, class_names=class_names)
+  
+  # Save data.
   scored_test_df = dataset.show_data()
   scored_test_df.to_csv(tf.gfile.Open(output_path, 'w'), index = False)
 
 if __name__ == "__main__":
+  tf.logging.set_verbosity(tf.logging.INFO)
+
   model_names = [name.strip() for name in FLAGS.model_names.split(',')]
   print(model_names)
   class_names = [name.strip() for name in FLAGS.class_names.split(',')]

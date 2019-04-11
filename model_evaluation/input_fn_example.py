@@ -280,8 +280,8 @@ def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
 ####  BIASBIOS DATASET   ####
 #### #### #### #### #### ####
 
-BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815/test-00000-of-00003.tfrecord'
-
+BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815/test*.tfrecord'
+SCRUBBED_BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815_scrubbed/test*.tfrecord'
 
 comments_spec = {
     'comment_text':
@@ -300,7 +300,7 @@ COMMENT_NAME = 'comment_text'
 LABEL_NAME = 'title'
 
 
-def create_input_fn_biasbios(tokenizer, model_input_comment_field):
+def create_input_fn_biasbios(tokenizer, model_input_comment_field, scrubbed=False):
   """"Generates an input_fn to evaluate model bias on biasbios dataset.
   """
 
@@ -308,9 +308,13 @@ def create_input_fn_biasbios(tokenizer, model_input_comment_field):
     return (random.random() < background_filter_keep_rate)
 
   def input_fn_biasbios(max_n_examples=None, random_filter_keep_rate=1.0):
+    if scrubbed:
+      path = SCRUBBED_BIASBIOS_PATH
+    else:
+      path = BIASBIOS_PATH
     df_raw = utils_tfrecords.decode_tf_records_to_pandas(
         comments_spec,
-        BIASBIOS_PATH,
+        path,
         max_n_examples=max_n_examples,
         filter_fn=filter_fn_biasbios,
     )
@@ -366,55 +370,3 @@ def create_input_fn_artificial_bias(tokenizer, model_input_comment_field):
     return res
 
   return input_fn_bias
-
-#### #### #### #### #### #### #### ####
-####   SCRUBBED BIASBIOS DATASET   ####
-#### #### #### #### #### #### #### ####
-
-SCRUBBED_BIASBIOS_PATH = 'gs://conversationai-models/biosbias/dataflow_dir/data-preparation-20190225173815_scrubbed/test-00000-of-00003.tfrecord'
-
-
-comments_spec = {
-    'comment_text':
-        tf.FixedLenFeature([], dtype=tf.string),
-    'gender':
-        tf.FixedLenFeature([], dtype=tf.string),
-    'title':
-        tf.FixedLenFeature([], dtype=tf.int64)
-}
-
-identity_terms = [
-    'gender'
-]
-
-COMMENT_NAME = 'comment_text'
-LABEL_NAME = 'title'
-
-
-def create_input_fn_scrubbed_biasbios(tokenizer, model_input_comment_field):
-  """"Generates an input_fn to evaluate model bias on scrubbed biasbios dataset.
-  """
-
-  def filter_fn_biasbios(example, background_filter_keep_rate=1.0):
-    return (random.random() < background_filter_keep_rate)
-
-  def input_fn_biasbios(max_n_examples=None, random_filter_keep_rate=1.0):
-    df_raw = utils_tfrecords.decode_tf_records_to_pandas(
-        comments_spec,
-        SCRUBBED_BIASBIOS_PATH,
-        max_n_examples=max_n_examples,
-        filter_fn=filter_fn_biasbios,
-    )
-    df_raw[COMMENT_NAME] = list(
-        map(tokenizer, df_raw[COMMENT_NAME]))
-    #for _term in identity_terms:
-    #  df_raw[_term] = list(df_raw[_term])
-    #df_raw[LABEL_NAME] = list(df_raw[LABEL_NAME])
-    df_raw = df_raw.rename(columns={
-        COMMENT_NAME: model_input_comment_field,
-        LABEL_NAME: 'label'
-    })
-    res = df_raw.copy(deep=True)
-    return res
-
-  return input_fn_biasbios
