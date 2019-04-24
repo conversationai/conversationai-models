@@ -24,11 +24,6 @@ elif [ "$1" == "many_communities" ]; then
     # 1 means that the comment was removed and 0 means it was not.
     label_dtypes="int"
 
-elif [ "$1" == "toxicity_es" ]; then
-    train_path="${GCS_RESOURCES}/polylang_data/train_es_data*.tfrecords"
-    valid_path="${GCS_RESOURCES}/polylang_data/dev_es_data*.tfrecords"
-    labels="frac_neg,frac_very_neg,identity_hate,insult,obscene,threat"
-
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
     exit 1
