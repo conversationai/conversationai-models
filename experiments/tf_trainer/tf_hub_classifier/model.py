@@ -6,7 +6,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 import tensorflow_hub as hub
-import tf_sentencepiece
 from tf_trainer.common import base_model
 from typing import List
 
@@ -20,7 +19,7 @@ tf.app.flags.DEFINE_float('dropout_rate', 0.15,
                           'The dropout rate to use during training.')
 tf.app.flags.DEFINE_string(
     'model_spec',
-    'https://tf-hub.corp.google.com/module/@kona/universal-encoder/es/2',
+    'https://tfhub.dev/google/universal-sentence-encoder-large/3',
     'The url of the TF Hub sentence encoding module to use.')
 tf.app.flags.DEFINE_bool('trainable', True,
                          'What to pass for the TF Hub trainable parameter.')
