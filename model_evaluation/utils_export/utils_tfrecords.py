@@ -142,7 +142,8 @@ def decode_tf_records_to_pandas(decoding_features_spec,
     max_n_examples = float('inf')
 
   reader = tf.TFRecordReader()
-  filename_queue = tf.train.string_input_producer([tf_records_path],
+  filenames = tf.train.match_filenames_once(tf_records_path)
+  filename_queue = tf.train.string_input_producer(filenames,
                                                   num_epochs=1)
 
   _, serialized_example = reader.read(filename_queue)
