@@ -100,7 +100,7 @@ def make_selected_output_row(row, line, counters):
       output_row[key] = value
   if not has_text_field:
     raise MisingAllTextFieldsError(
-        f'Error parsing file {input_jsonlines_path} at line: {line}.\n'
+        f'Error parsing file {FLAGS.input_jsonlines_path} at line: {line}.\n'
         f'No field matched by --text_field_regexp="{FLAGS.text_fields_re}":\n'
         f'  {json.dumps(row, sort_keys=True, indent=2)}')
   return output_row
