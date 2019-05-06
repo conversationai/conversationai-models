@@ -54,14 +54,14 @@ Send2Trash==1.5.0
 simplegeneric==0.8.1
 six==1.11.0
 sklearn==0.0
-tensorflow==1.4.0
+tensorflow==1.12.2
 tensorflow-tensorboard==1.5.0
 terminado==0.8.1
 testpath==0.3.1
 tflearn==0.3.2
 tornado==5.0
 traitlets==4.3.2
-urllib3==1.23
+urllib3==1.24.2
 wcwidth==0.1.7
 webencodings==0.5.1
 websocket-client==0.47.0
