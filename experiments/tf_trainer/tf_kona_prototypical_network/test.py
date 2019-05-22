@@ -2,6 +2,7 @@ import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
 import pandas as pd
+import sys
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string(
@@ -36,7 +37,7 @@ TEST_FEATURES = {
 }
 TEST_LABELS = {}
 
-NUM_EPISODES = 2
+NUM_EPISODES = 100
 BATCH_SIZE = 4
 N_SHOT = 8
 
@@ -54,6 +55,23 @@ def split_domain_data(domain_data):
   negative_support, negative_query = split_class_data(negative_data)
   results = [positive_support, positive_query, negative_support, negative_query]
   return tuple([result["text"].values for result in results])
+
+
+def distance(embeddings, prototype):
+  return tf.map_fn(tf.norm, embeddings - prototype)
+
+
+def recip_distance(embs, proto):
+  return tf.reciprocal(distance(embs, proto))
+
+
+def loss_from_embeddings(embeddings, positive_prototype, negative_prototype,
+                         true_class):
+  negative_logits = recip_distance(embeddings, negative_prototype)
+  positive_logits = recip_distance(embeddings, positive_prototype)
+  logits = tf.stack([negative_logits, positive_logits], axis=1)
+  return tf.losses.softmax_cross_entropy(
+      tf.broadcast_to(tf.one_hot(true_class, 2), tf.shape(logits)), logits)
 
 
 def main(argv):
@@ -81,8 +99,6 @@ def main(argv):
     negative_supports.append(negative_support)
     negative_queries.append(negative_query)
 
-  print(positive_supports)
-
   train_dataset = tf.data.Dataset.from_tensor_slices({
       "positive_supports": np.array(positive_supports),
       "negative_supports": np.array(negative_supports),
@@ -99,37 +115,43 @@ def main(argv):
 
   get_embeddings = lambda texts: dense_2(dense_1(embed(texts)))
 
-  negative_supports_prototype = tf.reduce_mean(
+  negative_prototype = tf.reduce_mean(
       get_embeddings(episode["negative_supports"]), 0)
-  positive_supports_prototype = tf.reduce_mean(
+  positive_prototype = tf.reduce_mean(
       get_embeddings(episode["positive_supports"]), 0)
-  negative_queries_embeddings = get_embeddings(episode["negative_supports"])
-  positive_queries_embeddings = get_embeddings(episode["positive_supports"])
+  negative_embeddings = get_embeddings(episode["negative_supports"])
+  positive_embeddings = get_embeddings(episode["positive_supports"])
 
-  distance = lambda embeddings, prototype: tf.norm(embeddings - prototype)
+  #calculate_loss = lambda embs, proto: (distance(embs, proto) + tf.log(
+  #    tf.reduce_sum(tf.exp(-distance(embs, proto))))) / (2 * tf.cast(
+  #        tf.shape(embs)[0], tf.float32))
+  #loss = calculate_loss(negative_embeddings,
+  #                      negative_prototype) + calculate_loss(
+  #                          positive_embeddings,
+  #                          positive_prototype)
 
-  calculate_loss = lambda embs, proto: (distance(embs, proto) + tf.log(
-      tf.reduce_sum(tf.exp(-distance(embs, proto))))) / (2 * tf.cast(
-          tf.shape(embs)[0], tf.float32))
-  loss = calculate_loss(negative_queries_embeddings,
-                        negative_supports_prototype) + calculate_loss(
-                            positive_queries_embeddings,
-                            positive_supports_prototype)
-  optimizer = tf.train.GradientDescentOptimizer(0.01)
+  negative_loss = loss_from_embeddings(negative_embeddings, positive_prototype,
+                                       negative_prototype, 0)
+  positive_loss = loss_from_embeddings(positive_embeddings, positive_prototype,
+                                       negative_prototype, 1)
+  loss = negative_loss + positive_loss
+
+  optimizer = tf.train.GradientDescentOptimizer(0.00000001)
   train = optimizer.minimize(loss)
 
-  recip_distance = lambda embs, proto: tf.reciprocal(distance(embs, proto))
   predict = lambda embs: tf.nn.softmax([
-      recip_distance(embs, negative_supports_prototype),
-      recip_distance(embs, positive_supports_prototype)
+      recip_distance(embs, negative_prototype),
+      recip_distance(embs, positive_prototype)
   ])
-  prediction = predict(negative_queries_embeddings)
+  prediction = predict(negative_embeddings)
 
   with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     sess.run(tf.tables_initializer())
-    sess.run(train)
-    print(sess.run(prediction))
+    for _ in range(100):
+      _, loss_value = sess.run([train, loss])
+      print(loss_value)
+    #print(sess.run(prediction))
 
 
 if __name__ == "__main__":
