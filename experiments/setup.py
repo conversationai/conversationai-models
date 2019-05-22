@@ -2,7 +2,10 @@ from setuptools import find_packages
 from setuptools import setup
 
 REQUIRED_PACKAGES = [
-    'nltk>=3.3', 'typed_ast==1.1.0', 'tensorflow-hub==0.1.1'
+    'nltk>=3.3',
+    'typed_ast==1.1.0',
+    'tensorflow-hub==0.1.1',
+    'bert-tensorflow==1.0.1'
 ]
 
 setup(
