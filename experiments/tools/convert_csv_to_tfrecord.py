@@ -67,6 +67,7 @@ def main(argv):
   output_tfrecord_path = FLAGS.output_tfrecord_path
   column_names = FLAGS.column_list.split(',')
   column_dtypes = FLAGS.dtype_list.split(',')
+  assert len(column_names) == len(column_dtypes)
 
   convert_csv_to_tfrecord(input_csv_path, 
                           output_tfrecord_path,
