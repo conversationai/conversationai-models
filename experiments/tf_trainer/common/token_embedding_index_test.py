@@ -38,11 +38,5 @@ class LoadTokenIdxEmbeddingsTest(tf.test.TestCase):
     # Note: padding embedding will be random, and is index 0. Also the unknown
     # token embedding will be random, and is index n+1; 7 in this case.
 
-  def test_LoadTokenIdxEmbeddingsGlove300d(self):
-    idx, embeddings, unknown_idx, embedding_size = LoadTokenIdxEmbeddings(
-        'gs://kaggle-model-experiments/resources/glove.6B/glove.6B.300d.txt')
-    self.assertEqual(embedding_size, 300)
-
-
 if __name__ == '__main__':
   tf.test.main()
