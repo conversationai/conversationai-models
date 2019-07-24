@@ -50,7 +50,7 @@ def convert_csv_to_tfrecord(input_csv_path,
               col_val)
         elif dtype == 'str':
           example.features.feature[col_name].bytes_list.value.append(
-              col_val.encode("utf-8", errors="replace"))
+              str(col_val).encode("utf-8", errors="replace"))
         elif dtype == 'float':
           example.features.feature[col_name].float_list.value.append(col_val)
         elif dtype == 'int':
