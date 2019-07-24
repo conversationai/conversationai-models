@@ -28,6 +28,7 @@ if [ "$1" == "civil_comments" ]; then
     eval_period=1000
     eval_steps=2000
     config="tf_trainer/common/basic_gpu_config.yaml"
+    text_feature="comment_text"
 
 elif [ "$1" == "toxicity" ]; then
     batch_size=32
@@ -40,6 +41,7 @@ elif [ "$1" == "toxicity" ]; then
     eval_period=1000
     eval_steps=6000
     config="tf_trainer/common/basic_gpu_config.yaml"
+    text_feature="comment_text"
 
 elif [ "$1" == "many_communities" ]; then
     batch_size=128
@@ -52,13 +54,44 @@ elif [ "$1" == "many_communities" ]; then
     eval_period=4000
     eval_steps=45000
     config="tf_trainer/common/p100_config.yaml"
+    text_feature="comment_text"
+
+elif [ "$1" == "many_communities_40_per_8_shot" ]; then
+
+    train_steps=8000
+    eval_steps=250
+    eval_period=200
+    config="tf_trainer/common/basic_gpu_config.yaml"
+
+    if [ "$2" == "optimistic" ]; then
+
+        batch_size=64
+        attention_units=32
+        dropout_rate=0.69778643162683085
+        learning_rate=0.00080291321858594659
+        dense_units='128,128'
+        gru_units='128'
+
+    elif [ "$2" == "pessimistic" ]; then
+        
+        batch_size=32
+        attention_units=64
+        dropout_rate=0.052541994248873507
+        learning_rate=0.00049418814574477758
+        dense_units='128,128'
+        gru_units='128'
+
+    else
+        echo "Must provide second positional argument."
+        exit 1
+    fi
 
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
     return;
 fi
 
-gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DATETIME} \
+gcloud ai-platform jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
     --runtime-version=1.10 \
     --config $config \
@@ -82,4 +115,5 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --gru_units=$gru_units \
     --train_steps=$train_steps \
     --eval_period=$eval_period \
-    --eval_steps=$eval_steps
+    --eval_steps=$eval_steps \
+    --text_feature=$text_feature

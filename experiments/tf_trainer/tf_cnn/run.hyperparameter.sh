@@ -8,7 +8,7 @@ JOB_DIR="${MODEL_PARENT_DIR}/${USER}/${MODEL_NAME_DATA}/${DATETIME}"
 
 gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DATETIME} \
     --job-dir=${JOB_DIR} \
-    --runtime-version=1.10 \
+    --runtime-version=1.12 \
     --module-name="tf_trainer.${MODEL_NAME}.run" \
     --package-path=tf_trainer \
     --region=us-east1 \
@@ -26,7 +26,8 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --eval_steps=$eval_steps \
     --labels=$labels \
     --label_dtypes=$label_dtypes \
-    --preprocess_in_tf=False
+    --preprocess_in_tf=False \
+    --text_feature=$text_feature
 
 echo "Model dir:"
 echo ${JOB_DIR}/model_dir
