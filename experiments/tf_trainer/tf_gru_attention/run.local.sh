@@ -19,4 +19,5 @@ python -m tf_trainer.tf_gru_attention.run \
   --model_dir="tf_gru_attention_local_model_dir" \
   --labels=$labels \
   --label_dtypes=$label_dtypes \
-  --preprocess_in_tf=False
+  --preprocess_in_tf=False \
+  --text_feature=$text_feature
