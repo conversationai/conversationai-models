@@ -219,7 +219,8 @@ if FLAGS.test_mode:
     sess.run(tf.tables_initializer())
     sess.run(tf.initializers.local_variables())
 
-    saver.restore(sess, save_path)
+    checkpoint = tf.train.latest_checkpoint(model_dir + "/save")
+    saver.restore(sess, checkpoint)
     test_itr_handle = sess.run(test_itr.string_handle())
     while True:
       try:
@@ -269,7 +270,8 @@ else:
     training_handle = sess.run(training_iterator.string_handle())
     validation_handle = sess.run(validation_iterator.string_handle())
 
-    for batch_num in range(3000):
+    best_auc = 0
+    for batch_num in range(500):
       print("Batch: " + str(batch_num))
 
       batch_size = 32
@@ -286,7 +288,6 @@ else:
         train_writer.add_summary(training_summary, batch_num * batch_size + i)
         train_writer.flush()
 
-      best_auc = 0
       recent_aucs = collections.deque([], 3)
 
       sess.run(validation_iterator.initializer)
@@ -298,7 +299,8 @@ else:
       # Save best version
       if val_auc > best_auc:
         best_auc = val_auc
-        saved_path = saver.save(sess, save_path)
+        saved_path = saver.save(
+            sess, save_path, global_step=(batch_num + 1) * batch_size)
 
       # Early stopping
       if len(recent_aucs) >= 3 and all(
