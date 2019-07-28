@@ -82,12 +82,14 @@ def prepare_dataset(data):
 def encoder(dense_config, output_types, output_shapes):
   """Tensorflow graph for getting prototypes and embeddings.
 
-  It contains a placeholder for a tensorflow Iterator handle whose elements
-  are a dict containing negative_supports, positive_supports, negative_queries,
-  and positive_queries. All of these are lists of strings.
+  It contains a placeholder for a tensorflow Iterator called "handle" whose
+  elements are a dict containing negative_supports, positive_supports,
+  negative_queries, and positive_queries. All of these are lists of strings.
 
   Args:
     dense_config: A list of integers that configure the dense layers.
+    output_types: A dictionary from output name to it's tf type.
+    output_shapes: A dictionary from output name to it's shape.
 
   Returns:
     A tuple of logits, the first representing those from the negative query set
@@ -168,148 +170,155 @@ def predictions_and_metrics(negative_logits, positive_logits):
   return (predictions, acc_op, auc_op, update_acc_op, update_auc_op)
 
 
-if FLAGS.model_dir:
-  model_dir = FLAGS.model_dir
-else:
-  st = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-  model_dir = "gs://conversationai-models/jjtan/transfer_learning/model/" + st
-print("Model dir: " + model_dir)
-save_path = model_dir + "/save/model.ckpt"
-metadata_path = model_dir + "/meta.txt"
+def main():
+  if FLAGS.model_dir:
+    model_dir = FLAGS.model_dir
+  else:
+    st = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    model_dir = "gs://conversationai-models/jjtan/transfer_learning/model/" + st
+  print("Model dir: " + model_dir)
+  save_path = model_dir + "/save/model.ckpt"
+  metadata_path = model_dir + "/meta.txt"
 
-with tf.gfile.Open(metadata_path, "w") as f:
-  f.write("Encoding Layers: " + FLAGS.encoding_layers + "\n")
+  with tf.gfile.Open(metadata_path, "w") as f:
+    f.write("Encoding Layers: " + FLAGS.encoding_layers + "\n")
 
-output_types = {
-    "negative_queries": tf.string,
-    "negative_supports": tf.string,
-    "positive_queries": tf.string,
-    "positive_supports": tf.string
-}
-output_shapes = {
-    "negative_queries": tf.TensorShape([tf.Dimension(12)]),
-    "negative_supports": tf.TensorShape([tf.Dimension(8)]),
-    "positive_queries": tf.TensorShape([tf.Dimension(12)]),
-    "positive_supports": tf.TensorShape([tf.Dimension(8)])
-}
+  output_types = {
+      "negative_queries": tf.string,
+      "negative_supports": tf.string,
+      "positive_queries": tf.string,
+      "positive_supports": tf.string
+  }
+  output_shapes = {
+      "negative_queries": tf.TensorShape([tf.Dimension(12)]),
+      "negative_supports": tf.TensorShape([tf.Dimension(8)]),
+      "positive_queries": tf.TensorShape([tf.Dimension(12)]),
+      "positive_supports": tf.TensorShape([tf.Dimension(8)])
+  }
 
-with tf.variable_scope("encoder"):
-  encoding_units = [int(units) for units in FLAGS.encoding_layers.split(",")]
-  handle, negative_logits, positive_logits = encoder(encoding_units,
-                                                     output_types,
-                                                     output_shapes)
+  with tf.variable_scope("encoder"):
+    encoding_units = [int(units) for units in FLAGS.encoding_layers.split(",")]
+    handle, negative_logits, positive_logits = encoder(encoding_units,
+                                                       output_types,
+                                                       output_shapes)
 
-if FLAGS.test_mode:
-  print("In TEST mode.")
-  with tf.gfile.Open(FLAGS.test_file, "r") as f:
-    test_df = pd.read_csv(f)
-    print("Test Dataframe Shape: " + str(test_df.shape))
-    test_ds = prepare_dataset(test_df).shuffle(64)
+  if FLAGS.test_mode:
+    print("In TEST mode.")
+    with tf.gfile.Open(FLAGS.test_file, "r") as f:
+      test_df = pd.read_csv(f)
+      print("Test Dataframe Shape: " + str(test_df.shape))
+      test_ds = prepare_dataset(test_df).shuffle(64)
 
-  # Test specific model components.
-  with tf.variable_scope("test_predictions_and_metrics"):
-    _, acc_op, auc_op, update_acc_op, update_auc_op = predictions_and_metrics(
-        negative_logits, positive_logits)
+    # Test specific model components.
+    with tf.variable_scope("test_predictions_and_metrics"):
+      _, acc_op, auc_op, update_acc_op, update_auc_op = predictions_and_metrics(
+          negative_logits, positive_logits)
 
-  saver = tf.train.Saver()
+    saver = tf.train.Saver()
 
-  test_itr = test_ds.make_one_shot_iterator()
-  with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    sess.run(tf.tables_initializer())
-    sess.run(tf.initializers.local_variables())
+    test_itr = test_ds.make_one_shot_iterator()
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      sess.run(tf.tables_initializer())
+      sess.run(tf.initializers.local_variables())
 
-    saver.restore(sess, save_path)
-    test_itr_handle = sess.run(test_itr.string_handle())
-    while True:
-      try:
-        _, _ = sess.run([update_acc_op, update_auc_op],
-                        feed_dict={handle: test_itr_handle})
-      except tf.errors.OutOfRangeError:
-        break
-    test_acc, test_auc = sess.run([acc_op, auc_op])
-    print("TEST ACCURACY: " + str(test_acc))
-    print("TEST AUC: " + str(test_auc))
-else:
-  print("In TRAINING mode.")
+      checkpoint = tf.train.latest_checkpoint(model_dir + "/save")
+      saver.restore(sess, checkpoint)
+      test_itr_handle = sess.run(test_itr.string_handle())
+      while True:
+        try:
+          _, _ = sess.run([update_acc_op, update_auc_op],
+                          feed_dict={handle: test_itr_handle})
+        except tf.errors.OutOfRangeError:
+          break
+      test_acc, test_auc = sess.run([acc_op, auc_op])
+      print("TEST ACCURACY: " + str(test_acc))
+      print("TEST AUC: " + str(test_auc))
+  else:
+    print("In TRAINING mode.")
 
-  with tf.gfile.Open(FLAGS.train_file, "r") as f:
-    train_df = pd.read_csv(f)
-    print("Train Dataframe Shape: " + str(train_df.shape))
-    train_dataset = prepare_dataset(train_df).shuffle(128).repeat()
+    with tf.gfile.Open(FLAGS.train_file, "r") as f:
+      train_df = pd.read_csv(f)
+      print("Train Dataframe Shape: " + str(train_df.shape))
+      train_dataset = prepare_dataset(train_df).shuffle(128).repeat()
 
-  with tf.gfile.Open(FLAGS.validation_file, "r") as f:
-    validation_df = pd.read_csv(f)
-    print("Validation Dataframe Shape: " + str(validation_df.shape))
-    validation_dataset = prepare_dataset(validation_df).shuffle(64)
+    with tf.gfile.Open(FLAGS.validation_file, "r") as f:
+      validation_df = pd.read_csv(f)
+      print("Validation Dataframe Shape: " + str(validation_df.shape))
+      validation_dataset = prepare_dataset(validation_df).shuffle(64)
 
-  # Training specific model components.
-  with tf.variable_scope("training_operations"):
-    train_op, loss_op = train_operation(negative_logits, positive_logits)
-  with tf.variable_scope("train_predictions_and_metrics"):
-    _, train_acc_op, train_auc_op, train_update_acc_op, train_update_auc_op = predictions_and_metrics(
-        negative_logits, positive_logits)
-  with tf.variable_scope("validation_predictions_and_metrics"):
-    _, val_acc_op, val_auc_op, val_update_acc_op, val_update_auc_op = predictions_and_metrics(
-        negative_logits, positive_logits)
+    # Training specific model components.
+    with tf.variable_scope("training_operations"):
+      train_op, loss_op = train_operation(negative_logits, positive_logits)
+    with tf.variable_scope("train_predictions_and_metrics"):
+      _, train_acc_op, train_auc_op, train_update_acc_op, train_update_auc_op = predictions_and_metrics(
+          negative_logits, positive_logits)
+    with tf.variable_scope("validation_predictions_and_metrics"):
+      _, val_acc_op, val_auc_op, val_update_acc_op, val_update_auc_op = predictions_and_metrics(
+          negative_logits, positive_logits)
 
-  saver = tf.train.Saver()
+    saver = tf.train.Saver()
 
-  with tf.Session() as sess:
-    sess.run(tf.global_variables_initializer())
-    sess.run(tf.tables_initializer())
-    sess.run(tf.initializers.local_variables())
+    with tf.Session() as sess:
+      sess.run(tf.global_variables_initializer())
+      sess.run(tf.tables_initializer())
+      sess.run(tf.initializers.local_variables())
 
-    train_writer = tf.summary.FileWriter(model_dir + "/train", sess.graph)
-    validation_writer = tf.summary.FileWriter(model_dir + "/validation",
-                                              sess.graph)
+      train_writer = tf.summary.FileWriter(model_dir + "/train", sess.graph)
+      validation_writer = tf.summary.FileWriter(model_dir + "/validation",
+                                                sess.graph)
 
-    training_iterator = train_dataset.make_one_shot_iterator()
-    validation_iterator = validation_dataset.make_initializable_iterator()
-    training_handle = sess.run(training_iterator.string_handle())
-    validation_handle = sess.run(validation_iterator.string_handle())
-
-    for batch_num in range(3000):
-      print("Batch: " + str(batch_num))
-
-      batch_size = 32
-      for i in range(batch_size):
-        _, loss, train_acc, train_auc = sess.run(
-            [train_op, loss_op, train_update_acc_op, train_update_auc_op],
-            feed_dict={handle: training_handle})
-
-        training_summary = tf.Summary(value=[
-            tf.Summary.Value(tag="loss", simple_value=loss),
-            tf.Summary.Value(tag="accuracy", simple_value=train_acc),
-            tf.Summary.Value(tag="auc", simple_value=train_auc),
-        ])
-        train_writer.add_summary(training_summary, batch_num * batch_size + i)
-        train_writer.flush()
+      training_iterator = train_dataset.make_one_shot_iterator()
+      validation_iterator = validation_dataset.make_initializable_iterator()
+      training_handle = sess.run(training_iterator.string_handle())
+      validation_handle = sess.run(validation_iterator.string_handle())
 
       best_auc = 0
-      recent_aucs = collections.deque([], 3)
+      for batch_num in range(500):
+        print("Batch: " + str(batch_num))
 
-      sess.run(validation_iterator.initializer)
-      for _ in range(32):
-        _, _ = sess.run([val_update_acc_op, val_update_auc_op],
-                        feed_dict={handle: validation_handle})
-      val_acc, val_auc = sess.run([val_acc_op, val_auc_op])
+        batch_size = 32
+        for i in range(batch_size):
+          _, loss, train_acc, train_auc = sess.run(
+              [train_op, loss_op, train_update_acc_op, train_update_auc_op],
+              feed_dict={handle: training_handle})
 
-      # Save best version
-      if val_auc > best_auc:
-        best_auc = val_auc
-        saved_path = saver.save(sess, save_path)
+          training_summary = tf.Summary(value=[
+              tf.Summary.Value(tag="loss", simple_value=loss),
+              tf.Summary.Value(tag="accuracy", simple_value=train_acc),
+              tf.Summary.Value(tag="auc", simple_value=train_auc),
+          ])
+          train_writer.add_summary(training_summary, batch_num * batch_size + i)
+          train_writer.flush()
 
-      # Early stopping
-      if len(recent_aucs) >= 3 and all(
-          val_auc < prev_auc for prev_auc in recent_aucs):
-        break
-      recent_aucs.append(val_auc)
+        recent_aucs = collections.deque([], 3)
 
-      validation_summary = tf.Summary(value=[
-          tf.Summary.Value(tag="accuracy", simple_value=val_acc),
-          tf.Summary.Value(tag="auc", simple_value=val_auc),
-      ])
-      validation_writer.add_summary(validation_summary.SerializeToString(),
-                                    (batch_num + 1) * batch_size)
-      validation_writer.flush()
+        sess.run(validation_iterator.initializer)
+        for _ in range(32):
+          _, _ = sess.run([val_update_acc_op, val_update_auc_op],
+                          feed_dict={handle: validation_handle})
+        val_acc, val_auc = sess.run([val_acc_op, val_auc_op])
+
+        # Save best version
+        if val_auc > best_auc:
+          best_auc = val_auc
+          saved_path = saver.save(
+              sess, save_path, global_step=(batch_num + 1) * batch_size)
+
+        # Early stopping
+        if len(recent_aucs) >= 3 and all(
+            val_auc < prev_auc for prev_auc in recent_aucs):
+          break
+        recent_aucs.append(val_auc)
+
+        validation_summary = tf.Summary(value=[
+            tf.Summary.Value(tag="accuracy", simple_value=val_acc),
+            tf.Summary.Value(tag="auc", simple_value=val_auc),
+        ])
+        validation_writer.add_summary(validation_summary.SerializeToString(),
+                                      (batch_num + 1) * batch_size)
+        validation_writer.flush()
+
+
+if __name__ == "__main__":
+  main()
