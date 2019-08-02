@@ -42,6 +42,37 @@ elif [ "$1" == "many_communities" ]; then
     eval_period=4000
     eval_steps=45000
 
+elif [ "$1" == "many_communities_40_per_8_shot" ]; then
+
+    train_steps=8000
+    eval_steps=250
+    eval_period=200
+
+    if [ "$2" == "optimistic" ]; then
+
+        batch_size=64
+        dense_units='64'
+        filter_sizes='3,4,5'
+        num_filters=128
+        dropout_rate=0.50444323963758519
+        learning_rate=0.00016448334200861331
+        pooling_type='max'
+
+    elif [ "$2" == "pessimistic" ]; then
+        
+        batch_size=32
+        dense_units='64,64'
+        filter_sizes='3,4,5'
+        num_filters=128
+        dropout_rate=0.33976339995062715
+        learning_rate=0.00035725183171118115
+        pooling_type='max'
+
+    else
+        echo "Must provide second positional argument."
+        exit 1
+    fi
+
 else
     echo "First positional arg must be one of civil_comments, toxicity, many_communities."
     return;
@@ -74,7 +105,8 @@ gcloud ml-engine jobs submit training tf_trainer_${MODEL_NAME_DATA}_${USER}_${DA
     --num_filters=$num_filters \
     --dropout_rate=$dropout_rate \
     --learning_rate=$learning_rate \
-    --pooling_type=$pooling_type
+    --pooling_type=$pooling_type \
+    --text_feature=$text_feature
 
 echo "Model dir:"
 echo ${JOB_DIR}/model_dir
