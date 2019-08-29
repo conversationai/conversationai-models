@@ -7,14 +7,16 @@ Series C (Applied Statistics), Vol. 28, No. 1, pp. 20-28.
 """
 
 import argparse
-import tensorflow as tf
-from scipy import stats
 import logging
 import math
-import numpy as np
-import pandas as pd
 import sys
 import time
+
+import numpy as np
+import pandas as pd
+from scipy import stats
+import tensorflow as tf
+
 
 FLAGS = None
 np.set_printoptions(precision=2)
@@ -25,7 +27,7 @@ def run(items,
         classes,
         counts,
         label,
-        pseudo_count,
+        psuedo_count,
         tol=1,
         max_iter=25,
         init='average'):
@@ -60,7 +62,7 @@ def run(items,
     #          distribution over true item classes
     old_item_classes = item_classes
 
-    (class_marginals, error_rates) = m_step(counts, item_classes, pseudo_count)
+    (class_marginals, error_rates) = m_step(counts, item_classes, psuedo_count)
 
     # E-step - calculate expected item classes given error rates and
     #          class marginals
@@ -145,7 +147,7 @@ def m_step(counts, item_classes, psuedo_count):
       counts: Array of how many times each rating was given by each rater
         for each item
       item_classes: Matrix of current assignments of items to classes
-      psuedo_count: A pseudo count used to smooth the error rates. For each
+      psuedo_count: A psuedo count used to smooth the error rates. For each
       rater k
         and for each class i and class j, we pretend rater k has rated
         psuedo_count examples with class i when class j was the true class.
@@ -195,7 +197,7 @@ def m_step_verbose(counts, item_classes, psuedo_count):
       counts: Array of how many times each rating was given by each rater
         for each item
       item_classes: Matrix of current assignments of items to classes
-      psuedo_count: A pseudo count used to smooth the error rates. For each
+      psuedo_count: A psuedo count used to smooth the error rates. For each
       rater k
         and for each class i and class j, we pretend rater k has rated
         psuedo_count examples with class i when class j was the true class.
