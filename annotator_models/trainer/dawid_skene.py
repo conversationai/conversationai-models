@@ -402,7 +402,7 @@ def majority_voting(counts):
 
 
 def parse_item_classes(df, label, item_classes, index_to_unit_id_map,
-                       index_to_y_map, unit_id, worker_id):
+                       index_to_y_map, unit_id, worker_id, comment_text_path):
   """
     Given the original data df, the predicted item_classes, and
     the data mappings, returns a DataFrame with the fields:
@@ -433,7 +433,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map,
 
   # To get a prediction of the mean label, multiply our predictions with the
   # true y values.
-  y_values = index_to_y_map.values()
+  y_values = list(index_to_y_map.values())
   col_name = '{0}_hat_mean'.format(label)
   df_predictions[col_name] = np.dot(df_predictions[col_names], y_values)
 
@@ -452,15 +452,16 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map,
   df_predictions = pd.merge(mean_labels, df_predictions, on=unit_id)
 
   # join with data that contains the item-level comment text
-  comment_text_path = FLAGS.comment_text_path
-  with tf.gfile.Open(comment_text_path, 'r') as fileobj:
-    logging.info('Loading comment text data from {}'.format(comment_text_path))
-    df_comments = pd.read_csv(fileobj)
+  if comment_text_path:
+    with tf.gfile.Open(comment_text_path, 'r') as fileobj:
+      logging.info(
+          'Loading comment text data from {}'.format(comment_text_path))
+      df_comments = pd.read_csv(fileobj)
 
-    # drop duplicate comments
-    df_comments = df_comments.drop_duplicates(subset=unit_id)
+      # drop duplicate comments
+      df_comments = df_comments.drop_duplicates(subset=unit_id)
 
-  df_predictions = df_predictions.merge(df_comments, on=unit_id)
+    df_predictions = df_predictions.merge(df_comments, on=unit_id)
   return df_predictions
 
 
@@ -514,6 +515,7 @@ def main(FLAGS):
   label = FLAGS.label
   unit_id = FLAGS.unit_id_col
   worker_id = FLAGS.worker_id_col
+  comment_text_path = FLAGS.comment_text_path
   df = load_data(FLAGS.data_path, unit_id, worker_id, label)[0:n_examples]
 
   logging.info('Running on {0} examples for label {1}'.format(len(df), label))
@@ -576,7 +578,7 @@ def main(FLAGS):
   # join comment_text, old labels and new labels
   df_predictions = parse_item_classes(df, label, item_classes,
                                       index_to_unit_id_map, index_to_y_map,
-                                      unit_id, worker_id)
+                                      unit_id, worker_id, comment_text_path)
 
   # join rater error_rates
   df_error_rates = parse_error_rates(df, error_rates, index_to_worker_id_map,
