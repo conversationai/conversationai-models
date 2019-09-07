@@ -5,7 +5,7 @@ bleach==3.1.0
 certifi==2018.11.29
 chardet==3.0.4
 gast==0.2.2
-gcsfs==0.3.0
+gcsfs==0.2.3
 grpcio==1.18.0
 h5py==2.9.0
 html5lib==1.0.1

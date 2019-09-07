@@ -10,6 +10,8 @@ from tf_trainer.common import serving_input
 from tf_trainer.common import tfrecord_input
 from tf_trainer.tf_hub_classifier import model as tf_hub_classifier
 
+import os
+import pandas as pd
 import tensorflow as tf
 
 FLAGS = tf.app.flags.FLAGS
@@ -40,9 +42,16 @@ def main(argv):
   df = pd.read_csv(valid_path_csv)
   labels = df['label'].values
 
-  assert len(labels) == len(predictions), 'Labels and predictions must have the same length.'
+  community = os.path.basename(FLAGS.validate_path).split("..")[0]
 
-  d = { 'label' : labels, 'prediction': [p[key][0] for p in predictions] }
+  assert len(labels) == len(predictions), "Labels and predictions must have the same length."
+
+  d = {
+    "label" : labels,
+    "prediction": [p[key][0] for p in predictions],
+    "community": [community for p in predictions],
+  }
+
   df = pd.DataFrame(data=d)
   df.to_csv(path_or_buf=FLAGS.tmp_results_path, mode='a+', index=False, header=False)
 
