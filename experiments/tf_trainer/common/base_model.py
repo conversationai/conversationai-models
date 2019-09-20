@@ -54,9 +54,9 @@ class BaseModel(abc.ABC):
 
     class Model(BaseModel):
 
-      def estimator(unused, model_dir):
+      def estimator(unused, model_dir, warm_start_from=None):
         del unused
-        return f(self.estimator(model_dir))
+        return f(self.estimator(model_dir, warm_start_from))
 
       def hparams(unused):
         del unused
@@ -65,7 +65,8 @@ class BaseModel(abc.ABC):
     return Model()
 
   @abc.abstractmethod
-  def estimator(self, model_dir: str) -> tf.estimator.Estimator:
+  def estimator(self, model_dir: str,
+                warm_start_from: str = None) -> tf.estimator.Estimator:
     pass
 
   def hparams(self) -> tf.contrib.training.HParams:
