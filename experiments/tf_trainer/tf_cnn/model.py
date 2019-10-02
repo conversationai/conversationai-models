@@ -61,12 +61,11 @@ class TFCNNModel(base_model.BaseModel):
         pooling_type=FLAGS.pooling_type)
     return hparams
 
-  def estimator(self, model_dir, warm_start_from=None):
+  def estimator(self, model_dir):
     estimator = tf.estimator.Estimator(
         model_fn=self._model_fn,
         params=self.hparams(),
-        config=tf.estimator.RunConfig(model_dir=model_dir),
-        warm_start_from=warm_start_from)
+        config=tf.estimator.RunConfig(model_dir=model_dir))
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):

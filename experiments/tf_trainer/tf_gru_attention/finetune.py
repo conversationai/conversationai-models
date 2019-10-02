@@ -48,28 +48,30 @@ def main(argv):
   model = preprocessor.add_embedding_to_model(model_tf,
                                               base_model.TOKENS_FEATURE_KEY)
 
-  trainer = model_trainer.ModelTrainer(dataset, model, warm_start_from=FLAGS.warm_start_from)
+  trainer = model_trainer.ModelTrainer(dataset, model,
+    warm_start_from=FLAGS.warm_start_from)
   trainer.train_with_eval()
 
-  key = ('label', 'logistic')
-  predictions = list(trainer.evaluate_on_dev(predict_keys=[key]))
+  keys = [("label", "probabilities")]
+  predictions = list(trainer.predict_on_dev(predict_keys=keys))
 
   valid_path_csv = FLAGS.validate_path.replace("..tfrecord", ".csv")
   df = pd.read_csv(valid_path_csv)
-  labels = df['label'].values
-
+  labels = df["label"].values
   community = os.path.basename(FLAGS.validate_path).split("..")[0]
 
-  assert len(labels) == len(predictions), "Labels and predictions must have the same length."
+  assert len(labels) == len(predictions), \
+    "Labels and predictions must have the same length."
 
   d = {
     "label" : labels,
-    "prediction": [p[key][0] for p in predictions],
+    "prediction": [p[keys[0]][1] for p in predictions],
     "community": [community for p in predictions],
   }
 
   df = pd.DataFrame(data=d)
-  df.to_csv(path_or_buf=FLAGS.tmp_results_path, mode='a+', index=False, header=False)
+  df.to_csv(path_or_buf=FLAGS.tmp_results_path, mode='a+',
+    index=False, header=False)
 
 if __name__ == "__main__":
   tf.logging.set_verbosity(tf.logging.INFO)

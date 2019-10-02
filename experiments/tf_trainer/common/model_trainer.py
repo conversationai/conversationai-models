@@ -68,6 +68,46 @@ tf.app.flags.DEFINE_integer('eval_steps', None,
 tf.app.flags.mark_flag_as_required('model_dir')
 
 
+# Copied from:
+# https://stackoverflow.com/questions/49846207/tensorflow-estimator-warm-start-from-and-model-dir
+class InitHook(tf.train.SessionRunHook):
+  """Initializes model from a checkpoint_path
+  
+    Args:
+      checkpoint_dir: full path to dir containing the checkpoint
+  """
+  def __init__(self, checkpoint_dir):
+    self.model_path = checkpoint_dir
+    self.initialized = False
+
+  def begin(self):
+    """
+    Restore parameters if a pre-trained model is available and
+    we haven't trained previously.
+    """
+    if not self.initialized:
+      #checkpoint = tf.train.latest_checkpoint(self.model_path)
+      all_checkpoints = file_io.get_matching_files(os.path.join(
+        self.model_path, 'model.ckpt-*.index'))
+
+      if not all_checkpoints:
+        raise ValueError('No checkpoint files found matching %s.' % (
+          self.model_path + '*'))
+
+      all_checkpoints = [x.replace('.index', '') for x in all_checkpoints]
+      all_checkpoints = sorted(all_checkpoints, key=lambda x: int(x.split('-')[-1]))
+      checkpoint = all_checkpoints[-1]
+
+      if checkpoint is None:
+        logging.info('No pre-trained model is available at %s, '
+          'training from scratch.' % self.model_path)
+      else:
+        logging.info('Pre-trained model {0} found in {1} - warmstarting.'.format(
+          checkpoint, self.model_path))
+        tf.train.warm_start(checkpoint)
+      self.initialized = True
+
+
 # This function extends tf.contrib.estimator.forward_features.
 # As the binary_head has a ClassificationOutput for serving_default,
 # the check at the end of 'new_model_fn' fails in the initial fn.
@@ -193,7 +233,8 @@ class ModelTrainer(object):
                warm_start_from: str = None) -> None:
     self._dataset = dataset
     self._model = model
-    self._estimator = model.estimator(self._model_dir(), warm_start_from)
+    self._warm_start_from = warm_start_from
+    self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self):
     """Train with periodic evaluation.
@@ -205,6 +246,12 @@ class ModelTrainer(object):
               save_steps=10,
               output_dir=os.path.join(self._model_dir(), 'profiler')),
       ]
+
+    init_hook = InitHook(checkpoint_dir=self._warm_start_from)
+    if training_hooks:
+      training_hooks.append(init_hook)
+    else:
+      training_hooks = [init_hook]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
@@ -225,7 +272,7 @@ class ModelTrainer(object):
 
     tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
 
-  def evaluate_on_dev(self, predict_keys=None):
+  def predict_on_dev(self, predict_keys=None):
     checkpoints, _ = self._get_list_checkpoint(1, self._model_dir(),
                                                          None, None)
     return self._estimator.predict(self._dataset.validate_input_fn,

@@ -3,13 +3,13 @@
 BASE_PATH="gs://conversationai-models"
 GCS_RESOURCES="${BASE_PATH}/resources"
 
-warm_start_from="gs://conversationai-models/tf_trainer_runs/msushkov/tf_cnn_many_communities_40_per_8_shot_glove/20190723_110543/model_dir/2800/1563906804/"
+warm_start_from="gs://conversationai-models/tf_trainer_runs/msushkov/tf_cnn_many_communities_40_per_8_shot_glove/20190723_110543/model_dir"
 combined_results_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/results/tf_cnn/validation"
 
 train_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/validation_episodes/support/*.tfrecord"
 
 eval_steps=1
-eval_period=1000
+eval_period=5
 
 labels="label"
 label_dtypes="int"
@@ -23,8 +23,8 @@ dropout_rate=0.33976339995062715
 pooling_type="max"
 
 # original, original/2, original/5, original/10, original*2
-learning_rate_lst=(0.00035725183171118115 0.00017862591 0.00007145036 0.000035725183171118115 0.00071450366)
-train_steps_lst=(5 10 50)
+learning_rate_lst=(0.00035725183171118115) # 0.00017862591 0.00007145036 0.000035725183171118115 0.00071450366)
+train_steps_lst=(5) #10 50)
 
 for learning_rate in "${learning_rate_lst[@]}"; do
 	echo "Learning rate: $learning_rate"
@@ -71,10 +71,10 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 
 			COUNTER=$[$COUNTER +1]
 
-			# if [ $COUNTER -eq 2 ]
-			# then
-			#     break;
-			# fi
+			if [ $COUNTER -eq 1 ]
+			then
+			    break;
+			fi
 		done
 
 		gsutil cp $tmp_results_path $combined_results_dir

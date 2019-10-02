@@ -3,7 +3,7 @@
 BASE_PATH="gs://conversationai-models"
 GCS_RESOURCES="${BASE_PATH}/resources"
 
-warm_start_from="gs://conversationai-models/tf_trainer_runs/msushkov/tf_gru_attention_many_communities_40_per_8_shot_glove/20190723_110533/model_dir/4400/1563906956/"
+warm_start_from="gs://conversationai-models/tf_trainer_runs/msushkov/tf_gru_attention_many_communities_40_per_8_shot_glove/20190723_110533/model_dir"
 combined_results_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/results/tf_gru_attention/validation"
 
 train_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/validation_episodes/support/*.tfrecord"
