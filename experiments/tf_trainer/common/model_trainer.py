@@ -46,6 +46,8 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
+tf.app.flags.DEFINE_string('warm_start_from', None,
+                           'Existing checkpoint from which to start training.')
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
 tf.app.flags.DEFINE_integer(
@@ -187,10 +189,11 @@ class ModelTrainer(object):
   """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
-               model: base_model.BaseModel) -> None:
+               model: base_model.BaseModel,
+               warm_start_from: str = None) -> None:
     self._dataset = dataset
     self._model = model
-    self._estimator = model.estimator(self._model_dir())
+    self._estimator = model.estimator(self._model_dir(), warm_start_from)
 
   def train_with_eval(self):
     """Train with periodic evaluation.
@@ -221,6 +224,16 @@ class ModelTrainer(object):
           keep_checkpoint_max=None)
 
     tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
+
+  def evaluate_on_dev(self, predict_keys=None):
+    checkpoints, _ = self._get_list_checkpoint(1, self._model_dir(),
+                                                         None, None)
+    return self._estimator.predict(self._dataset.validate_input_fn,
+                                   predict_keys=predict_keys,
+                                   checkpoint_path=checkpoints[0])
+
+  def eval_dir(self):
+    return self._estimator.eval_dir()
 
   def _model_dir(self):
     """Get Model Directory.

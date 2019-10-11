@@ -46,11 +46,12 @@ class TFHubClassifierModel(base_model.BaseModel):
         dense_units=dense_units)
     return hparams
 
-  def estimator(self, model_dir):
+  def estimator(self, model_dir, warm_start_from=None):
     estimator = tf.estimator.Estimator(
         model_fn=self._model_fn,
         params=self.hparams(),
-        config=tf.estimator.RunConfig(model_dir=model_dir))
+        config=tf.estimator.RunConfig(model_dir=model_dir),
+        warm_start_from=warm_start_from)
     return estimator
 
   def _model_fn(self, features, labels, mode, params, config):
