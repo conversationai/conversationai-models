@@ -183,6 +183,7 @@ def main():
   with tf.gfile.Open(metadata_path, "w") as f:
     f.write("Encoding Layers: " + FLAGS.encoding_layers + "\n")
 
+  # TODO(jjtan): Convert to flags.
   output_types = {
       "negative_queries": tf.string,
       "negative_supports": tf.string,
