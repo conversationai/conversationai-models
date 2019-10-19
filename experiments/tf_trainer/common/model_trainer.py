@@ -247,11 +247,12 @@ class ModelTrainer(object):
               output_dir=os.path.join(self._model_dir(), 'profiler')),
       ]
 
-    init_hook = InitHook(checkpoint_dir=self._warm_start_from)
-    if training_hooks:
-      training_hooks.append(init_hook)
-    else:
-      training_hooks = [init_hook]
+    if self._warm_start_from:
+      init_hook = InitHook(checkpoint_dir=self._warm_start_from)
+      if training_hooks:
+        training_hooks.append(init_hook)
+      else:
+        training_hooks = [init_hook]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,

@@ -9,7 +9,7 @@ combined_results_dir="gs://conversationai-models/resources/transfer_learning_dat
 train_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/validation_episodes/support/*.tfrecord"
 
 eval_steps=1
-eval_period=1000
+eval_period=5
 
 labels="label"
 label_dtypes="int"

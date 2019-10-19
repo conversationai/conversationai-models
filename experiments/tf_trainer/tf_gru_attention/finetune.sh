@@ -9,7 +9,7 @@ combined_results_dir="gs://conversationai-models/resources/transfer_learning_dat
 train_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/validation_episodes/support/*.tfrecord"
 
 eval_steps=1
-eval_period=1000
+eval_period=5
 
 labels="label"
 label_dtypes="int"
@@ -49,7 +49,7 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 			    --model_dir="tf_gru_attention_local_model_dir" \
 			    --train_path=$train_path \
 			    --validate_path=$valid_path \
-			    --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.300d.txt" \
+			    --embeddings_path="${GCS_RESOURCES}/glove.6B/glove.6B.100d.txt" \
 			    --is_embedding_trainable=False \
 			    --train_steps=$train_steps \
 			    --eval_period=$eval_period \
