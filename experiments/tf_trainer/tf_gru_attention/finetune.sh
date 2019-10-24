@@ -28,8 +28,11 @@ else
 	VALIDATION_OR_TEST="validation"
 
 	# original, original/2, original/5, original/10, original*2, original/20, original/50
-	learning_rate_lst=(0.00049418814574477758 0.00024709407 0.00009883762 0.000049418814574477758 0.00098837629 0.0000247094 0.00000988376)
-	train_steps_lst=(5 10 50)
+	#learning_rate_lst=(0.00049418814574477758 0.00024709407 0.00009883762 0.000049418814574477758 0.00098837629 0.0000247094 0.00000988376)
+
+	# original*4, original*10, original*20
+	learning_rate_lst=(0.00197675258 0.0049418814574477758 0.00988376291)
+	train_steps_lst=(5 10 50 100)
 fi
 
 combined_results_dir="gs://conversationai-models/resources/transfer_learning_data/many_communities_40_per_8_shot/results/tf_gru_attention/$VALIDATION_OR_TEST"
@@ -43,7 +46,7 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 		echo "Train steps:"
 		echo $train_steps
 
-		tmp_results_fname="tf_gru_attention_finetuning_baseline_trainsteps_${train_steps}_lrate_${learning_rate}.csv"
+		tmp_results_fname="tf_gru_attention_finetuning_baseline_trainsteps_${train_steps}_lrate_${learning_rate}_msushkov.csv"
 		tmp_results_path="/tmp/$tmp_results_fname"
 
 		rm $tmp_results_path

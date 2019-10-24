@@ -42,7 +42,7 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 		echo "Train steps:"
 		echo $train_steps
 
-		tmp_results_fname="tf_hub_classifier_finetuning_baseline_trainsteps_${train_steps}_lrate_${learning_rate}.csv"
+		tmp_results_fname="tf_hub_classifier_finetuning_baseline_trainsteps_${train_steps}_lrate_${learning_rate}_msushkov.csv"
 		tmp_results_path="/tmp/$tmp_results_fname"
 
 		rm $tmp_results_path
