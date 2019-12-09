@@ -41,6 +41,9 @@ def LoadTokenIdxEmbeddings(embeddings_path: str) \
   word_to_idx = {}
   word_embeddings = []
 
+  if not tf.gfile.Exists(embeddings_path):
+    raise ValueError('File at %s does not exist.' % embeddings_path)
+
   with tf.gfile.Open(embeddings_path) as f:
     for idx, line in enumerate(f):
       values = line.split()
@@ -48,6 +51,9 @@ def LoadTokenIdxEmbeddings(embeddings_path: str) \
       word_embedding = np.asarray(values[1:], dtype='float32')
       word_to_idx[word] = idx + 1  # Reserve first row for padding
       word_embeddings.append(word_embedding)
+
+  if not word_embeddings:
+    raise ValueError('No embeddings loaded from %s.' % embeddings_path)
 
   # Add the padding "embedding"
   word_embeddings.insert(0, np.random.randn(len(word_embeddings[0])))

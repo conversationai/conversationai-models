@@ -38,6 +38,5 @@ class LoadTokenIdxEmbeddingsTest(tf.test.TestCase):
     # Note: padding embedding will be random, and is index 0. Also the unknown
     # token embedding will be random, and is index n+1; 7 in this case.
 
-
 if __name__ == '__main__':
   tf.test.main()
