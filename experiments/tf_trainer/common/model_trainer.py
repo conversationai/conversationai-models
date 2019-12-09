@@ -46,6 +46,8 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('model_dir', None,
                            "Directory for the Estimator's model directory.")
+tf.app.flags.DEFINE_string('warm_start_from', None,
+                           'Existing checkpoint from which to start training.')
 tf.app.flags.DEFINE_bool('enable_profiling', False,
                          'Enable profiler hook in estimator.')
 tf.app.flags.DEFINE_integer(
@@ -64,6 +66,46 @@ tf.app.flags.DEFINE_integer('eval_steps', None,
                             'Number of examples to eval for, default all.')
 
 tf.app.flags.mark_flag_as_required('model_dir')
+
+
+# Copied from:
+# https://stackoverflow.com/questions/49846207/tensorflow-estimator-warm-start-from-and-model-dir
+class InitHook(tf.train.SessionRunHook):
+  """Initializes model from a checkpoint_path
+  
+    Args:
+      checkpoint_dir: full path to dir containing the checkpoint
+  """
+  def __init__(self, checkpoint_dir):
+    self.model_path = checkpoint_dir
+    self.initialized = False
+
+  def begin(self):
+    """
+    Restore parameters if a pre-trained model is available and
+    we haven't trained previously.
+    """
+    if not self.initialized:
+      #checkpoint = tf.train.latest_checkpoint(self.model_path)
+      all_checkpoints = file_io.get_matching_files(os.path.join(
+        self.model_path, 'model.ckpt-*.index'))
+
+      if not all_checkpoints:
+        raise ValueError('No checkpoint files found matching %s.' % (
+          self.model_path + '*'))
+
+      all_checkpoints = [x.replace('.index', '') for x in all_checkpoints]
+      all_checkpoints = sorted(all_checkpoints, key=lambda x: int(x.split('-')[-1]))
+      checkpoint = all_checkpoints[-1]
+
+      if checkpoint is None:
+        logging.info('No pre-trained model is available at %s, '
+          'training from scratch.' % self.model_path)
+      else:
+        logging.info('Pre-trained model {0} found in {1} - warmstarting.'.format(
+          checkpoint, self.model_path))
+        tf.train.warm_start(checkpoint)
+      self.initialized = True
 
 
 # This function extends tf.contrib.estimator.forward_features.
@@ -187,9 +229,11 @@ class ModelTrainer(object):
   """Model Trainer."""
 
   def __init__(self, dataset: ds.DatasetInput,
-               model: base_model.BaseModel) -> None:
+               model: base_model.BaseModel,
+               warm_start_from: str = None) -> None:
     self._dataset = dataset
     self._model = model
+    self._warm_start_from = warm_start_from
     self._estimator = model.estimator(self._model_dir())
 
   def train_with_eval(self):
@@ -202,6 +246,13 @@ class ModelTrainer(object):
               save_steps=10,
               output_dir=os.path.join(self._model_dir(), 'profiler')),
       ]
+
+    if self._warm_start_from:
+      init_hook = InitHook(checkpoint_dir=self._warm_start_from)
+      if training_hooks:
+        training_hooks.append(init_hook)
+      else:
+        training_hooks = [init_hook]
 
     train_spec = tf.estimator.TrainSpec(
         input_fn=self._dataset.train_input_fn,
@@ -221,6 +272,16 @@ class ModelTrainer(object):
           keep_checkpoint_max=None)
 
     tf.estimator.train_and_evaluate(self._estimator, train_spec, eval_spec)
+
+  def predict_on_dev(self, predict_keys=None):
+    checkpoints, _ = self._get_list_checkpoint(1, self._model_dir(),
+                                                         None, None)
+    return self._estimator.predict(self._dataset.validate_input_fn,
+                                   predict_keys=predict_keys,
+                                   checkpoint_path=checkpoints[0])
+
+  def eval_dir(self):
+    return self._estimator.eval_dir()
 
   def _model_dir(self):
     """Get Model Directory.
