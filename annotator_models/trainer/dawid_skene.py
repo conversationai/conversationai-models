@@ -435,7 +435,7 @@ def parse_item_classes(df, label, item_classes, index_to_unit_id_map,
   # true y values.
   y_values = list(index_to_y_map.values())
   col_name = '{0}_hat_mean'.format(label)
-  df_predictions[col_name] = np.dot(df_predictions[col_names], y_values)
+  df_predictions[col_name] = np.dot(df_predictions[col_names], list(y_values))
 
   # Use the _unit_index to map to the original _unit_id
   df_predictions['_unit_index'] = range(len(item_classes))
