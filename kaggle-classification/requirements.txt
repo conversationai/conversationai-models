@@ -15,7 +15,7 @@ kaggle==1.0.5
 Keras==2.1.5
 Markdown==2.6.11
 mypy==0.600
-nltk==3.3
+nltk==3.4.5
 numpy==1.14.0
 pandas==0.22.0
 Pillow==6.2.0
