@@ -1,7 +1,7 @@
 absl-py==0.7.0
 astor==0.7.1
 bert-tensorflow==1.0.1
-bleach==3.1.0
+bleach==3.1.1
 certifi==2018.11.29
 chardet==3.0.4
 gast==0.2.2
