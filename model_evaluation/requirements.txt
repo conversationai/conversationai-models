@@ -1,6 +1,6 @@
 google-api-python-client==1.7.3
 Markdown==2.6.11
-nltk==3.3
+nltk==3.4.5
 numpy==1.14.4
 pandas==0.22.0
 requests==2.20.0
@@ -12,5 +12,5 @@ six==1.11.0
 tensorflow==1.15.2
 jupyter==1.0.0
 matplotlib==2.0.2
-nltk==3.3
+nltk==3.4.5
 
