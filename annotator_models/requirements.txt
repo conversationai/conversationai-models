@@ -46,7 +46,7 @@ googleapis-common-protos==1.5.3
 grpc-google-iam-v1==0.11.4
 grpcio==1.10.0
 html5lib==0.9999999
-httplib2==0.11.1
+httplib2==0.18.0
 idna==2.6
 Markdown==2.6.11
 mock==2.0.0
