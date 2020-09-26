@@ -1,4 +1,4 @@
 apache-beam[gcp]==2.2.0
 configparser==3.5.0
-tensorflow==1.15.2
+tensorflow==1.15.4
 tensorflow_transform==0.9
