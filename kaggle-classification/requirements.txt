@@ -34,7 +34,7 @@ tensorflow-tensorboard==1.5.1
 termcolor==1.1.0
 tflearn==0.3.2
 typed-ast==1.1.0
-urllib3==1.24.2
+urllib3==1.26.5
 websocket-client==0.47.0
 Werkzeug==0.15.3
 wurlitzer==1.0.2
