@@ -13,7 +13,7 @@ idna==2.8
 jsonlines==1.2.0
 Markdown==3.0.1
 mypy==0.670
-nltk==3.6.5
+nltk==3.6.6
 numpy==1.21.0
 pandas==0.24.1
 protobuf==3.6.1
