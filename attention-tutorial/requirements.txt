@@ -30,7 +30,7 @@ mistune==0.8.3
 nbconvert==5.3.1
 nbformat==4.4.0
 nltk==3.6.6
-notebook==6.4.10
+notebook==6.4.12
 numpy==1.21.0
 pandas==0.22.0
 pandocfilters==1.4.2
