@@ -14,7 +14,7 @@ jsonlines==1.2.0
 Markdown==3.0.1
 mypy==0.670
 nltk==3.6.6
-numpy==1.21.0
+numpy==1.22.0
 pandas==0.24.1
 protobuf==3.15.0
 PyYAML==5.4
