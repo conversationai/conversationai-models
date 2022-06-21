@@ -16,7 +16,7 @@ Keras==2.1.5
 Markdown==2.6.11
 mypy==0.600
 nltk==3.6.6
-numpy==1.21.0
+numpy==1.22.0
 pandas==0.22.0
 Pillow==9.0.1
 protobuf==3.15.0
