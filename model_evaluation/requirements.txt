@@ -1,7 +1,7 @@
 google-api-python-client==1.7.3
 Markdown==2.6.11
 nltk==3.6.6
-numpy==1.21.0
+numpy==1.22.0
 pandas==0.22.0
 requests==2.20.0
 seaborn==0.8.1
