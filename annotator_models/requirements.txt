@@ -71,7 +71,7 @@ requests-oauthlib==0.8.0
 rsa==4.7
 six==1.11.0
 tensorboard==1.12.0
-tensorflow==2.9.3
+tensorflow==2.11.1
 termcolor==1.1.0
 urllib3==1.26.5
 Werkzeug==2.2.3
