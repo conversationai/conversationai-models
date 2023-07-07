@@ -25,7 +25,7 @@ pytz==2017.3
 PyYAML==5.4
 requests==2.31.0
 scikit-learn==0.19.1
-scipy==1.0.0
+scipy==1.10.0
 six==1.11.0
 sklearn==0.0
 tensorboard==1.8.0
