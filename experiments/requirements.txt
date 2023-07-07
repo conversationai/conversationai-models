@@ -19,7 +19,7 @@ pandas==0.24.1
 protobuf==3.18.3
 PyYAML==5.4
 requests==2.31.0
-scipy==1.2.1
+scipy==1.10.0
 sentencepiece==0.1.8
 six==1.12.0
 tensorboard==1.12.2
