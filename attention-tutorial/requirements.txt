@@ -49,7 +49,7 @@ pyzmq==17.0.0
 qtconsole==4.3.1
 requests==2.31.0
 scikit-learn==0.19.1
-scipy==1.0.0
+scipy==1.10.0
 Send2Trash==1.5.0
 simplegeneric==0.8.1
 six==1.11.0
