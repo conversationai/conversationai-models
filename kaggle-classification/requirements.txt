@@ -7,7 +7,7 @@ comet-ml==1.0.8
 enum34==1.1.6
 futures==3.1.1
 gast==0.2.0
-grpcio==1.53.0
+grpcio==1.53.2
 h5py==2.7.1
 html5lib==0.999999999
 idna==2.6
