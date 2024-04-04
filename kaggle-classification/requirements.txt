@@ -18,7 +18,7 @@ mypy==0.600
 nltk==3.6.6
 numpy==1.22.0
 pandas==0.22.0
-Pillow==10.2.0
+Pillow==10.3.0
 protobuf==3.18.3
 python-dateutil==2.6.1
 pytz==2017.3
