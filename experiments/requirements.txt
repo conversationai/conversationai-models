@@ -9,7 +9,7 @@ gcsfs==0.2.3
 grpcio==1.53.2
 h5py==2.9.0
 html5lib==1.0.1
-idna==2.8
+idna==3.7
 jsonlines==1.2.0
 Markdown==3.0.1
 mypy==0.670
