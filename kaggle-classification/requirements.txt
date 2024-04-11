@@ -10,7 +10,7 @@ gast==0.2.0
 grpcio==1.53.2
 h5py==2.7.1
 html5lib==0.999999999
-idna==2.6
+idna==3.7
 kaggle==1.0.5
 Keras==2.1.5
 Markdown==2.6.11
