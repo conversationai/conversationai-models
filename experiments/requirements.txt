@@ -18,7 +18,7 @@ numpy==1.22.0
 pandas==0.24.1
 protobuf==3.18.3
 PyYAML==5.4
-requests==2.31.0
+requests==2.32.2
 scipy==1.10.0
 sentencepiece==0.1.8
 six==1.12.0
