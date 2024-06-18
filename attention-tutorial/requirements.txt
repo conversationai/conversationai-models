@@ -47,7 +47,7 @@ pytz==2017.3
 PyYAML==5.4
 pyzmq==17.0.0
 qtconsole==4.3.1
-requests==2.31.0
+requests==2.32.2
 scikit-learn==0.19.1
 scipy==1.10.0
 Send2Trash==1.5.0
