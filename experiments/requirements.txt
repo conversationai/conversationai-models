@@ -2,7 +2,7 @@ absl-py==0.7.0
 astor==0.7.1
 bert-tensorflow==1.0.1
 bleach==3.3.0
-certifi==2023.7.22
+certifi==2024.7.4
 chardet==3.0.4
 gast==0.2.2
 gcsfs==0.2.3
