@@ -2,7 +2,7 @@ from setuptools import find_packages
 from setuptools import setup
 
 REQUIRED_PACKAGES = [
-    'tflearn>=0.3.2', 'Keras==2.1.5', 'h5py==2.7.1', 'comet-ml==1.0.8',
+    'tflearn>=0.3.2', 'Keras==2.13.1', 'h5py==2.7.1', 'comet-ml==1.0.8',
     'nltk>=3.3'
 ]
 
