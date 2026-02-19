@@ -7,7 +7,7 @@
 # 1. Install the gcloud SDK
 # 2. Authenticate with the GCP project you want to use, `gcloud config set project [my-project]`
 # 3. Put the train and test data in Cloud Storage,
-#      `gsutil cp [DATA_FILE] gs://[BUCKET_NAME]/resources`
+#      `gcloud storage cp [DATA_FILE] gs://[BUCKET_NAME]/resources`
 #
 
 # Edit these!
