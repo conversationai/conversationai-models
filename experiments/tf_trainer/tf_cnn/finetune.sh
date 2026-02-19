@@ -48,7 +48,7 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 		rm $tmp_results_path
 
 		COUNTER=0
-		for train_path in `gsutil ls $train_dir`; do
+		for train_path in `gcloud storage ls $train_dir`; do
 			echo "Community $COUNTER out of 170..."
 			
 			valid_path=${train_path/${VALIDATION_OR_TEST}_episodes\/support/${VALIDATION_OR_TEST}_episodes\/query}
@@ -81,7 +81,7 @@ for learning_rate in "${learning_rate_lst[@]}"; do
 			COUNTER=$[$COUNTER +1]
 		done
 
-		gsutil cp $tmp_results_path $combined_results_dir
+		gcloud storage cp $tmp_results_path $combined_results_dir
 
 	done
 done
