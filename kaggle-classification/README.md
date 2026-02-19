@@ -62,7 +62,7 @@ Google infrastructure.
     Note: to run in google cloud, you will need to be authenticated with
     Google Cloud (you can run `gcloud auth application-default login` to do
     this) and you must have access to the cloud bucket where the data is located
-    (you can test this by running `gsutil ls  gs://kaggle-model-experiments/`).
+    (you can test this by running `gcloud storage ls  gs://kaggle-model-experiments/`).
 
 
 ## Available Models
