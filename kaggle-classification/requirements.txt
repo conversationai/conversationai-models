@@ -19,7 +19,7 @@ nltk==3.9
 numpy==1.22.0
 pandas==0.22.0
 Pillow==10.3.0
-protobuf==3.18.3
+protobuf==7.34.0rc1
 python-dateutil==2.6.1
 pytz==2017.3
 PyYAML==5.4
