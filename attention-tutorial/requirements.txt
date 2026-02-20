@@ -39,7 +39,7 @@ pexpect==4.4.0
 pickleshare==0.7.4
 Pillow==10.3.0
 prompt-toolkit==1.0.15
-protobuf==3.18.3
+protobuf==5.29.6
 ptyprocess==0.5.2
 Pygments==2.15.0
 python-dateutil==2.6.1
