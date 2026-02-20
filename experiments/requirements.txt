@@ -16,7 +16,7 @@ mypy==0.670
 nltk==3.9
 numpy==1.22.0
 pandas==0.24.1
-protobuf==3.18.3
+protobuf==5.29.6
 PyYAML==5.4
 requests==2.32.2
 scipy==1.10.0
