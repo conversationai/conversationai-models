@@ -13,7 +13,7 @@ html5lib==0.999999999
 idna==3.7
 kaggle==1.0.5
 Keras==2.13.1
-Markdown==2.6.11
+Markdown==3.8.1
 mypy==0.600
 nltk==3.9
 numpy==1.22.0
