@@ -11,7 +11,7 @@ h5py==2.9.0
 html5lib==1.0.1
 idna==3.7
 jsonlines==1.2.0
-Markdown==3.0.1
+Markdown==3.8.1
 mypy==0.670
 nltk==3.9
 numpy==1.22.0
