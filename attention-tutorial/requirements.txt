@@ -26,7 +26,7 @@ kaggle==1.0.5
 Keras==2.13.1
 Markdown==2.6.11
 MarkupSafe==1.0
-mistune==2.0.3
+mistune==3.2.1
 nbconvert==6.5.1
 nbformat==4.4.0
 nltk==3.9
